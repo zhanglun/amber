@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { DinoSource, FileBlobStore, FileStore } from "@amber/adapters";
 import { ImportService, ReadService } from "@amber/core";
 
@@ -10,6 +10,7 @@ export function buildServices() {
   const blob = new FileBlobStore(dataDir);
   return {
     dataDir,
+    blobsDir: join(dataDir, "blobs"),
     importService: new ImportService(source, store, blob),
     readService: new ReadService(store),
   };
