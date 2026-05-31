@@ -24,6 +24,12 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@24.12.4)(jiti@2.7.0)(tsx@4.22.3)
 
+  packages/core:
+    dependencies:
+      '@amber/domain':
+        specifier: workspace:*
+        version: link:../domain
+
   packages/domain: {}
 
 packages:
