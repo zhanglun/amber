@@ -4,3 +4,4 @@ dist/
 .superpowers/
 *.log
 packages/adapters/src/generated/
+amber-data/
