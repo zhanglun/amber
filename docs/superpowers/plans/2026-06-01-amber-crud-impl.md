@@ -121,7 +121,7 @@ git commit -m "feat(domain): add delete to Store interface"
 
 - [ ] **Step 1: Write the failing test**
 
-In `packages/core/src/asset-key.test.ts`, add a new `describe` block after the existing tests:
+Replace `packages/core/src/asset-key.test.ts` entirely (import line also needs updating):
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -303,23 +303,22 @@ In `packages/core/src/import-service.test.ts`, add two new tests inside the `des
 
 ```ts
 it("uses forceId and skips dedup when options.forceId is provided", async () => {
-  const existing: Capture = {
-    id: "old", title: "Old", content: "x", sourceUrl: "https://example.com/a",
-    sourceType: "url", createdAt: "2026-01-01T00:00:00.000Z", capturedAt: "2026-01-01T00:00:00.000Z",
-  };
+  // Store is empty — CLI already called deleteCapture before calling run()
   const source = fakeSource(raw);
-  const { store, rows } = fakeStore([existing]);
+  const { store, rows } = fakeStore();
   const blob = fakeBlob();
   const service = new ImportService(source, store, blob, {
     now: () => new Date("2026-05-31T00:00:00.000Z"),
   });
 
-  const id = await service.run("https://example.com/a", { forceId: "old" });
+  const id = await service.run("https://example.com/a", { forceId: "forced-id" });
 
-  expect(id).toBe("old");
+  expect(id).toBe("forced-id");
   expect(source.capture).toHaveBeenCalledOnce();
   expect(store.findBySourceUrl).not.toHaveBeenCalled();
-  expect(rows.find((r) => r.id === "old")?.title).toBe("Hello");
+  expect(rows).toHaveLength(1);
+  expect(rows[0].id).toBe("forced-id");
+  expect(rows[0].title).toBe("Hello");
 });
 
 it("generates a new id when forceId is not provided (normal dedupe path)", async () => {
