@@ -73,6 +73,40 @@ describe("ImportService", () => {
     expect(blob.put).toHaveBeenCalledTimes(2);
   });
 
+  it("uses forceId and skips dedup when options.forceId is provided", async () => {
+    // store 为空——CLI 在调用 run() 之前已经调用过 deleteCapture
+    const source = fakeSource(raw);
+    const { store, rows } = fakeStore();
+    const blob = fakeBlob();
+    const service = new ImportService(source, store, blob, {
+      now: () => new Date("2026-05-31T00:00:00.000Z"),
+    });
+
+    const id = await service.run("https://example.com/a", { forceId: "forced-id" });
+
+    expect(id).toBe("forced-id");
+    expect(source.capture).toHaveBeenCalledOnce();
+    expect(store.findBySourceUrl).not.toHaveBeenCalled();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe("forced-id");
+    expect(rows[0].title).toBe("Hello");
+  });
+
+  it("generates a new id when forceId is not provided (normal dedupe path)", async () => {
+    const source = fakeSource(raw);
+    const { store } = fakeStore();
+    const blob = fakeBlob();
+    const service = new ImportService(source, store, blob, {
+      now: () => new Date("2026-05-31T00:00:00.000Z"),
+      newId: () => "fresh-id",
+    });
+
+    const id = await service.run("https://example.com/b");
+
+    expect(id).toBe("fresh-id");
+    expect(store.findBySourceUrl).toHaveBeenCalledWith("https://example.com/b");
+  });
+
   it("skips capture entirely when the url already exists (dedupe-first)", async () => {
     const existing: Capture = {
       id: "old", title: "Old", content: "x", sourceUrl: "https://example.com/a",

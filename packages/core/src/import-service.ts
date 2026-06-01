@@ -6,6 +6,10 @@ export interface ImportDeps {
   newId?: () => string;
 }
 
+export interface ImportOptions {
+  forceId?: string;
+}
+
 export class ImportService {
   private readonly now: () => Date;
   private readonly newId: () => string;
@@ -20,14 +24,17 @@ export class ImportService {
     this.newId = deps.newId ?? (() => crypto.randomUUID());
   }
 
-  /** 导入一个 URL。返回 capture id（若已导入则返回既有 id）。 */
-  async run(url: string): Promise<string> {
-    const existing = await this.store.findBySourceUrl(url);
-    if (existing) return existing.id;
+  /** 导入一个 URL。返回 capture id（若已导入则返回既有 id）。
+   *  传入 options.forceId 时跳过去重检查，用指定 id 覆盖写入。 */
+  async run(url: string, options?: ImportOptions): Promise<string> {
+    if (!options?.forceId) {
+      const existing = await this.store.findBySourceUrl(url);
+      if (existing) return existing.id;
+    }
 
     const raw = await this.source.capture(url);
 
-    const id = this.newId();
+    const id = options?.forceId ?? this.newId();
     let content = raw.markdown;
     for (let i = 0; i < raw.assets.length; i++) {
       const asset = raw.assets[i];
