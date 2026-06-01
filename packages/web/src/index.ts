@@ -14,6 +14,8 @@ const MIME: Record<string, string> = {
 export interface WebOptions {
   /** 本地 blobs 根目录（FileBlobStore 写入的 <dataDir>/blobs）。 */
   blobsDir: string;
+  /** 服务器开始监听后的回调（可用于打开浏览器等）。 */
+  onReady?: () => void;
 }
 
 export function createApp(readService: ReadService, options: WebOptions): Hono {
@@ -48,5 +50,5 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
 
 export function startServer(readService: ReadService, options: WebOptions & { port: number }): void {
   const app = createApp(readService, { blobsDir: options.blobsDir });
-  serve({ fetch: app.fetch, port: options.port });
+  serve({ fetch: app.fetch, port: options.port }, () => options.onReady?.());
 }
