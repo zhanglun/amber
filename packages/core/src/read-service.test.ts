@@ -13,6 +13,7 @@ function fakeStore(): Store {
     list: vi.fn(async () => [{ id: cap.id, title: cap.title, sourceUrl: cap.sourceUrl, createdAt: cap.createdAt }]),
     get: vi.fn(async (id: string) => (id === "c1" ? cap : null)),
     findBySourceUrl: vi.fn(),
+    delete: vi.fn(),
   };
 }
 

@@ -17,6 +17,10 @@ function fakeStore(seed: Capture[] = []) {
     list: vi.fn(async () => rows.map((r) => ({ id: r.id, title: r.title, sourceUrl: r.sourceUrl, createdAt: r.createdAt }))),
     get: vi.fn(async (id: string) => rows.find((r) => r.id === id) ?? null),
     findBySourceUrl: vi.fn(async (url: string) => rows.find((r) => r.sourceUrl === url) ?? null),
+    delete: vi.fn(async (id: string) => {
+      const idx = rows.findIndex((r) => r.id === id);
+      if (idx !== -1) rows.splice(idx, 1);
+    }),
   };
   return { store, rows };
 }

@@ -42,6 +42,7 @@ export interface Store {
   list(): Promise<CaptureSummary[]>;
   get(id: string): Promise<Capture | null>;
   findBySourceUrl(url: string): Promise<Capture | null>;
+  delete(id: string): Promise<void>;
 }
 
 /** 二进制/对象存储。`put` 返回公开 URL。 */
