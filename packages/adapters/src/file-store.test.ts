@@ -50,4 +50,17 @@ describe("FileStore", () => {
     const store = new FileStore(dir);
     expect(await store.list()).toEqual([]);
   });
+
+  it("delete removes the capture file, then get returns null", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "del1" }));
+    expect(await store.get("del1")).not.toBeNull();
+    await store.delete("del1");
+    expect(await store.get("del1")).toBeNull();
+  });
+
+  it("delete is a no-op for unknown ids", async () => {
+    const store = new FileStore(dir);
+    await expect(store.delete("ghost")).resolves.toBeUndefined();
+  });
 });

@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Capture, CaptureSummary, Store } from "@amber/domain";
 
@@ -53,5 +53,9 @@ export class FileStore implements Store {
   async findBySourceUrl(url: string): Promise<Capture | null> {
     const all = await this.readAll();
     return all.find((c) => c.sourceUrl === url) ?? null;
+  }
+
+  async delete(id: string): Promise<void> {
+    await unlink(this.file(id)).catch(() => {});
   }
 }
