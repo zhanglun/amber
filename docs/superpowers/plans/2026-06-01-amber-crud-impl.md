@@ -87,10 +87,14 @@ return {
 };
 ```
 
-- [ ] **Step 4: Run typecheck**
+- [ ] **Step 4: Run scoped typecheck (domain + core only)**
+
+`FileStore` 直到 Task 5 才实现 `delete`，此时跑全量 typecheck 会报 adapters 错误。只检查已改动的两个包：
 
 ```bash
-cd /Users/zhanglun/Documents/mine/amber && pnpm typecheck
+cd /Users/zhanglun/Documents/mine/amber && \
+  pnpm exec tsc --noEmit -p packages/domain/tsconfig.json && \
+  pnpm exec tsc --noEmit -p packages/core/tsconfig.json
 ```
 
 Expected: exits 0, no errors.
@@ -199,7 +203,7 @@ git commit -m "feat(core): add captureAssetPrefix for blob directory cleanup"
 
 - [ ] **Step 1: Write the failing test**
 
-In `packages/core/src/read-service.test.ts`, add a test inside the `describe("ReadService", ...)` block:
+Replace `packages/core/src/read-service.test.ts` entirely — `fakeStore` needs its `findBySourceUrl` updated from `vi.fn()` to a real stub so the new test can verify the delegation:
 
 ```ts
 import { describe, expect, it, vi } from "vitest";
