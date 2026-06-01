@@ -10,4 +10,8 @@ export class ReadService {
   get(id: string): Promise<Capture | null> {
     return this.store.get(id);
   }
+
+  findBySourceUrl(url: string): Promise<Capture | null> {
+    return this.store.findBySourceUrl(url);
+  }
 }

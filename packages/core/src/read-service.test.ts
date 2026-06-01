@@ -12,7 +12,7 @@ function fakeStore(): Store {
     insert: vi.fn(),
     list: vi.fn(async () => [{ id: cap.id, title: cap.title, sourceUrl: cap.sourceUrl, createdAt: cap.createdAt }]),
     get: vi.fn(async (id: string) => (id === "c1" ? cap : null)),
-    findBySourceUrl: vi.fn(),
+    findBySourceUrl: vi.fn(async (url: string) => (url === "https://x/a" ? cap : null)),
     delete: vi.fn(),
   };
 }
@@ -28,5 +28,11 @@ describe("ReadService", () => {
     const svc = new ReadService(fakeStore());
     expect(await svc.get("c1")).toEqual(cap);
     expect(await svc.get("nope")).toBeNull();
+  });
+
+  it("finds a capture by source URL, or null", async () => {
+    const svc = new ReadService(fakeStore());
+    expect(await svc.findBySourceUrl("https://x/a")).toEqual(cap);
+    expect(await svc.findBySourceUrl("https://x/missing")).toBeNull();
   });
 });
