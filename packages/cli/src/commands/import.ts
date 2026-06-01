@@ -6,13 +6,26 @@ export const importCommand = defineCommand({
   meta: { name: "import", description: "Import a URL into Amber" },
   args: {
     url: { type: "positional", description: "Web page URL to capture", required: true },
+    force: { type: "boolean", description: "Skip dedup and re-capture, keeping original id if it exists", default: false },
   },
   async run({ args }) {
-    const { importService, readService, dataDir } = buildServices();
+    const { importService, readService, deleteCapture, dataDir } = buildServices();
     const spin = p.spinner();
     spin.start(`Importing ${args.url}`);
     try {
-      const id = await importService.run(args.url);
+      let id: string;
+      if (args.force) {
+        const existing = await readService.findBySourceUrl(args.url);
+        if (existing) {
+          await deleteCapture(existing.id);
+          id = await importService.run(args.url, { forceId: existing.id });
+        } else {
+          id = await importService.run(args.url);
+        }
+      } else {
+        id = await importService.run(args.url);
+      }
+
       spin.stop(`Imported as ${id}`);
       p.log.info(`Saved to ${dataDir}/captures/${id}.json`);
 
