@@ -15,3 +15,7 @@ export function assetKey(
   const ext = (contentType && EXT_BY_TYPE[contentType]) || "bin";
   return `captures/${captureId}/${index}.${ext}`;
 }
+
+export function captureAssetPrefix(captureId: string): string {
+  return `captures/${captureId}`;
+}
