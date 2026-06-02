@@ -18,3 +18,31 @@ export function getThemeScriptHtml(): string {
 })();
 </script>`;
 }
+
+export function getSearchBarHtml(): string {
+  return `<div class="search-bar"><input id="search" type="search" placeholder="搜索标题或来源…" autocomplete="off"></div>`;
+}
+
+export function getListFilterScriptHtml(): string {
+  return `<script>
+(function(){
+  var inp=document.getElementById('search');
+  if(!inp)return;
+  inp.addEventListener('input',function(){
+    var q=this.value.trim().toLowerCase();
+    document.querySelectorAll('[data-title][data-host]').forEach(function(item){
+      var match=!q||item.dataset.title.includes(q)||item.dataset.host.includes(q);
+      item.style.display=match?'':'none';
+    });
+    document.querySelectorAll('[data-group]').forEach(function(group){
+      var items=group.querySelectorAll('[data-title][data-host]');
+      var n=0;
+      items.forEach(function(i){if(i.style.display!=='none')n++;});
+      group.style.display=n===0?'none':'';
+      var el=group.querySelector('.count');
+      if(el)el.textContent=n;
+    });
+  });
+})();
+</script>`;
+}

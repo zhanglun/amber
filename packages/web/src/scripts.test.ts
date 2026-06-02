@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getThemeSwitcherHtml, getThemeScriptHtml } from "./scripts.js";
+import { getThemeSwitcherHtml, getThemeScriptHtml, getSearchBarHtml, getListFilterScriptHtml } from "./scripts.js";
 
 describe("getThemeSwitcherHtml", () => {
   it("includes buttons for all four themes", () => {
@@ -25,5 +25,33 @@ describe("getThemeScriptHtml", () => {
 
   it("defines setTheme globally", () => {
     expect(getThemeScriptHtml()).toContain("setTheme");
+  });
+});
+
+describe("getSearchBarHtml", () => {
+  it("contains search input with id and type", () => {
+    const html = getSearchBarHtml();
+    expect(html).toContain('id="search"');
+    expect(html).toContain('type="search"');
+  });
+
+  it("wraps input in search-bar div", () => {
+    expect(getSearchBarHtml()).toContain('class="search-bar"');
+  });
+});
+
+describe("getListFilterScriptHtml", () => {
+  it("filters items by data-title and data-host", () => {
+    const script = getListFilterScriptHtml();
+    expect(script).toContain("data-title");
+    expect(script).toContain("data-host");
+  });
+
+  it("toggles group visibility via data-group", () => {
+    expect(getListFilterScriptHtml()).toContain("data-group");
+  });
+
+  it("updates count element", () => {
+    expect(getListFilterScriptHtml()).toContain(".count");
   });
 });
