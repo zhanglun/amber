@@ -43,7 +43,7 @@ html { background: var(--bg); color: var(--text); font-family: var(--font-body);
 body { max-width: var(--max-width); margin: 2rem auto; padding: 0 1rem; font-size: 16px; line-height: var(--line-height); }
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; }
-h1 { line-height: 1.3; }
+h1, h2, h3, h4, h5, h6 { line-height: 1.3; }
 p { margin: 0 0 1em; }
 img { max-width: 100%; }
 pre, code { font-family: var(--font-mono); background: var(--bg-code); }
