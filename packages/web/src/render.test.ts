@@ -88,6 +88,14 @@ describe("renderList", () => {
     const html = renderList(items);
     expect(html).toContain('class="header-right"');
   });
+
+  it("escapes special characters in data-title attribute", () => {
+    const special = [
+      { id: "s1", title: 'Hello "World"', sourceUrl: "https://example.com/a", createdAt: "2020-01-15T00:00:00.000Z" },
+    ];
+    const html = renderList(special);
+    expect(html).toContain('data-title="hello &quot;world&quot;"');
+  });
 });
 
 describe("renderArticle", () => {
