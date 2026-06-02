@@ -31,7 +31,7 @@ export function getListFilterScriptHtml(): string {
   inp.addEventListener('input',function(){
     var q=this.value.trim().toLowerCase();
     document.querySelectorAll('.item[data-title]').forEach(function(item){
-      var match=!q||item.dataset.title.includes(q)||item.dataset.host.includes(q);
+      var match=!q||(item.getAttribute('data-title')||'').includes(q)||(item.getAttribute('data-host')||'').includes(q);
       item.style.display=match?'':'none';
     });
     document.querySelectorAll('[data-group]').forEach(function(group){
