@@ -26,7 +26,7 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
   app.get("/captures/:id", async (c) => {
     const capture = await readService.get(c.req.param("id"));
     if (!capture) return c.html("<p>Not found. <a href='/'>back</a></p>", 404);
-    return c.html(renderArticle(capture));
+    return c.html(await renderArticle(capture));
   });
 
   // serve 本地图片：/blobs/<key> → <blobsDir>/<key>
