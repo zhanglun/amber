@@ -25,6 +25,10 @@ describe("assetKey", () => {
   it("maps video/quicktime to mov", () => {
     expect(assetKey("cap", 0, "video/quicktime")).toBe("captures/cap/0.mov");
   });
+
+  it("maps video/ogg to ogv", () => {
+    expect(assetKey("cap", 0, "video/ogg")).toBe("captures/cap/0.ogv");
+  });
 });
 
 describe("captureAssetPrefix", () => {
