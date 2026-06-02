@@ -19,4 +19,12 @@ describe("getStyles", () => {
   it("sets max-width for reading layout", () => {
     expect(getStyles()).toContain("--max-width: 680px");
   });
+
+  it("includes search bar and group label styles", () => {
+    const css = getStyles();
+    expect(css).toContain(".header-right");
+    expect(css).toContain(".search-bar");
+    expect(css).toContain(".group-label");
+    expect(css).toContain(".count");
+  });
 });

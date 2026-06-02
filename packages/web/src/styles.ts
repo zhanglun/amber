@@ -64,5 +64,11 @@ pre code { padding: 0; background: none; }
 .shiki.github-dark { display: none; }
 [data-theme="dark"] .shiki.github-light { display: none; }
 [data-theme="dark"] .shiki.github-dark { display: block; }
+.header-right { display: flex; align-items: center; gap: 1rem; }
+.search-bar input { border: 1px solid var(--border); border-radius: 6px; padding: .3rem .6rem; font-size: .85rem; background: var(--bg); color: var(--text); width: 180px; }
+.search-bar input:focus { outline: none; border-color: var(--link); }
+.group { margin-bottom: 1.5rem; }
+.group-label { font-size: .8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); padding-bottom: .3rem; margin-bottom: .5rem; }
+.group-label .count { font-weight: 400; margin-left: .4rem; }
 </style>`;
 }
