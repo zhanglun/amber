@@ -3,6 +3,30 @@ import { getStyles } from "./styles.js";
 import { getThemeSwitcherHtml, getThemeScriptHtml } from "./scripts.js";
 import { renderMarkdown } from "./highlight.js";
 
+export interface Group {
+  label: string;
+  items: CaptureSummary[];
+}
+
+export function groupByWeek(items: CaptureSummary[]): Group[] {
+  const now = new Date();
+  const daysToMonday = (now.getUTCDay() + 6) % 7;
+  const thisMonday = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysToMonday);
+  const lastMonday = thisMonday - 7 * 24 * 60 * 60 * 1000;
+  const groups: Group[] = [
+    { label: "本周", items: [] },
+    { label: "上周", items: [] },
+    { label: "更早", items: [] },
+  ];
+  for (const item of items) {
+    const ts = new Date(item.createdAt).getTime();
+    if (ts >= thisMonday) groups[0].items.push(item);
+    else if (ts >= lastMonday) groups[1].items.push(item);
+    else groups[2].items.push(item);
+  }
+  return groups.filter((g) => g.items.length > 0);
+}
+
 export function escapeHtml(s: string): string {
   return s
     .replaceAll("&", "&amp;")

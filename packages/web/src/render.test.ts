@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { renderArticle, renderList, escapeHtml, readingStats } from "./render.js";
+import { describe, expect, it, afterEach, vi } from "vitest";
+import { renderArticle, renderList, escapeHtml, readingStats, groupByWeek } from "./render.js";
+import type { CaptureSummary } from "@amber/domain";
 
 const CAPTURE = {
   id: "c1",
@@ -90,5 +91,67 @@ describe("renderArticle", () => {
   it("includes theme switcher", async () => {
     const html = await renderArticle(CAPTURE);
     expect(html).toContain("theme-switcher");
+  });
+});
+
+describe("groupByWeek", () => {
+  function makeSummary(id: string, createdAt: string): CaptureSummary {
+    return { id, title: `Title ${id}`, sourceUrl: "https://example.com/path", createdAt };
+  }
+
+  afterEach(() => vi.useRealTimers());
+
+  it("returns empty array when given empty list", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-03T12:00:00Z"));
+    expect(groupByWeek([])).toEqual([]);
+    vi.useRealTimers();
+  });
+
+  it("groups item from this week into 本周", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-03T12:00:00Z"));
+    const items = [makeSummary("1", "2026-06-02T10:00:00Z")];
+    const groups = groupByWeek(items);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].label).toBe("本周");
+    expect(groups[0].items).toEqual(items);
+    vi.useRealTimers();
+  });
+
+  it("groups item from last week into 上周", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-03T12:00:00Z"));
+    const items = [makeSummary("2", "2026-05-26T10:00:00Z")];
+    const groups = groupByWeek(items);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].label).toBe("上周");
+    expect(groups[0].items).toEqual(items);
+    vi.useRealTimers();
+  });
+
+  it("groups item from earlier into 更早", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-03T12:00:00Z"));
+    const items = [makeSummary("3", "2026-05-01T10:00:00Z")];
+    const groups = groupByWeek(items);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].label).toBe("更早");
+    expect(groups[0].items).toEqual(items);
+    vi.useRealTimers();
+  });
+
+  it("filters out empty groups", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-03T12:00:00Z"));
+    const items = [
+      makeSummary("1", "2026-06-02T10:00:00Z"),
+      makeSummary("2", "2026-05-01T10:00:00Z"),
+    ];
+    const groups = groupByWeek(items);
+    expect(groups).toHaveLength(2);
+    expect(groups[0].label).toBe("本周");
+    expect(groups[1].label).toBe("更早");
+    vi.useRealTimers();
   });
 });
