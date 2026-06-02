@@ -8,8 +8,7 @@ export interface Group {
   items: CaptureSummary[];
 }
 
-export function groupByWeek(items: CaptureSummary[]): Group[] {
-  const now = new Date();
+export function groupByWeek(items: CaptureSummary[], now = new Date()): Group[] {
   const daysToMonday = (now.getUTCDay() + 6) % 7;
   const thisMonday = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysToMonday);
   const lastMonday = thisMonday - 7 * 24 * 60 * 60 * 1000;
