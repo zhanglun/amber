@@ -188,3 +188,19 @@ mp.weixin.qq.com · 2026-05-28
 - `readingStats` 边界：空内容返回 `{ chars: 0, minutes: 1 }`
 - shiki highlight：有语言标记的代码块输出包含 `<pre class="shiki"`
 - shiki highlight：未知语言不抛错，fallback 为 `<pre><code>`
+
+---
+
+## 实现注意事项
+
+### render.ts async 连锁变更
+
+`renderArticle` 因调用 shiki 变为 `async`，`renderList` 保持同步。调用方 `packages/web/src/server.ts`（或等效 HTTP handler）中所有 `renderArticle(...)` 调用需改为 `await renderArticle(...)`。实现计划须覆盖此改动。
+
+### shiki 版本
+
+`@amber/web` 新增 `shiki` 依赖，版本锁定在 `package.json` 中写死为当前最新稳定版（安装时确认）。不使用 `^` 范围，避免 shiki 大版本 breaking change 静默升级。
+
+### 测试中 shiki 初始化性能
+
+`getHighlighter()` 首次调用耗时约 200–500 ms（加载语言语法文件）。测试文件共享模块级单例（模块缓存在 Vitest worker 内复用），无需额外 mock。如测试套件整体超时，可在 `vitest.config` 中对该测试文件单独调高 `testTimeout`。
