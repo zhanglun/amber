@@ -1,5 +1,5 @@
 import { describe, expect, it, afterEach, beforeEach, vi } from "vitest";
-import { renderArticle, renderList, escapeHtml, readingStats, groupByWeek } from "./render.js";
+import { renderArticle, renderLibrary, renderList, escapeHtml, readingStats, groupByWeek } from "./render.js";
 import type { CaptureSummary } from "@amber/domain";
 
 const CAPTURE = {
@@ -95,6 +95,32 @@ describe("renderList", () => {
     ];
     const html = renderList(special);
     expect(html).toContain('data-title="hello &quot;world&quot;"');
+  });
+});
+
+describe("renderLibrary", () => {
+  const items = [
+    { id: "c1", title: "First", sourceUrl: "https://example.com/a", createdAt: "2026-06-01T00:00:00.000Z" },
+    { id: "c2", title: "Second", sourceUrl: "https://example.org/b", createdAt: "2026-05-25T00:00:00.000Z" },
+  ];
+
+  it("renders a split app shell with sidebar and reader", async () => {
+    const html = await renderLibrary(items, CAPTURE);
+    expect(html).toContain('class="app-shell"');
+    expect(html).toContain('class="sidebar"');
+    expect(html).toContain('class="reader"');
+    expect(html).toContain("<h1>Title</h1>");
+  });
+
+  it("marks the selected sidebar item active", async () => {
+    const html = await renderLibrary(items, CAPTURE);
+    expect(html).toContain('class="item sidebar-item active"');
+    expect(html).toContain('href="/captures/c1"');
+  });
+
+  it("renders an empty reader state when no capture is selected", async () => {
+    const html = await renderLibrary([], null);
+    expect(html).toContain("No captures yet");
   });
 });
 

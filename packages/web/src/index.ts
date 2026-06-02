@@ -1,15 +1,21 @@
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { join, normalize } from "node:path";
+import { extname, join, normalize } from "node:path";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import type { ReadService } from "@amber/core";
-import { renderArticle, renderList } from "./render.js";
+import { renderLibrary } from "./render.js";
 
 const MIME: Record<string, string> = {
   ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
   ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
+  ".mp4": "video/mp4", ".webm": "video/webm", ".ogv": "video/ogg",
+  ".mov": "video/quicktime",
 };
+
+export function contentTypeForPath(path: string): string {
+  return MIME[extname(path).toLowerCase()] ?? "application/octet-stream";
+}
 
 export interface WebOptions {
   /** 本地 blobs 根目录（FileBlobStore 写入的 <dataDir>/blobs）。 */
@@ -21,12 +27,17 @@ export interface WebOptions {
 export function createApp(readService: ReadService, options: WebOptions): Hono {
   const app = new Hono();
 
-  app.get("/", async (c) => c.html(renderList(await readService.list())));
+  app.get("/", async (c) => {
+    const items = await readService.list();
+    const selected = items[0] ? await readService.get(items[0].id) : null;
+    return c.html(await renderLibrary(items, selected));
+  });
 
   app.get("/captures/:id", async (c) => {
+    const items = await readService.list();
     const capture = await readService.get(c.req.param("id"));
     if (!capture) return c.html("<p>Not found. <a href='/'>back</a></p>", 404);
-    return c.html(await renderArticle(capture));
+    return c.html(await renderLibrary(items, capture));
   });
 
   // serve 本地图片：/blobs/<key> → <blobsDir>/<key>
@@ -40,9 +51,8 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
     } catch {
       return c.notFound();
     }
-    const ext = rel.slice(rel.lastIndexOf(".")).toLowerCase();
     const stream = createReadStream(file) as unknown as ReadableStream;
-    return new Response(stream, { headers: { "content-type": MIME[ext] ?? "application/octet-stream" } });
+    return new Response(stream, { headers: { "content-type": contentTypeForPath(rel) } });
   });
 
   return app;

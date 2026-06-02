@@ -1,4 +1,5 @@
 import MarkdownIt from "markdown-it";
+import type Token from "markdown-it/lib/token.mjs";
 import { createHighlighter, type Highlighter } from "shiki";
 
 let _init: Promise<Highlighter> | null = null;
@@ -11,6 +12,72 @@ function getHighlighter(): Promise<Highlighter> {
     });
   }
   return _init;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function isLocalVideoHref(href: string): boolean {
+  const path = href.split(/[?#]/, 1)[0].toLowerCase();
+  return path.startsWith("/blobs/") && /\.(mp4|webm|ogv|mov)$/.test(path);
+}
+
+function videoLinkFromInline(token: Token): { href: string } | null {
+  const children = token.children;
+  if (!children || children.length < 2) return null;
+
+  const first = children[0];
+  const last = children[children.length - 1];
+  if (first.type !== "link_open" || last.type !== "link_close") return null;
+  if (children.slice(1, -1).some((child) => child.type !== "text")) return null;
+
+  const href = first.attrGet("href");
+  return href && isLocalVideoHref(href) ? { href } : null;
+}
+
+function videoFigure(href: string): string {
+  const safeHref = escapeHtml(href);
+  return (
+    `<figure class="video-embed">` +
+    `<video controls preload="metadata" src="${safeHref}"></video>` +
+    `<figcaption><a href="${safeHref}">Open video</a></figcaption>` +
+    `</figure>`
+  );
+}
+
+function installVideoEmbeds(md: MarkdownIt): void {
+  md.core.ruler.after("inline", "amber_video_embeds", (state) => {
+    const tokens = state.tokens;
+    for (let i = 0; i < tokens.length - 2; i++) {
+      const paragraphOpen = tokens[i];
+      const inline = tokens[i + 1];
+      const paragraphClose = tokens[i + 2];
+      if (
+        paragraphOpen.type !== "paragraph_open" ||
+        inline.type !== "inline" ||
+        paragraphClose.type !== "paragraph_close"
+      ) {
+        continue;
+      }
+
+      const video = videoLinkFromInline(inline);
+      if (!video) continue;
+
+      paragraphOpen.type = "html_block";
+      paragraphOpen.tag = "";
+      paragraphOpen.nesting = 0;
+      paragraphOpen.attrs = null;
+      paragraphOpen.children = null;
+      paragraphOpen.content = videoFigure(video.href);
+      paragraphOpen.block = true;
+      tokens.splice(i + 1, 2);
+    }
+  });
 }
 
 export async function renderMarkdown(content: string): Promise<string> {
@@ -31,5 +98,6 @@ export async function renderMarkdown(content: string): Promise<string> {
       return "";
     },
   });
+  installVideoEmbeds(md);
   return md.render(content);
 }

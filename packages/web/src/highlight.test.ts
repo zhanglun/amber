@@ -17,4 +17,13 @@ describe("renderMarkdown", () => {
     expect(html).toContain("<pre>");
     expect(html).not.toContain('<pre class="shiki');
   });
+
+  it("renders local video links as native video embeds", async () => {
+    const html = await renderMarkdown("[▶ video](/blobs/captures/c1/2.mp4)");
+    expect(html).toContain('<figure class="video-embed">');
+    expect(html).toContain("<video");
+    expect(html).toContain("controls");
+    expect(html).toContain('preload="metadata"');
+    expect(html).toContain('src="/blobs/captures/c1/2.mp4"');
+  });
 });

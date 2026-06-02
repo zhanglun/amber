@@ -27,4 +27,13 @@ describe("getStyles", () => {
     expect(css).toContain(".group-label");
     expect(css).toContain(".count");
   });
+
+  it("includes split reader and video embed styles", () => {
+    const css = getStyles();
+    expect(css).toContain(".app-shell");
+    expect(css).toContain(".sidebar");
+    expect(css).toContain(".reader");
+    expect(css).toContain(".video-embed");
+    expect(css).toContain(".video-embed video");
+  });
 });
