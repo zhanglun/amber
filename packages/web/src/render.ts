@@ -1,6 +1,6 @@
 import type { Capture, CaptureSummary } from "@amber/domain";
 import { getStyles } from "./styles.js";
-import { getThemeSwitcherHtml, getThemeScriptHtml } from "./scripts.js";
+import { getThemeSwitcherHtml, getThemeScriptHtml, getSearchBarHtml, getListFilterScriptHtml } from "./scripts.js";
 import { renderMarkdown } from "./highlight.js";
 
 export interface Group {
@@ -51,20 +51,39 @@ ${getThemeScriptHtml()}
 }
 
 export function renderList(items: CaptureSummary[]): string {
+  const searchBar = getSearchBarHtml();
   const switcher = getThemeSwitcherHtml();
-  const header = `<div class="header"><h1>Amber</h1>${switcher}</div>`;
-  const rows = items
-    .map((i) => {
-      const hostname = new URL(i.sourceUrl).hostname;
-      const date = i.createdAt.slice(0, 10);
+  const header = `<div class="header"><h1>Amber</h1><div class="header-right">${searchBar}${switcher}</div></div>`;
+
+  if (items.length === 0) {
+    const body = header + "<p class='muted'>No captures yet. Run: amber import &lt;url&gt;</p>";
+    return page("Amber", body);
+  }
+
+  const groups = groupByWeek(items);
+  const sectionsHtml = groups
+    .map((g) => {
+      const rowsHtml = g.items
+        .map((i) => {
+          const hostname = new URL(i.sourceUrl).hostname;
+          const date = i.createdAt.slice(0, 10);
+          return (
+            `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}">` +
+            `<a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
+            `<div class="muted">${escapeHtml(hostname)} · ${date}</div></div>`
+          );
+        })
+        .join("");
       return (
-        `<div class="item"><a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
-        `<div class="muted">${escapeHtml(hostname)} · ${date}</div></div>`
+        `<section class="group" data-group>` +
+        `<h2 class="group-label">${escapeHtml(g.label)} <span class="count">${g.items.length}</span></h2>` +
+        rowsHtml +
+        `</section>`
       );
     })
     .join("");
-  const body =
-    header + (rows || "<p class='muted'>No captures yet. Run: amber import &lt;url&gt;</p>");
+
+  const body = header + sectionsHtml + getListFilterScriptHtml();
   return page("Amber", body);
 }
 

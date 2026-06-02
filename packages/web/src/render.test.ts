@@ -40,7 +40,7 @@ describe("readingStats", () => {
 
 describe("renderList", () => {
   const items = [
-    { id: "c1", title: "First", sourceUrl: "https://example.com/a", createdAt: "2026-06-01T00:00:00.000Z" },
+    { id: "c1", title: "First", sourceUrl: "https://example.com/a", createdAt: "2020-01-15T00:00:00.000Z" },
   ];
 
   it("links to each capture", () => {
@@ -52,7 +52,7 @@ describe("renderList", () => {
   it("shows hostname and formatted date", () => {
     const html = renderList(items);
     expect(html).toContain("example.com");
-    expect(html).toContain("2026-06-01");
+    expect(html).toContain("2020-01-15");
   });
 
   it("shows empty hint when no captures", () => {
@@ -61,6 +61,32 @@ describe("renderList", () => {
 
   it("includes theme switcher", () => {
     expect(renderList(items)).toContain("theme-switcher");
+  });
+
+  it("output contains group class and data-group", () => {
+    const html = renderList(items);
+    expect(html).toContain('class="group"');
+    expect(html).toContain('data-group');
+  });
+
+  it("each item has data-title attribute", () => {
+    const html = renderList(items);
+    expect(html).toContain('data-title="first"');
+  });
+
+  it("each item has data-host attribute", () => {
+    const html = renderList(items);
+    expect(html).toContain('data-host="example.com"');
+  });
+
+  it("output contains search bar input", () => {
+    const html = renderList(items);
+    expect(html).toContain('<input id="search"');
+  });
+
+  it("header contains header-right wrapper", () => {
+    const html = renderList(items);
+    expect(html).toContain('class="header-right"');
   });
 });
 
