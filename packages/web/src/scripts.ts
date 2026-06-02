@@ -30,12 +30,12 @@ export function getListFilterScriptHtml(): string {
   if(!inp)return;
   inp.addEventListener('input',function(){
     var q=this.value.trim().toLowerCase();
-    document.querySelectorAll('[data-title][data-host]').forEach(function(item){
+    document.querySelectorAll('.item[data-title]').forEach(function(item){
       var match=!q||item.dataset.title.includes(q)||item.dataset.host.includes(q);
       item.style.display=match?'':'none';
     });
     document.querySelectorAll('[data-group]').forEach(function(group){
-      var items=group.querySelectorAll('[data-title][data-host]');
+      var items=group.querySelectorAll('.item[data-title]');
       var n=0;
       items.forEach(function(i){if(i.style.display!=='none')n++;});
       group.style.display=n===0?'none':'';
