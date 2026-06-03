@@ -2,6 +2,7 @@ import type { Capture, CaptureSummary } from "@amber/domain";
 import { getStyles } from "./styles.js";
 import { getThemeSwitcherHtml, getThemeScriptHtml, getSearchBarHtml, getListFilterScriptHtml } from "./scripts.js";
 import { renderMarkdown } from "./highlight.js";
+import { extractToc, type TocItem } from "./toc.js";
 
 export interface Group {
   label: string;
@@ -88,81 +89,55 @@ export function renderList(items: CaptureSummary[]): string {
   return page("Amber", body);
 }
 
-function renderSidebar(items: CaptureSummary[], selectedId?: string): string {
-  const searchBar = getSearchBarHtml();
-  const switcher = getThemeSwitcherHtml();
-  const header =
-    `<div class="sidebar-header"><h1>Amber</h1>` +
-    `<div class="header-right">${searchBar}${switcher}</div></div>`;
-
-  const groups = groupByWeek(items);
-  const sectionsHtml = groups
-    .map((g) => {
-      const rowsHtml = g.items
-        .map((i) => {
-          const hostname = new URL(i.sourceUrl).hostname;
-          const date = i.createdAt.slice(0, 10);
-          const active = i.id === selectedId ? " active" : "";
-          return (
-            `<div class="item sidebar-item${active}" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}">` +
-            `<a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
-            `<div class="muted">${escapeHtml(hostname)} · ${date}</div></div>`
-          );
-        })
-        .join("");
-      return (
-        `<section class="group" data-group>` +
-        `<h2 class="group-label">${escapeHtml(g.label)} <span class="count">${g.items.length}</span></h2>` +
-        rowsHtml +
-        `</section>`
-      );
+function renderTocList(toc: TocItem[]): string {
+  return toc
+    .map((item) => {
+      const id = escapeHtml(item.id);
+      return `<li class="toc-item level-${item.level}"><a href="#${id}">${escapeHtml(item.text)}</a></li>`;
     })
     .join("");
-
-  return `<aside class="sidebar">${header}${sectionsHtml}</aside>`;
 }
 
-async function renderReader(capture: Capture | null): Promise<string> {
-  if (!capture) {
-    return `<main class="reader"><div class="reader-inner"><p class="muted">No captures yet. Run: amber import &lt;url&gt;</p></div></main>`;
-  }
-
-  const { chars, minutes } = readingStats(capture.content);
-  const hostname = new URL(capture.sourceUrl).hostname;
-  const meta =
-    `<p class="meta">${chars} 字 · 约 ${minutes} 分钟 · ` +
-    `<a href="${escapeHtml(capture.sourceUrl)}">${escapeHtml(hostname)} ↗</a></p>`;
-  const content = await renderMarkdown(capture.content);
+function renderDesktopToc(toc: TocItem[]): string {
   return (
-    `<main class="reader"><article class="reader-inner">` +
-    `<h1>${escapeHtml(capture.title)}</h1>` +
-    meta +
-    content +
-    `</article></main>`
+    `<nav class="toc" aria-label="目录">` +
+    `<div class="toc-title">目录</div>` +
+    `<ol class="toc-list">${renderTocList(toc)}</ol>` +
+    `</nav>`
   );
 }
 
-export async function renderLibrary(items: CaptureSummary[], selectedCapture: Capture | null): Promise<string> {
-  const title = selectedCapture ? `${selectedCapture.title} · Amber` : "Amber";
-  const body =
-    `<div class="app-shell">` +
-    renderSidebar(items, selectedCapture?.id) +
-    await renderReader(selectedCapture) +
-    `</div>` +
-    getListFilterScriptHtml();
-  return page(title, body, "app-body");
+function renderMobileToc(toc: TocItem[]): string {
+  return (
+    `<details class="toc-mobile">` +
+    `<summary>目录</summary>` +
+    `<ol class="toc-list">${renderTocList(toc)}</ol>` +
+    `</details>`
+  );
 }
 
 export async function renderArticle(capture: Capture): Promise<string> {
   const switcher = getThemeSwitcherHtml();
-  const header = `<div class="header"><a class="muted" href="/">← 返回</a>${switcher}</div>`;
+  const header = `<header class="article-topbar"><a class="muted" href="/">← 返回列表</a>${switcher}</header>`;
   const { chars, minutes } = readingStats(capture.content);
   const hostname = new URL(capture.sourceUrl).hostname;
   const meta =
     `<p class="meta">${chars} 字 · 约 ${minutes} 分钟 · ` +
     `<a href="${escapeHtml(capture.sourceUrl)}">${escapeHtml(hostname)} ↗</a></p>`;
-  const content = await renderMarkdown(capture.content);
+  const toc = extractToc(capture.content);
+  const hasToc = toc.length >= 2;
+  const content = await renderMarkdown(capture.content, { toc });
   const body =
-    header + `<h1>${escapeHtml(capture.title)}</h1>` + meta + content;
-  return page(capture.title, body);
+    `<div class="article-shell">` +
+    header +
+    `<div class="article-layout">` +
+    `<main class="article-main"><article class="article-content">` +
+    `<h1>${escapeHtml(capture.title)}</h1>` +
+    meta +
+    (hasToc ? renderMobileToc(toc) : "") +
+    content +
+    `</article></main>` +
+    (hasToc ? renderDesktopToc(toc) : "") +
+    `</div></div>`;
+  return page(capture.title, body, "article-body");
 }

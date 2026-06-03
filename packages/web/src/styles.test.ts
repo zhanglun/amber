@@ -28,12 +28,22 @@ describe("getStyles", () => {
     expect(css).toContain(".count");
   });
 
-  it("includes split reader and video embed styles", () => {
+  it("includes focused reader, toc, and video embed styles", () => {
     const css = getStyles();
-    expect(css).toContain(".app-shell");
-    expect(css).toContain(".sidebar");
-    expect(css).toContain(".reader");
+    expect(css).toContain(".article-shell");
+    expect(css).toContain(".article-layout");
+    expect(css).toContain(".toc");
+    expect(css).toContain(".toc-mobile");
     expect(css).toContain(".video-embed");
     expect(css).toContain(".video-embed video");
+  });
+
+  it("keeps article content centered while floating the toc on the left", () => {
+    const css = getStyles();
+    expect(css).toContain(".article-layout { width: 100%; padding: 2rem 1rem 4rem;");
+    expect(css).toContain(".article-main { max-width: var(--max-width); margin: 0 auto;");
+    expect(css).toContain(".toc { position: fixed;");
+    expect(css).toContain("left: max(1rem, calc((100vw - var(--max-width)) / 2 - 260px))");
+    expect(css).not.toContain("grid-column: 3");
   });
 });

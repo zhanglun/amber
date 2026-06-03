@@ -4,7 +4,7 @@ import { extname, join, normalize } from "node:path";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import type { ReadService } from "@amber/core";
-import { renderLibrary } from "./render.js";
+import { renderArticle, renderList } from "./render.js";
 
 const MIME: Record<string, string> = {
   ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -29,15 +29,13 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
 
   app.get("/", async (c) => {
     const items = await readService.list();
-    const selected = items[0] ? await readService.get(items[0].id) : null;
-    return c.html(await renderLibrary(items, selected));
+    return c.html(renderList(items));
   });
 
   app.get("/captures/:id", async (c) => {
-    const items = await readService.list();
     const capture = await readService.get(c.req.param("id"));
     if (!capture) return c.html("<p>Not found. <a href='/'>back</a></p>", 404);
-    return c.html(await renderLibrary(items, capture));
+    return c.html(await renderArticle(capture));
   });
 
   // serve 本地图片：/blobs/<key> → <blobsDir>/<key>

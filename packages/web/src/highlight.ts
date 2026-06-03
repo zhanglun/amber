@@ -1,6 +1,7 @@
 import MarkdownIt from "markdown-it";
 import type Token from "markdown-it/lib/token.mjs";
 import { createHighlighter, type Highlighter } from "shiki";
+import type { TocItem } from "./toc.js";
 
 let _init: Promise<Highlighter> | null = null;
 
@@ -80,7 +81,32 @@ function installVideoEmbeds(md: MarkdownIt): void {
   });
 }
 
-export async function renderMarkdown(content: string): Promise<string> {
+function installHeadingIds(md: MarkdownIt, toc: TocItem[] | undefined): void {
+  if (!toc || toc.length === 0) return;
+  let index = 0;
+  const defaultHeadingOpen = md.renderer.rules.heading_open;
+
+  md.renderer.rules.heading_open = (tokens, idx, options, env, self) => {
+    const token = tokens[idx];
+    const level = token.tag === "h2" ? 2 : token.tag === "h3" ? 3 : null;
+    if (level === 2 || level === 3) {
+      const item = toc[index];
+      if (item && item.level === level) {
+        token.attrSet("id", item.id);
+        index += 1;
+      }
+    }
+    return defaultHeadingOpen
+      ? defaultHeadingOpen(tokens, idx, options, env, self)
+      : self.renderToken(tokens, idx, options);
+  };
+}
+
+export interface RenderMarkdownOptions {
+  toc?: TocItem[];
+}
+
+export async function renderMarkdown(content: string, options: RenderMarkdownOptions = {}): Promise<string> {
   const hl = await getHighlighter();
   const md = new MarkdownIt({
     html: false,
@@ -98,6 +124,7 @@ export async function renderMarkdown(content: string): Promise<string> {
       return "";
     },
   });
+  installHeadingIds(md, options.toc);
   installVideoEmbeds(md);
   return md.render(content);
 }

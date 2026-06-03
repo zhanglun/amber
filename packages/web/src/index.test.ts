@@ -7,7 +7,7 @@ const captures: Capture[] = [
   {
     id: "c1",
     title: "First",
-    content: "# First Body\n\ntext",
+    content: "# First Body\n\n## Intro\n\ntext\n\n### Detail\n\nmore",
     sourceUrl: "https://example.com/a",
     sourceType: "url",
     createdAt: "2026-06-02T00:00:00.000Z",
@@ -16,7 +16,7 @@ const captures: Capture[] = [
   {
     id: "c2",
     title: "Second",
-    content: "# Second Body\n\ntext",
+    content: "# Second Body\n\n## Section\n\ntext\n\n### Notes\n\nmore",
     sourceUrl: "https://example.org/b",
     sourceType: "url",
     createdAt: "2026-06-01T00:00:00.000Z",
@@ -33,24 +33,25 @@ function fakeReadService(): ReadService {
 }
 
 describe("createApp", () => {
-  it("renders the newest capture on / inside the split shell", async () => {
+  it("renders the list page on / without the article shell", async () => {
     const app = createApp(fakeReadService(), { blobsDir: "/tmp" });
     const res = await app.request("/");
     const html = await res.text();
-    expect(html).toContain('class="app-shell"');
-    expect(html).toContain('class="sidebar"');
-    expect(html).toContain('class="reader"');
-    expect(html).toContain("<h1>First</h1>");
+    expect(html).toContain('<input id="search"');
+    expect(html).toContain('href="/captures/c1"');
+    expect(html).toContain('href="/captures/c2"');
+    expect(html).not.toContain('class="article-shell"');
   });
 
-  it("renders the selected capture on /captures/:id inside the split shell", async () => {
+  it("renders the selected capture on /captures/:id as a focused article", async () => {
     const app = createApp(fakeReadService(), { blobsDir: "/tmp" });
     const res = await app.request("/captures/c2");
     const html = await res.text();
-    expect(html).toContain('class="app-shell"');
+    expect(html).toContain('class="article-shell"');
+    expect(html).toContain('class="toc"');
     expect(html).toContain("<h1>Second</h1>");
-    expect(html).toContain('href="/captures/c2"');
-    expect(html).toContain('class="item sidebar-item active"');
+    expect(html).toContain('href="#section"');
+    expect(html).not.toContain('href="/captures/c1"');
   });
 });
 

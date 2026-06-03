@@ -1,11 +1,11 @@
 import { describe, expect, it, afterEach, beforeEach, vi } from "vitest";
-import { renderArticle, renderLibrary, renderList, escapeHtml, readingStats, groupByWeek } from "./render.js";
+import { renderArticle, renderList, escapeHtml, readingStats, groupByWeek } from "./render.js";
 import type { CaptureSummary } from "@amber/domain";
 
 const CAPTURE = {
   id: "c1",
   title: "Title",
-  content: "# Heading\n\ntext",
+  content: "# Heading\n\n## Intro\n\ntext\n\n### Detail\n\nmore",
   sourceUrl: "https://example.com/a",
   sourceType: "url" as const,
   createdAt: "2026-06-01T00:00:00.000Z",
@@ -98,32 +98,6 @@ describe("renderList", () => {
   });
 });
 
-describe("renderLibrary", () => {
-  const items = [
-    { id: "c1", title: "First", sourceUrl: "https://example.com/a", createdAt: "2026-06-01T00:00:00.000Z" },
-    { id: "c2", title: "Second", sourceUrl: "https://example.org/b", createdAt: "2026-05-25T00:00:00.000Z" },
-  ];
-
-  it("renders a split app shell with sidebar and reader", async () => {
-    const html = await renderLibrary(items, CAPTURE);
-    expect(html).toContain('class="app-shell"');
-    expect(html).toContain('class="sidebar"');
-    expect(html).toContain('class="reader"');
-    expect(html).toContain("<h1>Title</h1>");
-  });
-
-  it("marks the selected sidebar item active", async () => {
-    const html = await renderLibrary(items, CAPTURE);
-    expect(html).toContain('class="item sidebar-item active"');
-    expect(html).toContain('href="/captures/c1"');
-  });
-
-  it("renders an empty reader state when no capture is selected", async () => {
-    const html = await renderLibrary([], null);
-    expect(html).toContain("No captures yet");
-  });
-});
-
 describe("renderArticle", () => {
   it("renders markdown to html", async () => {
     const html = await renderArticle(CAPTURE);
@@ -151,6 +125,23 @@ describe("renderArticle", () => {
   it("includes theme switcher", async () => {
     const html = await renderArticle(CAPTURE);
     expect(html).toContain("theme-switcher");
+  });
+
+  it("renders a focused article shell with desktop and mobile toc", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).toContain('class="article-shell"');
+    expect(html).toContain('class="toc"');
+    expect(html).toContain('class="toc-mobile"');
+    expect(html).toContain('href="#intro"');
+    expect(html).toContain('href="#detail"');
+    expect(html).toContain('<h2 id="intro">Intro</h2>');
+    expect(html).toContain('<h3 id="detail">Detail</h3>');
+  });
+
+  it("omits toc when the article has fewer than two toc headings", async () => {
+    const html = await renderArticle({ ...CAPTURE, content: "# Heading\n\n## Only one\n\ntext" });
+    expect(html).not.toContain('class="toc"');
+    expect(html).not.toContain('class="toc-mobile"');
   });
 });
 
