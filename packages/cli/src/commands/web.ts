@@ -6,16 +6,36 @@ import * as p from "@clack/prompts";
 import { startServer } from "@amber/web";
 import { buildServices } from "../wiring.js";
 
-// ─── types ────────────────────────────────────────────────────────────────────
-
-interface PidInfo {
+export interface PidInfo {
   pid: number;
   port: number;
   dataDir: string;
   startedAt: string;
 }
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+export interface WebActions {
+  isBackground(): boolean;
+  restart(port: number, portExplicit: boolean): Promise<void>;
+  serve(port: number): Promise<void>;
+  start(port: number): Promise<void>;
+  status(): Promise<void>;
+  stop(): Promise<PidInfo | null>;
+}
+
+export interface WebRuntime {
+  buildServices: typeof buildServices;
+  getDataDir(): string;
+  isAlive(pid: number): boolean;
+  kill(pid: number, signal: NodeJS.Signals): void;
+  log: Pick<typeof p.log, "info" | "message" | "success" | "warn">;
+  now(): Date;
+  openBrowser(url: string): void;
+  readPid(dataDir: string): Promise<PidInfo | null>;
+  spawnDaemon(port: number): void;
+  startServer: typeof startServer;
+  unlinkPid(dataDir: string): Promise<void>;
+  writePid(dataDir: string, info: PidInfo): Promise<void>;
+}
 
 function getDataDir(): string {
   return resolve(process.env.AMBER_DATA_DIR ?? "./amber-data");
@@ -51,14 +71,17 @@ function openBrowser(url: string): void {
   exec(cmd);
 }
 
-/**
- * 以后台 detached 子进程重新启动自身。
- * 使用 process.execPath + process.execArgv 精确复现 tsx 加载链。
- */
-function spawnDaemon(): void {
+export function daemonProcessArgs(argv: string[], port: number): string[] {
+  const args = argv.slice(1);
+  const webIndex = args.lastIndexOf("web");
+  const portArg = `--port=${port}`;
+  return webIndex >= 0 ? [...args.slice(0, webIndex + 1), portArg] : [...args, "web", portArg];
+}
+
+function spawnDaemon(port: number): void {
   const child = spawn(
     process.execPath,
-    [...process.execArgv, ...process.argv.slice(1)],
+    [...process.execArgv, ...daemonProcessArgs(process.argv, port)],
     {
       detached: true,
       stdio: "ignore",
@@ -69,89 +92,185 @@ function spawnDaemon(): void {
   child.unref();
 }
 
-// ─── subcommands ──────────────────────────────────────────────────────────────
+async function writePid(dataDir: string, info: PidInfo): Promise<void> {
+  await writeFile(pidFilePath(dataDir), JSON.stringify(info, null, 2));
+}
 
-const statusCommand = defineCommand({
-  meta: { name: "status", description: "Show web UI server status" },
-  async run() {
-    const dataDir = getDataDir();
-    const info = await readPid(dataDir);
-    if (!info || !isAlive(info.pid)) {
-      if (info) await unlink(pidFilePath(dataDir)).catch(() => {});
-      p.log.info("Web UI is not running.");
-      return;
-    }
-    p.log.success("Web UI is running");
-    p.log.message(
-      [
-        `  URL      http://localhost:${info.port}`,
-        `  PID      ${info.pid}`,
-        `  Data     ${info.dataDir}`,
-        `  Started  ${new Date(info.startedAt).toLocaleString()}`,
-      ].join("\n"),
-    );
-  },
-});
+async function unlinkPid(dataDir: string): Promise<void> {
+  await unlink(pidFilePath(dataDir));
+}
 
-const stopCommand = defineCommand({
-  meta: { name: "stop", description: "Stop the web UI server" },
-  async run() {
-    const dataDir = getDataDir();
-    const info = await readPid(dataDir);
-    if (!info || !isAlive(info.pid)) {
-      if (info) await unlink(pidFilePath(dataDir)).catch(() => {});
-      p.log.info("Web UI is not running.");
-      return;
-    }
-    process.kill(info.pid, "SIGTERM");
-    await unlink(pidFilePath(dataDir)).catch(() => {});
-    p.log.success(`Web UI stopped (PID ${info.pid}).`);
-  },
-});
+const defaultRuntime: WebRuntime = {
+  buildServices,
+  getDataDir,
+  isAlive,
+  kill: (pid, signal) => process.kill(pid, signal),
+  log: p.log,
+  now: () => new Date(),
+  openBrowser,
+  readPid,
+  spawnDaemon,
+  startServer,
+  unlinkPid,
+  writePid,
+};
 
-// ─── main web command ─────────────────────────────────────────────────────────
+function hasPortArg(rawArgs: string[]): boolean {
+  return rawArgs.some((arg) => arg === "--port" || arg.startsWith("--port="));
+}
 
-export const webCommand = defineCommand({
-  meta: { name: "web", description: "Start or manage the local web UI" },
-  args: {
-    port: {
-      type: "string",
-      description: "Port to listen on",
-      default: process.env.AMBER_PORT ?? "7788",
+async function stopExisting(runtime: WebRuntime): Promise<PidInfo | null> {
+  const dataDir = runtime.getDataDir();
+  const info = await runtime.readPid(dataDir);
+  if (!info || !runtime.isAlive(info.pid)) {
+    if (info) await runtime.unlinkPid(dataDir).catch(() => {});
+    runtime.log.info("Web UI is not running.");
+    return null;
+  }
+
+  runtime.kill(info.pid, "SIGTERM");
+  await runtime.unlinkPid(dataDir).catch(() => {});
+  runtime.log.success(`Web UI stopped (PID ${info.pid}).`);
+  return info;
+}
+
+export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActions {
+  return {
+    isBackground() {
+      return Boolean(process.env._AMBER_WEB_BG);
     },
-  },
-  subCommands: { status: statusCommand, stop: stopCommand },
-  async run({ args }) {
-    const port = Number(args.port);
-    const dataDir = getDataDir();
+    async restart(port, portExplicit) {
+      const dataDir = runtime.getDataDir();
+      const existing = await runtime.readPid(dataDir);
+      const restartPort = !portExplicit && existing ? existing.port : port;
 
-    // ── foreground parent: guard + spawn daemon ──────────────────────────────
-    if (!process.env._AMBER_WEB_BG) {
-      const existing = await readPid(dataDir);
-      if (existing && isAlive(existing.pid)) {
-        p.log.warn(`Web UI already running → http://localhost:${existing.port} (PID ${existing.pid})`);
-        p.log.info('Use "amber web stop" to stop it first.');
+      if (existing && runtime.isAlive(existing.pid)) {
+        runtime.kill(existing.pid, "SIGTERM");
+        await runtime.unlinkPid(dataDir).catch(() => {});
+        runtime.log.success(`Web UI stopped (PID ${existing.pid}).`);
+      } else if (existing) {
+        await runtime.unlinkPid(dataDir).catch(() => {});
+      }
+
+      runtime.spawnDaemon(restartPort);
+      runtime.log.success(`Web UI restarting on port ${restartPort}…`);
+      runtime.log.info('"amber web status" to check  |  "amber web stop" to stop');
+    },
+    async serve(port) {
+      const dataDir = runtime.getDataDir();
+      const { readService, blobsDir } = runtime.buildServices();
+      const url = `http://localhost:${port}`;
+
+      await runtime.writePid(dataDir, {
+        pid: process.pid,
+        port,
+        dataDir,
+        startedAt: runtime.now().toISOString(),
+      });
+
+      const cleanup = () => runtime.unlinkPid(dataDir).catch(() => {});
+      process.once("SIGINT", () => { cleanup(); process.exit(0); });
+      process.once("SIGTERM", () => { cleanup(); process.exit(0); });
+
+      runtime.startServer(readService, { blobsDir, port, onReady: () => runtime.openBrowser(url) });
+    },
+    async start(port) {
+      const dataDir = runtime.getDataDir();
+      const existing = await runtime.readPid(dataDir);
+      if (existing && runtime.isAlive(existing.pid)) {
+        runtime.log.warn(`Web UI already running → http://localhost:${existing.port} (PID ${existing.pid})`);
+        runtime.log.info('Use "amber web stop" to stop it first.');
         return;
       }
-      spawnDaemon();
-      p.log.success(`Web UI starting on port ${port}…`);
-      p.log.info('"amber web status" to check  |  "amber web stop" to stop');
-      return;
-    }
+      if (existing) await runtime.unlinkPid(dataDir).catch(() => {});
 
-    // ── background daemon: start server ─────────────────────────────────────
-    const { readService, blobsDir } = buildServices();
-    const url = `http://localhost:${port}`;
+      runtime.spawnDaemon(port);
+      runtime.log.success(`Web UI starting on port ${port}…`);
+      runtime.log.info('"amber web status" to check  |  "amber web stop" to stop');
+    },
+    async status() {
+      const dataDir = runtime.getDataDir();
+      const info = await runtime.readPid(dataDir);
+      if (!info || !runtime.isAlive(info.pid)) {
+        if (info) await runtime.unlinkPid(dataDir).catch(() => {});
+        runtime.log.info("Web UI is not running.");
+        return;
+      }
+      runtime.log.success("Web UI is running");
+      runtime.log.message(
+        [
+          `  URL      http://localhost:${info.port}`,
+          `  PID      ${info.pid}`,
+          `  Data     ${info.dataDir}`,
+          `  Started  ${new Date(info.startedAt).toLocaleString()}`,
+        ].join("\n"),
+      );
+    },
+    async stop() {
+      return stopExisting(runtime);
+    },
+  };
+}
 
-    await writeFile(
-      pidFilePath(dataDir),
-      JSON.stringify({ pid: process.pid, port, dataDir, startedAt: new Date().toISOString() } satisfies PidInfo, null, 2),
-    );
+function createStatusCommand(actions: WebActions) {
+  return defineCommand({
+    meta: { name: "status", description: "Show web UI server status" },
+    run: () => actions.status(),
+  });
+}
 
-    const cleanup = () => unlink(pidFilePath(dataDir)).catch(() => {});
-    process.once("SIGINT", () => { cleanup(); process.exit(0); });
-    process.once("SIGTERM", () => { cleanup(); process.exit(0); });
+function createStopCommand(actions: WebActions) {
+  return defineCommand({
+    meta: { name: "stop", description: "Stop the web UI server" },
+    run: () => actions.stop(),
+  });
+}
 
-    startServer(readService, { blobsDir, port, onReady: () => openBrowser(url) });
-  },
-});
+function createRestartCommand(actions: WebActions) {
+  return defineCommand({
+    meta: { name: "restart", description: "Restart the web UI server" },
+    args: {
+      port: {
+        type: "string",
+        description: "Port to listen on",
+        default: process.env.AMBER_PORT ?? "7788",
+      },
+    },
+    run: ({ args, rawArgs }) => actions.restart(Number(args.port), hasPortArg(rawArgs)),
+  });
+}
+
+const WEB_SUBCOMMANDS = new Set(["restart", "status", "stop"]);
+
+function hasWebSubcommand(rawArgs: string[]): boolean {
+  return rawArgs.some((arg) => WEB_SUBCOMMANDS.has(arg));
+}
+
+export function createWebCommand(actions: WebActions = createWebActions()) {
+  return defineCommand({
+    meta: { name: "web", description: "Start or manage the local web UI" },
+    args: {
+      port: {
+        type: "string",
+        description: "Port to listen on",
+        default: process.env.AMBER_PORT ?? "7788",
+      },
+    },
+    subCommands: {
+      restart: createRestartCommand(actions),
+      status: createStatusCommand(actions),
+      stop: createStopCommand(actions),
+    },
+    async run({ args, rawArgs }) {
+      if (hasWebSubcommand(rawArgs)) return;
+      const port = Number(args.port);
+      if (actions.isBackground()) {
+        await actions.serve(port);
+        return;
+      }
+      await actions.start(port);
+    },
+  });
+}
+
+export const webCommand = createWebCommand();
