@@ -109,6 +109,15 @@ describe("renderList", () => {
     const html = renderList(special);
     expect(html).toContain('data-title="hello &quot;world&quot;"');
   });
+
+  it("injects data-read-progress and data-read-at on items with read status", () => {
+    const items: CaptureSummary[] = [
+      { id: "r1", title: "Read Article", sourceUrl: "https://example.com/r", createdAt: "2026-06-04T00:00:00.000Z", readProgress: 55, readAt: "2026-06-04T12:00:00.000Z" },
+    ];
+    const html = renderList(items);
+    expect(html).toContain('data-read-progress="55"');
+    expect(html).toContain('data-read-at="2026-06-04T12:00:00.000Z"');
+  });
 });
 
 describe("renderArticle", () => {
@@ -215,6 +224,23 @@ describe("renderArticle", () => {
     const html = await renderArticle(CAPTURE);
     expect(html).toContain('class="read-progress-bar"');
     expect(html).toContain('class="scroll-top-btn"');
+  });
+
+  it("injects data-total-chars on article-shell", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).toMatch(/data-total-chars="\d+"/);
+  });
+
+  it("renders prev card only when only prev neighbor exists", async () => {
+    const html = await renderArticle(CAPTURE, { prev: NEIGHBORS.prev, next: null });
+    expect(html).toContain('data-nav="prev"');
+    expect(html).not.toContain('data-nav="next"');
+  });
+
+  it("renders next card only when only next neighbor exists", async () => {
+    const html = await renderArticle(CAPTURE, { prev: null, next: NEIGHBORS.next });
+    expect(html).not.toContain('data-nav="prev"');
+    expect(html).toContain('data-nav="next"');
   });
 });
 

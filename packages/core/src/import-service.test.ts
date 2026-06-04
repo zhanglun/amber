@@ -21,6 +21,7 @@ function fakeStore(seed: Capture[] = []) {
       const idx = rows.findIndex((r) => r.id === id);
       if (idx !== -1) rows.splice(idx, 1);
     }),
+    updateReadStatus: vi.fn(),
   };
   return { store, rows };
 }
