@@ -53,7 +53,7 @@ code { padding: .2em .4em; border-radius: 3px; }
 pre code { padding: 0; background: none; }
 .muted { color: var(--text-muted); font-size: .85rem; }
 .header { display: flex; justify-content: space-between; align-items: center; padding: .8rem 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
-.item { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .6rem 0; border-bottom: 1px solid var(--border); }
+.item { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: .6rem 0; border-bottom: 1px solid var(--border); }
 .item-main { min-width: 0; }
 .item-main a { overflow-wrap: anywhere; }
 .delete-form { flex: 0 0 auto; }
@@ -131,7 +131,6 @@ pre code { padding: 0; background: none; }
 .read-indicator.unread { background: var(--link); }
 .read-indicator.in-progress { width: auto; height: auto; border-radius: 3px; background: transparent; color: #f59e0b; font-size: .7rem; font-weight: 600; padding: .05rem .25rem; margin-top: .3rem; }
 .read-indicator.read { background: var(--border); }
-.item { align-items: flex-start; }
 .title-read { color: var(--text-muted); }
 .meta-remaining { transition: color .2s; }
 .toc-item.active > a { color: var(--link); font-weight: 500; }
