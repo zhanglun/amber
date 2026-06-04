@@ -6,6 +6,10 @@ import {
   getListFilterScriptHtml,
   getReaderHeaderScriptHtml,
   getDeleteConfirmScriptHtml,
+  calcReadProgress,
+  calcRemainingMinutes,
+  getReaderEnhancementsScriptHtml,
+  getReadIndicatorScriptHtml,
 } from "./scripts.js";
 
 describe("getThemeSwitcherHtml", () => {
@@ -80,5 +84,100 @@ describe("getDeleteConfirmScriptHtml", () => {
     expect(script).toContain("confirm");
     expect(script).toContain("preventDefault");
     expect(script).toContain("data-title");
+  });
+});
+
+describe("calcReadProgress", () => {
+  it("returns 0 at the top", () => {
+    expect(calcReadProgress(0, 1000, 500)).toBe(0);
+  });
+
+  it("returns 100 at the bottom", () => {
+    expect(calcReadProgress(500, 1000, 500)).toBe(100);
+  });
+
+  it("returns 50 at midpoint", () => {
+    expect(calcReadProgress(250, 1000, 500)).toBe(50);
+  });
+
+  it("returns 0 when page fits in viewport", () => {
+    expect(calcReadProgress(0, 400, 500)).toBe(0);
+  });
+});
+
+describe("calcRemainingMinutes", () => {
+  it("returns full time at 0 progress", () => {
+    expect(calcRemainingMinutes(600, 0)).toBe(2);
+  });
+
+  it("returns 0 at 100 progress", () => {
+    expect(calcRemainingMinutes(600, 100)).toBe(0);
+  });
+
+  it("returns half at 50 progress", () => {
+    expect(calcRemainingMinutes(600, 50)).toBe(1);
+  });
+
+  it("returns 0 for empty content", () => {
+    expect(calcRemainingMinutes(0, 0)).toBe(0);
+  });
+});
+
+describe("getReaderEnhancementsScriptHtml", () => {
+  it("contains progress bar logic", () => {
+    expect(getReaderEnhancementsScriptHtml()).toContain("read-progress-fill");
+  });
+
+  it("uses requestAnimationFrame for scroll throttle", () => {
+    expect(getReaderEnhancementsScriptHtml()).toContain("requestAnimationFrame");
+  });
+
+  it("handles font size via localStorage", () => {
+    expect(getReaderEnhancementsScriptHtml()).toContain("amber-font-size");
+  });
+
+  it("injects copy buttons into pre elements", () => {
+    expect(getReaderEnhancementsScriptHtml()).toContain("copy-btn");
+  });
+
+  it("saves progress to PATCH endpoint", () => {
+    expect(getReaderEnhancementsScriptHtml()).toContain("/read");
+    expect(getReaderEnhancementsScriptHtml()).toContain("PATCH");
+  });
+
+  it("reads data-nav attributes for keyboard shortcuts", () => {
+    expect(getReaderEnhancementsScriptHtml()).toContain('data-nav="prev"');
+    expect(getReaderEnhancementsScriptHtml()).toContain('data-nav="next"');
+  });
+
+  it("updates meta-remaining element", () => {
+    expect(getReaderEnhancementsScriptHtml()).toContain("meta-remaining");
+  });
+
+  it("shows scroll-top-btn after threshold", () => {
+    expect(getReaderEnhancementsScriptHtml()).toContain("scroll-top-btn");
+  });
+
+  it("updates toc active class on scroll", () => {
+    expect(getReaderEnhancementsScriptHtml()).toContain("toc-item");
+    expect(getReaderEnhancementsScriptHtml()).toContain("active");
+  });
+});
+
+describe("getReadIndicatorScriptHtml", () => {
+  it("reads data-read-progress from list items", () => {
+    expect(getReadIndicatorScriptHtml()).toContain("data-read-progress");
+  });
+
+  it("reads data-read-at from list items", () => {
+    expect(getReadIndicatorScriptHtml()).toContain("data-read-at");
+  });
+
+  it("adds read-indicator element", () => {
+    expect(getReadIndicatorScriptHtml()).toContain("read-indicator");
+  });
+
+  it("applies title-read class for read captures", () => {
+    expect(getReadIndicatorScriptHtml()).toContain("title-read");
   });
 });
