@@ -103,6 +103,10 @@ describe("calcReadProgress", () => {
   it("returns 0 when page fits in viewport", () => {
     expect(calcReadProgress(0, 400, 500)).toBe(0);
   });
+
+  it("clamps to 100 when scrolled past bottom (over-scroll)", () => {
+    expect(calcReadProgress(600, 1000, 500)).toBe(100);
+  });
 });
 
 describe("calcRemainingMinutes", () => {

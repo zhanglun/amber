@@ -79,7 +79,7 @@ export function getDeleteConfirmScriptHtml(): string {
 
 export function calcReadProgress(scrollTop: number, scrollHeight: number, clientHeight: number): number {
   const max = scrollHeight - clientHeight;
-  return max > 0 ? Math.round((scrollTop / max) * 100) : 0;
+  return max > 0 ? Math.min(100, Math.max(0, Math.round((scrollTop / max) * 100))) : 0;
 }
 
 export function calcRemainingMinutes(totalChars: number, progress: number): number {
@@ -120,6 +120,7 @@ export function getReaderEnhancementsScriptHtml(): string {
   document.querySelectorAll('pre').forEach(function(pre){
     var wrap=document.createElement('div');
     wrap.className='code-block';
+    if(!pre.parentNode)return;
     pre.parentNode.insertBefore(wrap,pre);
     wrap.appendChild(pre);
     var lang=pre.dataset.language;
@@ -180,7 +181,7 @@ export function getReaderEnhancementsScriptHtml(): string {
         saveTimer=setTimeout(function(){
           var body={readProgress:p};
           if(p>=95)body.readAt=new Date().toISOString();
-          fetch('/captures/'+captureId+'/read',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+          fetch('/captures/'+captureId+'/read',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(function(){});
         },2000);
       }
     });
