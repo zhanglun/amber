@@ -65,3 +65,42 @@ describe("getStyles", () => {
     expect(css).toContain("transition: none");
   });
 });
+
+describe("reading enhancement styles", () => {
+  it("includes read progress bar styles", () => {
+    expect(getStyles()).toContain(".read-progress-bar");
+    expect(getStyles()).toContain(".read-progress-fill");
+  });
+
+  it("includes copy button styles", () => {
+    expect(getStyles()).toContain(".copy-btn");
+    expect(getStyles()).toContain(".code-lang");
+    expect(getStyles()).toContain(".code-block");
+  });
+
+  it("includes font control styles", () => {
+    expect(getStyles()).toContain(".font-ctrl");
+    expect(getStyles()).toContain(".font-btn");
+  });
+
+  it("includes scroll-to-top button styles", () => {
+    expect(getStyles()).toContain(".scroll-top-btn");
+  });
+
+  it("includes article footer nav styles", () => {
+    expect(getStyles()).toContain(".article-footer");
+    expect(getStyles()).toContain(".nav-card");
+  });
+
+  it("includes read indicator styles for list page", () => {
+    expect(getStyles()).toContain(".read-indicator");
+  });
+
+  it("includes meta-remaining style", () => {
+    expect(getStyles()).toContain(".meta-remaining");
+  });
+
+  it("includes toc active item style", () => {
+    expect(getStyles()).toContain(".toc-item.active");
+  });
+});
