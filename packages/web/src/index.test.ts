@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ReadService } from "@amber/core";
 import type { Capture } from "@amber/domain";
 import { contentTypeForPath, createApp } from "./index.js";
@@ -26,9 +26,12 @@ const captures: Capture[] = [
 
 function fakeReadService(): ReadService {
   return {
-    list: async () => captures.map(({ id, title, sourceUrl, createdAt }) => ({ id, title, sourceUrl, createdAt })),
-    get: async (id: string) => captures.find((capture) => capture.id === id) ?? null,
-    findBySourceUrl: async (sourceUrl: string) => captures.find((capture) => capture.sourceUrl === sourceUrl) ?? null,
+    list: async () =>
+      captures.map(({ id, title, sourceUrl, createdAt }) => ({ id, title, sourceUrl, createdAt })),
+    get: async (id: string) => captures.find((c) => c.id === id) ?? null,
+    findBySourceUrl: async (sourceUrl: string) =>
+      captures.find((c) => c.sourceUrl === sourceUrl) ?? null,
+    updateReadStatus: vi.fn(),
   } as unknown as ReadService;
 }
 
@@ -52,7 +55,29 @@ describe("createApp", () => {
     expect(html).toContain('class="toc"');
     expect(html).toContain('<h1 class="article-title-anchor">Second</h1>');
     expect(html).toContain('href="#section"');
-    expect(html).not.toContain('href="/captures/c1"');
+    expect(html).toContain('data-capture-id="c2"');
+    expect(html).not.toContain('action="/captures/c2/delete"');
+    expect(html).not.toContain('class="group"');
+  });
+
+  it("article page includes link to adjacent capture via data-nav", async () => {
+    const app = createApp(fakeReadService(), { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const res = await app.request("/captures/c2");
+    const html = await res.text();
+    expect(html).toContain('data-nav="prev"');
+    expect(html).toContain('href="/captures/c1"');
+  });
+
+  it("PATCH /captures/:id/read calls updateReadStatus and returns 204", async () => {
+    const svc = fakeReadService();
+    const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const res = await app.request("/captures/c1/read", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ readProgress: 55 }),
+    });
+    expect(res.status).toBe(204);
+    expect(svc.updateReadStatus).toHaveBeenCalledWith("c1", { readProgress: 55 });
   });
 
   it("deletes a capture and redirects back to the list", async () => {

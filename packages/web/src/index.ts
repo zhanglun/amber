@@ -18,11 +18,8 @@ export function contentTypeForPath(path: string): string {
 }
 
 export interface WebOptions {
-  /** 本地 blobs 根目录（FileBlobStore 写入的 <dataDir>/blobs）。 */
   blobsDir: string;
-  /** 删除 capture 及其 blobs。 */
   deleteCapture: (id: string) => Promise<void>;
-  /** 服务器开始监听后的回调（可用于打开浏览器等）。 */
   onReady?: () => void;
 }
 
@@ -35,9 +32,15 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
   });
 
   app.get("/captures/:id", async (c) => {
-    const capture = await readService.get(c.req.param("id"));
+    const id = c.req.param("id");
+    const [capture, all] = await Promise.all([readService.get(id), readService.list()]);
     if (!capture) return c.html("<p>Not found. <a href='/'>back</a></p>", 404);
-    return c.html(await renderArticle(capture));
+    const idx = all.findIndex((s) => s.id === id);
+    const neighbors = {
+      prev: idx > 0 ? all[idx - 1] : null,
+      next: idx < all.length - 1 ? all[idx + 1] : null,
+    };
+    return c.html(await renderArticle(capture, neighbors));
   });
 
   app.post("/captures/:id/delete", async (c) => {
@@ -45,7 +48,12 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
     return c.redirect("/", 303);
   });
 
-  // serve 本地图片：/blobs/<key> → <blobsDir>/<key>
+  app.patch("/captures/:id/read", async (c) => {
+    const body = await c.req.json<{ readProgress: number; readAt?: string }>();
+    await readService.updateReadStatus(c.req.param("id"), body);
+    return c.body(null, 204);
+  });
+
   app.get("/blobs/*", async (c) => {
     const rel = normalize(c.req.path.slice("/blobs/".length));
     if (rel.startsWith("..")) return c.notFound();
