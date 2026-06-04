@@ -63,4 +63,42 @@ describe("FileStore", () => {
     const store = new FileStore(dir);
     await expect(store.delete("ghost")).resolves.toBeUndefined();
   });
+
+  it("updateReadStatus merges readProgress into the stored capture", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "r1" }));
+    await store.updateReadStatus("r1", { readProgress: 42 });
+    const updated = await store.get("r1");
+    expect(updated?.readProgress).toBe(42);
+    expect(updated?.readAt).toBeUndefined();
+  });
+
+  it("updateReadStatus sets readAt when provided", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "r2" }));
+    await store.updateReadStatus("r2", { readProgress: 100, readAt: "2026-06-04T10:00:00.000Z" });
+    const updated = await store.get("r2");
+    expect(updated?.readAt).toBe("2026-06-04T10:00:00.000Z");
+  });
+
+  it("updateReadStatus does not overwrite an existing readAt", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "r3", readAt: "2026-05-01T00:00:00.000Z" } as Capture));
+    await store.updateReadStatus("r3", { readProgress: 100, readAt: "2026-06-04T10:00:00.000Z" });
+    const updated = await store.get("r3");
+    expect(updated?.readAt).toBe("2026-05-01T00:00:00.000Z");
+  });
+
+  it("updateReadStatus is a no-op for unknown ids", async () => {
+    const store = new FileStore(dir);
+    await expect(store.updateReadStatus("ghost", { readProgress: 50 })).resolves.toBeUndefined();
+  });
+
+  it("list includes readProgress and readAt when present", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "rp1", readProgress: 55, readAt: "2026-06-04T00:00:00.000Z" } as Capture));
+    const list = await store.list();
+    expect(list[0].readProgress).toBe(55);
+    expect(list[0].readAt).toBe("2026-06-04T00:00:00.000Z");
+  });
 });

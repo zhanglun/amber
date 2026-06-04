@@ -37,8 +37,15 @@ export class FileStore implements Store {
 
   async list(): Promise<CaptureSummary[]> {
     const all = await this.readAll();
-    all.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)); // createdAt desc
-    return all.map((c) => ({ id: c.id, title: c.title, sourceUrl: c.sourceUrl, createdAt: c.createdAt }));
+    all.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    return all.map((c) => ({
+      id: c.id,
+      title: c.title,
+      sourceUrl: c.sourceUrl,
+      createdAt: c.createdAt,
+      readProgress: c.readProgress,
+      readAt: c.readAt,
+    }));
   }
 
   async get(id: string): Promise<Capture | null> {
@@ -57,5 +64,18 @@ export class FileStore implements Store {
 
   async delete(id: string): Promise<void> {
     await unlink(this.file(id)).catch(() => {});
+  }
+
+  async updateReadStatus(
+    id: string,
+    status: { readProgress: number; readAt?: string }
+  ): Promise<void> {
+    const capture = await this.get(id);
+    if (!capture) return;
+    capture.readProgress = status.readProgress;
+    if (status.readAt && !capture.readAt) {
+      capture.readAt = status.readAt;
+    }
+    await writeFile(this.file(id), JSON.stringify(capture, null, 2), "utf8");
   }
 }
