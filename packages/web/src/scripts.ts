@@ -76,3 +76,8 @@ export function getDeleteConfirmScriptHtml(): string {
 })();
 </script>`;
 }
+
+export function calcReadProgress(_scrollTop: number, _scrollHeight: number, _clientHeight: number): number { return 0; }
+export function calcRemainingMinutes(_totalChars: number, _progress: number): number { return 0; }
+export function getReaderEnhancementsScriptHtml(): string { return ''; }
+export function getReadIndicatorScriptHtml(): string { return ''; }

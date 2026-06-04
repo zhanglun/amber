@@ -164,6 +164,58 @@ describe("renderArticle", () => {
     expect(html).not.toContain('class="toc"');
     expect(html).not.toContain('class="toc-mobile"');
   });
+
+  const NEIGHBORS = {
+    prev: { id: "p1", title: "Prev Article", sourceUrl: "https://prev.com/a", createdAt: "2026-06-02T00:00:00.000Z" },
+    next: { id: "n1", title: "Next Article", sourceUrl: "https://next.com/a", createdAt: "2026-05-30T00:00:00.000Z" },
+  };
+
+  it("injects data-capture-id and data-read-progress on article-shell", async () => {
+    const cap = { ...CAPTURE, readProgress: 42 };
+    const html = await renderArticle(cap);
+    expect(html).toContain('data-capture-id="c1"');
+    expect(html).toContain('data-read-progress="42"');
+  });
+
+  it("data-read-progress defaults to 0 when readProgress is absent", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).toContain('data-read-progress="0"');
+  });
+
+  it("renders prev/next footer with data-nav attributes when neighbors provided", async () => {
+    const html = await renderArticle(CAPTURE, NEIGHBORS);
+    expect(html).toContain('data-nav="prev"');
+    expect(html).toContain('data-nav="next"');
+    expect(html).toContain('href="/captures/p1"');
+    expect(html).toContain('href="/captures/n1"');
+    expect(html).toContain("Prev Article");
+    expect(html).toContain("Next Article");
+  });
+
+  it("omits footer when no neighbors", async () => {
+    const html = await renderArticle(CAPTURE, { prev: null, next: null });
+    expect(html).not.toContain('data-nav="prev"');
+    expect(html).not.toContain('data-nav="next"');
+    expect(html).not.toContain('class="article-footer"');
+  });
+
+  it("renders meta-remaining span in meta line", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).toContain('class="meta-remaining"');
+  });
+
+  it("renders font control buttons in topbar", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).toContain('class="font-ctrl"');
+    expect(html).toContain('data-dir="down"');
+    expect(html).toContain('data-dir="up"');
+  });
+
+  it("renders progress bar and scroll-to-top elements", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).toContain('class="read-progress-bar"');
+    expect(html).toContain('class="scroll-top-btn"');
+  });
 });
 
 describe("groupByWeek", () => {

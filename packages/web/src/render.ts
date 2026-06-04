@@ -7,6 +7,8 @@ import {
   getListFilterScriptHtml,
   getReaderHeaderScriptHtml,
   getDeleteConfirmScriptHtml,
+  getReaderEnhancementsScriptHtml,
+  getReadIndicatorScriptHtml,
 } from "./scripts.js";
 import { renderMarkdown } from "./highlight.js";
 import { extractToc, type TocItem } from "./toc.js";
@@ -76,8 +78,10 @@ export function renderList(items: CaptureSummary[]): string {
         .map((i) => {
           const hostname = new URL(i.sourceUrl).hostname;
           const date = i.createdAt.slice(0, 10);
+          const rp = escapeHtml(String(i.readProgress ?? ""));
+          const ra = escapeHtml(i.readAt ?? "");
           return (
-            `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}">` +
+            `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}" data-read-progress="${rp}" data-read-at="${ra}">` +
             `<div class="item-main"><a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
             `<div class="muted">${escapeHtml(hostname)} · ${date}</div></div>` +
             `<form class="delete-form" method="post" action="/captures/${escapeHtml(i.id)}/delete" data-title="${escapeHtml(i.title)}">` +
@@ -95,7 +99,7 @@ export function renderList(items: CaptureSummary[]): string {
     })
     .join("");
 
-  const body = header + sectionsHtml + getListFilterScriptHtml() + getDeleteConfirmScriptHtml();
+  const body = header + sectionsHtml + getListFilterScriptHtml() + getDeleteConfirmScriptHtml() + getReadIndicatorScriptHtml();
   return page("Amber", body);
 }
 
@@ -126,25 +130,58 @@ function renderMobileToc(toc: TocItem[]): string {
   );
 }
 
-export async function renderArticle(capture: Capture): Promise<string> {
+function renderArticleFooter(
+  prev: CaptureSummary | null,
+  next: CaptureSummary | null
+): string {
+  if (!prev && !next) return "";
+  const prevCard = prev
+    ? `<a class="nav-card" href="/captures/${escapeHtml(prev.id)}" data-nav="prev">` +
+      `<span class="nav-dir">← 上一篇</span>` +
+      `<span class="nav-title">${escapeHtml(prev.title)}</span></a>`
+    : `<span></span>`;
+  const nextCard = next
+    ? `<a class="nav-card nav-card-next" href="/captures/${escapeHtml(next.id)}" data-nav="next">` +
+      `<span class="nav-dir">下一篇 →</span>` +
+      `<span class="nav-title">${escapeHtml(next.title)}</span></a>`
+    : `<span></span>`;
+  return `<footer class="article-footer">${prevCard}${nextCard}</footer>`;
+}
+
+export async function renderArticle(
+  capture: Capture,
+  neighbors: { prev: CaptureSummary | null; next: CaptureSummary | null } = { prev: null, next: null }
+): Promise<string> {
   const switcher = getThemeSwitcherHtml();
+  const fontCtrl =
+    `<div class="font-ctrl">` +
+    `<button class="font-btn" data-dir="down" title="缩小字体">A−</button>` +
+    `<button class="font-btn" data-dir="up" title="放大字体">A+</button>` +
+    `</div>`;
   const title = escapeHtml(capture.title);
   const header =
     `<header class="article-topbar">` +
     `<a class="muted" href="/">← 返回列表</a>` +
     `<span class="article-topbar-title" aria-hidden="true">${title}</span>` +
-    switcher +
+    `<div class="topbar-right">${fontCtrl}${switcher}</div>` +
     `</header>`;
+
   const { chars, minutes } = readingStats(capture.content);
   const hostname = new URL(capture.sourceUrl).hostname;
   const meta =
-    `<p class="meta">${chars} 字 · 约 ${minutes} 分钟 · ` +
+    `<p class="meta">${chars} 字 · ` +
+    `<span class="meta-remaining">约 ${minutes} 分钟</span> · ` +
     `<a href="${escapeHtml(capture.sourceUrl)}">${escapeHtml(hostname)} ↗</a></p>`;
+
   const toc = extractToc(capture.content);
   const hasToc = toc.length >= 2;
   const content = await renderMarkdown(capture.content, { toc });
+  const readProgress = capture.readProgress ?? 0;
+  const footer = renderArticleFooter(neighbors.prev, neighbors.next);
+
   const body =
-    `<div class="article-shell">` +
+    `<div class="article-shell" data-capture-id="${escapeHtml(capture.id)}" data-read-progress="${readProgress}" data-total-chars="${chars}">` +
+    `<div class="read-progress-bar"><div class="read-progress-fill"></div></div>` +
     header +
     `<div class="article-layout">` +
     `<main class="article-main"><article class="article-content">` +
@@ -152,9 +189,13 @@ export async function renderArticle(capture: Capture): Promise<string> {
     meta +
     (hasToc ? renderMobileToc(toc) : "") +
     content +
+    footer +
     `</article></main>` +
     (hasToc ? renderDesktopToc(toc) : "") +
-    `</div></div>` +
-    getReaderHeaderScriptHtml();
+    `</div>` +
+    `<button class="scroll-top-btn" title="回到顶部" aria-label="回到顶部">↑</button>` +
+    `</div>` +
+    getReaderHeaderScriptHtml() +
+    getReaderEnhancementsScriptHtml();
   return page(capture.title, body, "article-body");
 }
