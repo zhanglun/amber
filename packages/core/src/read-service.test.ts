@@ -14,6 +14,7 @@ function fakeStore(): Store {
     get: vi.fn(async (id: string) => (id === "c1" ? cap : null)),
     findBySourceUrl: vi.fn(async (url: string) => (url === "https://x/a" ? cap : null)),
     delete: vi.fn(),
+    updateReadStatus: vi.fn(),
   };
 }
 
@@ -34,5 +35,12 @@ describe("ReadService", () => {
     const svc = new ReadService(fakeStore());
     expect(await svc.findBySourceUrl("https://x/a")).toEqual(cap);
     expect(await svc.findBySourceUrl("https://x/missing")).toBeNull();
+  });
+
+  it("delegates updateReadStatus to the store", async () => {
+    const store = fakeStore();
+    const svc = new ReadService(store);
+    await svc.updateReadStatus("c1", { readProgress: 70 });
+    expect(store.updateReadStatus).toHaveBeenCalledWith("c1", { readProgress: 70 });
   });
 });

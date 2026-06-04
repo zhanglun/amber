@@ -14,4 +14,11 @@ export class ReadService {
   findBySourceUrl(url: string): Promise<Capture | null> {
     return this.store.findBySourceUrl(url);
   }
+
+  updateReadStatus(
+    id: string,
+    status: { readProgress: number; readAt?: string }
+  ): Promise<void> {
+    return this.store.updateReadStatus(id, status);
+  }
 }
