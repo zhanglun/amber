@@ -36,10 +36,12 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
     const [capture, all] = await Promise.all([readService.get(id), readService.list()]);
     if (!capture) return c.html("<p>Not found. <a href='/'>back</a></p>", 404);
     const idx = all.findIndex((s) => s.id === id);
-    const neighbors = {
-      prev: idx > 0 ? all[idx - 1] : null,
-      next: idx < all.length - 1 ? all[idx + 1] : null,
-    };
+    const neighbors = idx === -1
+      ? { prev: null, next: null }
+      : {
+          prev: idx > 0 ? all[idx - 1] : null,
+          next: idx < all.length - 1 ? all[idx + 1] : null,
+        };
     return c.html(await renderArticle(capture, neighbors));
   });
 

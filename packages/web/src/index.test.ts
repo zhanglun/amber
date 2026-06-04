@@ -68,6 +68,15 @@ describe("createApp", () => {
     expect(html).toContain('href="/captures/c1"');
   });
 
+  it("first article has no prev neighbor but has next", async () => {
+    const app = createApp(fakeReadService(), { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const res = await app.request("/captures/c1");
+    const html = await res.text();
+    expect(html).not.toContain('data-nav="prev"');
+    expect(html).toContain('data-nav="next"');
+    expect(html).toContain('href="/captures/c2"');
+  });
+
   it("PATCH /captures/:id/read calls updateReadStatus and returns 204", async () => {
     const svc = fakeReadService();
     const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
