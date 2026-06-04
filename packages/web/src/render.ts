@@ -1,6 +1,13 @@
 import type { Capture, CaptureSummary } from "@amber/domain";
 import { getStyles } from "./styles.js";
-import { getThemeSwitcherHtml, getThemeScriptHtml, getSearchBarHtml, getListFilterScriptHtml } from "./scripts.js";
+import {
+  getThemeSwitcherHtml,
+  getThemeScriptHtml,
+  getSearchBarHtml,
+  getListFilterScriptHtml,
+  getReaderHeaderScriptHtml,
+  getDeleteConfirmScriptHtml,
+} from "./scripts.js";
 import { renderMarkdown } from "./highlight.js";
 import { extractToc, type TocItem } from "./toc.js";
 
@@ -71,8 +78,11 @@ export function renderList(items: CaptureSummary[]): string {
           const date = i.createdAt.slice(0, 10);
           return (
             `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}">` +
-            `<a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
-            `<div class="muted">${escapeHtml(hostname)} · ${date}</div></div>`
+            `<div class="item-main"><a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
+            `<div class="muted">${escapeHtml(hostname)} · ${date}</div></div>` +
+            `<form class="delete-form" method="post" action="/captures/${escapeHtml(i.id)}/delete" data-title="${escapeHtml(i.title)}">` +
+            `<button class="delete-btn" type="submit" title="删除">删除</button>` +
+            `</form></div>`
           );
         })
         .join("");
@@ -85,7 +95,7 @@ export function renderList(items: CaptureSummary[]): string {
     })
     .join("");
 
-  const body = header + sectionsHtml + getListFilterScriptHtml();
+  const body = header + sectionsHtml + getListFilterScriptHtml() + getDeleteConfirmScriptHtml();
   return page("Amber", body);
 }
 
@@ -118,7 +128,13 @@ function renderMobileToc(toc: TocItem[]): string {
 
 export async function renderArticle(capture: Capture): Promise<string> {
   const switcher = getThemeSwitcherHtml();
-  const header = `<header class="article-topbar"><a class="muted" href="/">← 返回列表</a>${switcher}</header>`;
+  const title = escapeHtml(capture.title);
+  const header =
+    `<header class="article-topbar">` +
+    `<a class="muted" href="/">← 返回列表</a>` +
+    `<span class="article-topbar-title" aria-hidden="true">${title}</span>` +
+    switcher +
+    `</header>`;
   const { chars, minutes } = readingStats(capture.content);
   const hostname = new URL(capture.sourceUrl).hostname;
   const meta =
@@ -132,12 +148,13 @@ export async function renderArticle(capture: Capture): Promise<string> {
     header +
     `<div class="article-layout">` +
     `<main class="article-main"><article class="article-content">` +
-    `<h1>${escapeHtml(capture.title)}</h1>` +
+    `<h1 class="article-title-anchor">${title}</h1>` +
     meta +
     (hasToc ? renderMobileToc(toc) : "") +
     content +
     `</article></main>` +
     (hasToc ? renderDesktopToc(toc) : "") +
-    `</div></div>`;
+    `</div></div>` +
+    getReaderHeaderScriptHtml();
   return page(capture.title, body, "article-body");
 }

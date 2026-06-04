@@ -46,3 +46,33 @@ export function getListFilterScriptHtml(): string {
 })();
 </script>`;
 }
+
+export function getReaderHeaderScriptHtml(): string {
+  return `<script>
+(function(){
+  var header=document.querySelector('.article-topbar');
+  var title=document.querySelector('.article-title-anchor');
+  if(!header||!title||!('IntersectionObserver' in window))return;
+  var observer=new IntersectionObserver(function(entries){
+    var visible=entries[0]&&entries[0].isIntersecting;
+    header.classList.toggle('title-visible',!visible);
+  },{threshold:0});
+  observer.observe(title);
+})();
+</script>`;
+}
+
+export function getDeleteConfirmScriptHtml(): string {
+  return `<script>
+(function(){
+  document.querySelectorAll('.delete-form').forEach(function(form){
+    form.addEventListener('submit',function(event){
+      var title=form.getAttribute('data-title')||'this capture';
+      if(!window.confirm('删除「'+title+'」？')){
+        event.preventDefault();
+      }
+    });
+  });
+})();
+</script>`;
+}

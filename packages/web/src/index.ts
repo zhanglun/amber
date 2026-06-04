@@ -20,6 +20,8 @@ export function contentTypeForPath(path: string): string {
 export interface WebOptions {
   /** 本地 blobs 根目录（FileBlobStore 写入的 <dataDir>/blobs）。 */
   blobsDir: string;
+  /** 删除 capture 及其 blobs。 */
+  deleteCapture: (id: string) => Promise<void>;
   /** 服务器开始监听后的回调（可用于打开浏览器等）。 */
   onReady?: () => void;
 }
@@ -36,6 +38,11 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
     const capture = await readService.get(c.req.param("id"));
     if (!capture) return c.html("<p>Not found. <a href='/'>back</a></p>", 404);
     return c.html(await renderArticle(capture));
+  });
+
+  app.post("/captures/:id/delete", async (c) => {
+    await options.deleteCapture(c.req.param("id"));
+    return c.redirect("/", 303);
   });
 
   // serve 本地图片：/blobs/<key> → <blobsDir>/<key>
@@ -57,6 +64,6 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
 }
 
 export function startServer(readService: ReadService, options: WebOptions & { port: number }): void {
-  const app = createApp(readService, { blobsDir: options.blobsDir });
+  const app = createApp(readService, { blobsDir: options.blobsDir, deleteCapture: options.deleteCapture });
   serve({ fetch: app.fetch, port: options.port }, () => options.onReady?.());
 }

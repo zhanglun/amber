@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getThemeSwitcherHtml, getThemeScriptHtml, getSearchBarHtml, getListFilterScriptHtml } from "./scripts.js";
+import {
+  getThemeSwitcherHtml,
+  getThemeScriptHtml,
+  getSearchBarHtml,
+  getListFilterScriptHtml,
+  getReaderHeaderScriptHtml,
+  getDeleteConfirmScriptHtml,
+} from "./scripts.js";
 
 describe("getThemeSwitcherHtml", () => {
   it("includes buttons for all four themes", () => {
@@ -53,5 +60,25 @@ describe("getListFilterScriptHtml", () => {
 
   it("updates count element", () => {
     expect(getListFilterScriptHtml()).toContain(".count");
+  });
+});
+
+describe("getReaderHeaderScriptHtml", () => {
+  it("uses IntersectionObserver to show the title after the article h1 leaves view", () => {
+    const script = getReaderHeaderScriptHtml();
+    expect(script).toContain("IntersectionObserver");
+    expect(script).toContain(".article-title-anchor");
+    expect(script).toContain("title-visible");
+    expect(script).toContain("isIntersecting");
+  });
+});
+
+describe("getDeleteConfirmScriptHtml", () => {
+  it("confirms capture deletion before submitting delete forms", () => {
+    const script = getDeleteConfirmScriptHtml();
+    expect(script).toContain(".delete-form");
+    expect(script).toContain("confirm");
+    expect(script).toContain("preventDefault");
+    expect(script).toContain("data-title");
   });
 });

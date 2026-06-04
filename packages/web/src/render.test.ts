@@ -49,6 +49,15 @@ describe("renderList", () => {
     expect(html).toContain("First");
   });
 
+  it("renders a delete form for each capture", () => {
+    const html = renderList(items);
+    expect(html).toContain('class="delete-form"');
+    expect(html).toContain('method="post"');
+    expect(html).toContain('action="/captures/c1/delete"');
+    expect(html).toContain('data-title="First"');
+    expect(html).toContain('class="delete-btn"');
+  });
+
   it("shows hostname and formatted date", () => {
     const html = renderList(items);
     expect(html).toContain("example.com");
@@ -82,6 +91,10 @@ describe("renderList", () => {
   it("output contains search bar input", () => {
     const html = renderList(items);
     expect(html).toContain('<input id="search"');
+  });
+
+  it("includes delete confirmation script", () => {
+    expect(renderList(items)).toContain(".delete-form");
   });
 
   it("header contains header-right wrapper", () => {
@@ -125,6 +138,14 @@ describe("renderArticle", () => {
   it("includes theme switcher", async () => {
     const html = await renderArticle(CAPTURE);
     expect(html).toContain("theme-switcher");
+  });
+
+  it("renders a hidden header title that can appear after scrolling", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).toContain('<span class="article-topbar-title" aria-hidden="true">Title</span>');
+    expect(html).toContain('<h1 class="article-title-anchor">Title</h1>');
+    expect(html).toContain("article-title-anchor");
+    expect(html).toContain("title-visible");
   });
 
   it("renders a focused article shell with desktop and mobile toc", async () => {

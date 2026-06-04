@@ -158,7 +158,7 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
     },
     async serve(port) {
       const dataDir = runtime.getDataDir();
-      const { readService, blobsDir } = runtime.buildServices();
+      const { readService, blobsDir, deleteCapture } = runtime.buildServices();
       const url = `http://localhost:${port}`;
 
       await runtime.writePid(dataDir, {
@@ -172,7 +172,7 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
       process.once("SIGINT", () => { cleanup(); process.exit(0); });
       process.once("SIGTERM", () => { cleanup(); process.exit(0); });
 
-      runtime.startServer(readService, { blobsDir, port, onReady: () => runtime.openBrowser(url) });
+      runtime.startServer(readService, { blobsDir, deleteCapture, port, onReady: () => runtime.openBrowser(url) });
     },
     async start(port) {
       const dataDir = runtime.getDataDir();

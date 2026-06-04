@@ -28,6 +28,14 @@ describe("getStyles", () => {
     expect(css).toContain(".count");
   });
 
+  it("includes list item delete action styles", () => {
+    const css = getStyles();
+    expect(css).toContain(".item-main");
+    expect(css).toContain(".delete-form");
+    expect(css).toContain(".delete-btn");
+    expect(css).toContain(".delete-btn:hover");
+   });
+
   it("includes focused reader, toc, and video embed styles", () => {
     const css = getStyles();
     expect(css).toContain(".article-shell");
@@ -45,5 +53,15 @@ describe("getStyles", () => {
     expect(css).toContain(".toc { position: fixed;");
     expect(css).toContain("left: max(1rem, calc((100vw - var(--max-width)) / 2 - 260px))");
     expect(css).not.toContain("grid-column: 3");
+  });
+
+  it("animates the sticky header title and respects reduced motion", () => {
+    const css = getStyles();
+    expect(css).toContain(".article-topbar-title");
+    expect(css).toContain("opacity: 0");
+    expect(css).toContain("transform: translateY(4px)");
+    expect(css).toContain(".article-topbar.title-visible .article-topbar-title");
+    expect(css).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(css).toContain("transition: none");
   });
 });
