@@ -79,11 +79,12 @@ pre code { padding: 0; background: none; }
 .article-shell { min-height: 100vh; }
 .article-topbar { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 1rem; padding: .8rem 1rem; border-bottom: 1px solid var(--border); background: var(--bg); }
 .article-topbar .theme-switcher { justify-self: end; }
+.article-topbar .topbar-right { justify-self: end; }
 .article-topbar-title { max-width: min(44vw, var(--max-width)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-size: .9rem; font-weight: 600; opacity: 0; transform: translateY(4px); transition: opacity .18s ease, transform .18s ease; }
 .article-topbar.title-visible .article-topbar-title { opacity: 1; transform: translateY(0); }
 .article-layout { width: 100%; padding: 2rem 1rem 4rem; }
 .article-main { max-width: var(--max-width); margin: 0 auto; min-width: 0; }
-.article-content { max-width: var(--max-width); }
+.article-content { max-width: var(--max-width); font-size: var(--font-size-article, 16px); }
 .article-content > h1:first-child { margin-top: 0; }
 .toc { position: fixed; top: 5rem; left: max(1rem, calc((100vw - var(--max-width)) / 2 - 260px)); width: 220px; max-height: calc(100vh - 6rem); overflow: auto; border-right: 1px solid var(--border); padding-right: 1rem; font-size: .85rem; line-height: 1.45; }
 .toc-title { color: var(--text-muted); font-weight: 600; margin-bottom: .5rem; }

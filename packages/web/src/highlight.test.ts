@@ -28,6 +28,11 @@ describe("renderMarkdown", () => {
     expect(html).toContain('src="/blobs/captures/c1/2.mp4"');
   });
 
+  it("adds data-language attribute to the light shiki pre for known languages", async () => {
+    const html = await renderMarkdown("```typescript\nconst x = 1\n```");
+    expect(html).toContain('data-language="typescript"');
+  });
+
   it("adds toc ids to h2 and h3 headings by order", async () => {
     const toc: TocItem[] = [
       { level: 2, text: "Repeat", id: "repeat" },

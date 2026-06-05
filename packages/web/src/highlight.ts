@@ -116,7 +116,7 @@ export async function renderMarkdown(content: string, options: RenderMarkdownOpt
         try {
           const light = hl.codeToHtml(code, { theme: "github-light", lang });
           const dark = hl.codeToHtml(code, { theme: "github-dark", lang });
-          return light + dark;
+          return light.replace("<pre ", `<pre data-language="${lang}" `) + dark;
         } catch {
           // unknown language — fall through to markdown-it default
         }

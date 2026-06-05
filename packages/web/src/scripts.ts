@@ -87,7 +87,9 @@ export function calcRemainingMinutes(totalChars: number, progress: number): numb
   return Math.max(0, Math.round((totalChars * (1 - progress / 100)) / 300));
 }
 
-export function getReaderEnhancementsScriptHtml(): string {
+export function getReaderEnhancementsScriptHtml(opts: { hasPrev?: boolean; hasNext?: boolean } = {}): string {
+  const hasPrev = opts.hasPrev !== false;
+  const hasNext = opts.hasNext !== false;
   return `<script>
 (function(){
   var shell=document.querySelector('.article-shell');
@@ -118,6 +120,7 @@ export function getReaderEnhancementsScriptHtml(): string {
   });
 
   document.querySelectorAll('pre').forEach(function(pre){
+    if(pre.classList.contains('github-dark'))return;
     var wrap=document.createElement('div');
     wrap.className='code-block';
     if(!pre.parentNode)return;
@@ -189,8 +192,8 @@ export function getReaderEnhancementsScriptHtml(): string {
 
   if(scrollTopBtn)scrollTopBtn.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
 
-  var prevLink=document.querySelector('a[data-nav="prev"]');
-  var nextLink=document.querySelector('a[data-nav="next"]');
+  ${hasPrev ? `var prevLink=document.querySelector('a[data-nav="prev"]');` : ''}
+  ${hasNext ? `var nextLink=document.querySelector('a[data-nav="next"]');` : ''}
   document.addEventListener('keydown',function(e){
     var tag=(document.activeElement||{}).tagName;
     if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
@@ -198,8 +201,8 @@ export function getReaderEnhancementsScriptHtml(): string {
     if(e.key==='j')window.scrollBy({top:200,behavior:'smooth'});
     else if(e.key==='k')window.scrollBy({top:-200,behavior:'smooth'});
     else if(e.key==='Escape')window.location.href='/';
-    else if(e.key==='['&&prevLink)window.location.href=prevLink.href;
-    else if(e.key===']'&&nextLink)window.location.href=nextLink.href;
+    ${hasPrev ? `else if(e.key==='['&&prevLink)window.location.href=prevLink.href;` : ''}
+    ${hasNext ? `else if(e.key===']'&&nextLink)window.location.href=nextLink.href;` : ''}
   });
 })();
 </script>`;

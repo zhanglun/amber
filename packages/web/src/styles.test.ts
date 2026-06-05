@@ -103,4 +103,8 @@ describe("reading enhancement styles", () => {
   it("includes toc active item style", () => {
     expect(getStyles()).toContain(".toc-item.active");
   });
+
+  it("uses font-size-article variable on article content", () => {
+    expect(getStyles()).toContain("--font-size-article");
+  });
 });
