@@ -196,6 +196,6 @@ export async function renderArticle(
     `<button class="scroll-top-btn" title="回到顶部" aria-label="回到顶部">↑</button>` +
     `</div>` +
     getReaderHeaderScriptHtml() +
-    getReaderEnhancementsScriptHtml();
+    getReaderEnhancementsScriptHtml({ hasPrev: !!neighbors.prev, hasNext: !!neighbors.next });
   return page(capture.title, body, "article-body");
 }
