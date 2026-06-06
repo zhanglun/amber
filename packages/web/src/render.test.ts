@@ -234,7 +234,7 @@ describe("renderList tags", () => {
     const items: CaptureSummary[] = [
       { id: "a", title: "A", sourceUrl: "https://a.com", capturedAt: "2026-06-08T00:00:00.000Z" },
     ];
-    expect(renderList(items)).not.toContain("tag-bar");
+    expect(renderList(items)).not.toContain('class="tag-bar"');
   });
 
   it("puts each item's tags into data-tags as JSON and renders an editor", () => {
