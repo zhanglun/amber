@@ -25,7 +25,7 @@ function rowToSummary(row: SummaryRow): CaptureSummary {
     excerpt: row.excerpt ?? undefined,
     wordCount: row.wordCount ?? undefined,
     hasCode: row.hasCode ?? undefined,
-    tags: row.tags.length > 0 ? row.tags : undefined,
+    tags: row.tags,
     readProgress: row.readProgress ?? undefined,
     readAt: row.readAt?.toISOString() ?? undefined,
   };
@@ -45,7 +45,7 @@ function rowToCapture(row: FullRow): Capture {
     excerpt: row.excerpt ?? undefined,
     wordCount: row.wordCount ?? undefined,
     hasCode: row.hasCode ?? undefined,
-    tags: row.tags.length > 0 ? row.tags : undefined,
+    tags: row.tags,
     readProgress: row.readProgress ?? undefined,
     readAt: row.readAt?.toISOString() ?? undefined,
     lastOpenedAt: row.lastOpenedAt?.toISOString() ?? undefined,
