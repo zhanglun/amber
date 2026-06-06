@@ -30,6 +30,12 @@ describe("FileStore", () => {
     expect(await store.get("nope")).toBeNull();
   });
 
+  it("insert rejects a duplicate id", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "dup" }));
+    await expect(store.insert(cap({ id: "dup" }))).rejects.toThrow();
+  });
+
   it("list returns summaries sorted by capturedAt desc", async () => {
     const store = new FileStore(dir);
     await store.insert(cap({ id: "old", capturedAt: "2026-01-01T00:00:00.000Z" }));

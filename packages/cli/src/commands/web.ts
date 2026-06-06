@@ -158,7 +158,7 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
     },
     async serve(port) {
       const dataDir = runtime.getDataDir();
-      const { readService, blobsDir, deleteCapture } = runtime.buildServices();
+      const { readService, blobsDir, deleteCapture, dispose } = runtime.buildServices();
       const url = `http://localhost:${port}`;
 
       await runtime.writePid(dataDir, {
@@ -168,9 +168,12 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
         startedAt: runtime.now().toISOString(),
       });
 
-      const cleanup = () => runtime.unlinkPid(dataDir).catch(() => {});
-      process.once("SIGINT", () => { cleanup(); process.exit(0); });
-      process.once("SIGTERM", () => { cleanup(); process.exit(0); });
+      const cleanup = async () => {
+        await runtime.unlinkPid(dataDir).catch(() => {});
+        await dispose().catch(() => {});
+      };
+      process.once("SIGINT", () => { void cleanup().then(() => process.exit(0)); });
+      process.once("SIGTERM", () => { void cleanup().then(() => process.exit(0)); });
 
       runtime.startServer(readService, { blobsDir, deleteCapture, port, onReady: () => runtime.openBrowser(url) });
     },

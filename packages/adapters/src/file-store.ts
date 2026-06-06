@@ -32,7 +32,11 @@ export class FileStore implements Store {
 
   async insert(capture: Capture): Promise<void> {
     await mkdir(this.dir, { recursive: true });
-    await writeFile(this.file(capture.id), JSON.stringify(capture, null, 2), "utf8");
+    // flag "wx" 在文件已存在时抛 EEXIST，使 insert 语义与 PostgresStore 一致（重复 id 即报错）
+    await writeFile(this.file(capture.id), JSON.stringify(capture, null, 2), {
+      encoding: "utf8",
+      flag: "wx",
+    });
   }
 
   async list(): Promise<CaptureSummary[]> {

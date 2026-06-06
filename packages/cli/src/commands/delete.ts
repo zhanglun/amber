@@ -9,26 +9,29 @@ export const deleteCommand = defineCommand({
     yes: { type: "boolean", description: "Skip confirmation prompt", default: false },
   },
   async run({ args }) {
-    const { readService, deleteCapture } = buildServices();
-
-    const capture = await readService.get(args.id);
-    if (!capture) {
-      p.log.error(`Capture not found: ${args.id}`);
-      process.exitCode = 1;
-      return;
-    }
-
-    if (!args.yes) {
-      const confirmed = await p.confirm({
-        message: `Delete "${capture.title}" (${args.id})?`,
-      });
-      if (p.isCancel(confirmed) || !confirmed) {
-        p.log.info("Cancelled.");
+    const { readService, deleteCapture, dispose } = buildServices();
+    try {
+      const capture = await readService.get(args.id);
+      if (!capture) {
+        p.log.error(`Capture not found: ${args.id}`);
+        process.exitCode = 1;
         return;
       }
-    }
 
-    await deleteCapture(args.id);
-    p.log.success(`Deleted ${args.id}`);
+      if (!args.yes) {
+        const confirmed = await p.confirm({
+          message: `Delete "${capture.title}" (${args.id})?`,
+        });
+        if (p.isCancel(confirmed) || !confirmed) {
+          p.log.info("Cancelled.");
+          return;
+        }
+      }
+
+      await deleteCapture(args.id);
+      p.log.success(`Deleted ${args.id}`);
+    } finally {
+      await dispose();
+    }
   },
 });

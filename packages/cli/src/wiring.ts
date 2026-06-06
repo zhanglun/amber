@@ -42,11 +42,18 @@ export function buildServices() {
     });
   }
 
+  // 释放 store 持有的资源（PostgresStore 的连接池会保持事件循环存活，
+  // 短命 CLI 命令若不释放会卡住不退出）。
+  async function dispose(): Promise<void> {
+    await store.disconnect?.();
+  }
+
   return {
     dataDir,
     blobsDir,
     importService: new ImportService(source, store, blob),
     readService: new ReadService(store),
     deleteCapture,
+    dispose,
   };
 }

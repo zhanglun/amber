@@ -46,6 +46,11 @@ describe.skipIf(!TEST_DB_URL)("PostgresStore", () => {
     expect(await store.get("nope")).toBeNull();
   });
 
+  it("insert rejects a duplicate id", async () => {
+    await store.insert(cap({ id: "dup" }));
+    await expect(store.insert(cap({ id: "dup", sourceUrl: "https://x/dup2" }))).rejects.toThrow();
+  });
+
   it("insert preserves optional string fields", async () => {
     await store.insert(cap({
       id: "opt",

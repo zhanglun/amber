@@ -9,7 +9,7 @@ export const importCommand = defineCommand({
     force: { type: "boolean", description: "Skip dedup and re-capture, keeping original id if it exists", default: false },
   },
   async run({ args }) {
-    const { importService, readService, deleteCapture, dataDir } = buildServices();
+    const { importService, readService, deleteCapture, dataDir, dispose } = buildServices();
     const spin = p.spinner();
     spin.start(`Importing ${args.url}`);
     try {
@@ -38,6 +38,8 @@ export const importCommand = defineCommand({
       spin.stop("Import failed");
       p.log.error((err as Error).message);
       process.exitCode = 1;
+    } finally {
+      await dispose();
     }
   },
 });
