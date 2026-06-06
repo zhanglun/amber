@@ -1,4 +1,5 @@
 #!/usr/bin/env -S node --import tsx
+import "dotenv/config";
 import { defineCommand, runMain } from "citty";
 import { importCommand } from "./commands/import.js";
 import { listCommand } from "./commands/list.js";

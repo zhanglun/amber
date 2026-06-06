@@ -3,14 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "bin": { "amber": "./src/main.ts" },
-  "exports": { ".": "./src/main.ts" },
+  "bin": {
+    "amber": "./src/main.ts"
+  },
+  "exports": {
+    ".": "./src/main.ts"
+  },
   "dependencies": {
     "@amber/adapters": "workspace:*",
     "@amber/core": "workspace:*",
     "@amber/domain": "workspace:*",
     "@amber/web": "workspace:*",
     "@clack/prompts": "^0.8.2",
-    "citty": "^0.1.6"
+    "citty": "^0.1.6",
+    "dotenv": "^17.4.2"
   }
 }
