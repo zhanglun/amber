@@ -175,9 +175,12 @@ export async function renderArticle(
   const chars = capture.wordCount ?? computedChars;
   const minutes = Math.max(1, Math.round(chars / 300));
   const hostname = new URL(capture.sourceUrl).hostname;
-  const publishedLine = capture.publishedAt
-    ? ` · 发布于 ${escapeHtml(capture.publishedAt.slice(0, 10))}`
-    : "";
+  const publishedLine = (() => {
+    if (!capture.publishedAt) return "";
+    const d = new Date(capture.publishedAt);
+    const dateStr = isNaN(d.getTime()) ? capture.publishedAt : d.toISOString().slice(0, 10);
+    return ` · 发布于 ${escapeHtml(dateStr)}`;
+  })();
   const meta =
     `<p class="meta">${chars} 字 · ` +
     `<span class="meta-remaining">约 ${minutes} 分钟</span> · ` +

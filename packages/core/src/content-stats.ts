@@ -1,5 +1,11 @@
 export function computeWordCount(markdown: string): number {
-  return markdown.replace(/```[\s\S]*?```/g, "").replace(/\s/g, "").length;
+  return markdown
+    .replace(/```[\s\S]*?```/g, "")          // fenced code blocks
+    .replace(/`[^`\n]+`/g, "")               // inline code
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")    // images
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // links → keep text, strip URL
+    .replace(/\s/g, "")
+    .length;
 }
 
 export function computeHasCode(markdown: string): boolean {

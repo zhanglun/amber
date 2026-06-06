@@ -58,8 +58,11 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
   });
 
   app.patch("/captures/:id/tags", async (c) => {
+    const id = c.req.param("id");
+    const capture = await readService.get(id);
+    if (!capture) return c.body(null, 404);
     const body = await c.req.json<{ tags: string[] }>();
-    await readService.updateTags(c.req.param("id"), body.tags ?? []);
+    await readService.updateTags(id, body.tags ?? []);
     return c.body(null, 204);
   });
 

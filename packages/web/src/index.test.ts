@@ -108,6 +108,18 @@ describe("createApp", () => {
     expect(svc.updateTags).toHaveBeenCalledWith("c1", ["reading", "tech"]);
   });
 
+  it("PATCH /captures/:id/tags returns 404 for unknown id", async () => {
+    const svc = fakeReadService();
+    const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const res = await app.request("/captures/unknown/tags", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags: ["x"] }),
+    });
+    expect(res.status).toBe(404);
+    expect(svc.updateTags).not.toHaveBeenCalled();
+  });
+
   it("deletes a capture and redirects back to the list", async () => {
     const deleted: string[] = [];
     const app = createApp(fakeReadService(), {

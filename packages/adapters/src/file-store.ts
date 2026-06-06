@@ -92,6 +92,8 @@ export class FileStore implements Store {
     await writeFile(this.file(id), JSON.stringify(capture, null, 2), "utf8");
   }
 
+  // TODO: read-modify-write race — two concurrent visits may lose one readCount increment.
+  // Acceptable for file-store v1; fix when migrating to a database with atomic updates.
   async recordVisit(id: string, visitedAt: string): Promise<void> {
     const capture = await this.get(id);
     if (!capture) return;

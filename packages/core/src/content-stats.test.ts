@@ -14,6 +14,18 @@ describe("computeWordCount", () => {
   it("returns 0 for empty string", () => {
     expect(computeWordCount("")).toBe(0);
   });
+
+  it("excludes inline code", () => {
+    expect(computeWordCount("use `foo` bar")).toBe(6); // "use" + "bar" = 6
+  });
+
+  it("excludes image syntax entirely", () => {
+    expect(computeWordCount("![alt text](https://img.example.com/pic.jpg) word")).toBe(4); // "word" = 4
+  });
+
+  it("keeps link text but excludes URL", () => {
+    expect(computeWordCount("[click here](https://example.com/very/long/path) end")).toBe(12); // "click" + "here" + "end" = 12
+  });
 });
 
 describe("computeHasCode", () => {
