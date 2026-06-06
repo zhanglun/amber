@@ -50,10 +50,10 @@ describe("ReadService", () => {
     expect(store.updateReadStatus).toHaveBeenCalledWith("c1", { readProgress: 70 });
   });
 
-  it("delegates updateTags to the store", async () => {
+  it("normalizes tags before delegating updateTags to the store", async () => {
     const store = fakeStore();
     const svc = new ReadService(store);
-    await svc.updateTags("c1", ["a", "b"]);
+    await svc.updateTags("c1", [" a ", "a", "", "b"]);
     expect(store.updateTags).toHaveBeenCalledWith("c1", ["a", "b"]);
   });
 

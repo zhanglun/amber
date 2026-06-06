@@ -1,4 +1,5 @@
 import type { Capture, CaptureSummary, Store } from "@amber/domain";
+import { normalizeTags } from "./tags.js";
 
 export class ReadService {
   constructor(private readonly store: Store) {}
@@ -23,7 +24,7 @@ export class ReadService {
   }
 
   updateTags(id: string, tags: string[]): Promise<void> {
-    return this.store.updateTags(id, tags);
+    return this.store.updateTags(id, normalizeTags(tags));
   }
 
   recordVisit(id: string, visitedAt: string): Promise<void> {
