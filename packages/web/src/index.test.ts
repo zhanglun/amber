@@ -10,7 +10,6 @@ const captures: Capture[] = [
     content: "# First Body\n\n## Intro\n\ntext\n\n### Detail\n\nmore",
     sourceUrl: "https://example.com/a",
     sourceType: "url",
-    createdAt: "2026-06-02T00:00:00.000Z",
     capturedAt: "2026-06-02T00:00:00.000Z",
   },
   {
@@ -19,7 +18,6 @@ const captures: Capture[] = [
     content: "# Second Body\n\n## Section\n\ntext\n\n### Notes\n\nmore",
     sourceUrl: "https://example.org/b",
     sourceType: "url",
-    createdAt: "2026-06-01T00:00:00.000Z",
     capturedAt: "2026-06-01T00:00:00.000Z",
   },
 ];
@@ -27,11 +25,13 @@ const captures: Capture[] = [
 function fakeReadService(): ReadService {
   return {
     list: async () =>
-      captures.map(({ id, title, sourceUrl, createdAt }) => ({ id, title, sourceUrl, createdAt })),
+      captures.map(({ id, title, sourceUrl, capturedAt }) => ({ id, title, sourceUrl, capturedAt })),
     get: async (id: string) => captures.find((c) => c.id === id) ?? null,
     findBySourceUrl: async (sourceUrl: string) =>
       captures.find((c) => c.sourceUrl === sourceUrl) ?? null,
     updateReadStatus: vi.fn(),
+    updateTags: vi.fn(),
+    recordVisit: vi.fn(),
   } as unknown as ReadService;
 }
 
@@ -77,6 +77,13 @@ describe("createApp", () => {
     expect(html).toContain('href="/captures/c2"');
   });
 
+  it("GET /captures/:id calls recordVisit", async () => {
+    const svc = fakeReadService();
+    const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
+    await app.request("/captures/c1");
+    expect(svc.recordVisit).toHaveBeenCalledWith("c1", expect.any(String));
+  });
+
   it("PATCH /captures/:id/read calls updateReadStatus and returns 204", async () => {
     const svc = fakeReadService();
     const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
@@ -87,6 +94,18 @@ describe("createApp", () => {
     });
     expect(res.status).toBe(204);
     expect(svc.updateReadStatus).toHaveBeenCalledWith("c1", { readProgress: 55 });
+  });
+
+  it("PATCH /captures/:id/tags calls updateTags and returns 204", async () => {
+    const svc = fakeReadService();
+    const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const res = await app.request("/captures/c1/tags", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags: ["reading", "tech"] }),
+    });
+    expect(res.status).toBe(204);
+    expect(svc.updateTags).toHaveBeenCalledWith("c1", ["reading", "tech"]);
   });
 
   it("deletes a capture and redirects back to the list", async () => {

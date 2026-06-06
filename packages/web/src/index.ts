@@ -35,6 +35,7 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
     const id = c.req.param("id");
     const [capture, all] = await Promise.all([readService.get(id), readService.list()]);
     if (!capture) return c.html("<p>Not found. <a href='/'>back</a></p>", 404);
+    void readService.recordVisit(id, new Date().toISOString());
     const idx = all.findIndex((s) => s.id === id);
     const neighbors = idx === -1
       ? { prev: null, next: null }
@@ -53,6 +54,12 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
   app.patch("/captures/:id/read", async (c) => {
     const body = await c.req.json<{ readProgress: number; readAt?: string }>();
     await readService.updateReadStatus(c.req.param("id"), body);
+    return c.body(null, 204);
+  });
+
+  app.patch("/captures/:id/tags", async (c) => {
+    const body = await c.req.json<{ tags: string[] }>();
+    await readService.updateTags(c.req.param("id"), body.tags ?? []);
     return c.body(null, 204);
   });
 

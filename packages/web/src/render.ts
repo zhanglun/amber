@@ -28,7 +28,7 @@ export function groupByWeek(items: CaptureSummary[], now = new Date()): Group[] 
     { label: "更早", items: [] },
   ];
   for (const item of items) {
-    const ts = new Date(item.createdAt).getTime();
+    const ts = new Date(item.capturedAt).getTime();
     if (ts >= thisMonday) groups[0].items.push(item);
     else if (ts >= lastMonday) groups[1].items.push(item);
     else groups[2].items.push(item);
@@ -77,7 +77,7 @@ export function renderList(items: CaptureSummary[]): string {
       const rowsHtml = g.items
         .map((i) => {
           const hostname = new URL(i.sourceUrl).hostname;
-          const date = i.createdAt.slice(0, 10);
+          const date = i.capturedAt.slice(0, 10);
           const rp = escapeHtml(String(i.readProgress ?? ""));
           const ra = escapeHtml(i.readAt ?? "");
           return (
