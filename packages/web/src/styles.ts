@@ -56,6 +56,7 @@ pre code { padding: 0; background: none; }
 .item { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: .6rem 0; border-bottom: 1px solid var(--border); }
 .item-main { min-width: 0; flex: 1; }
 .item-main a { overflow-wrap: anywhere; }
+.excerpt { font-size: .8rem; color: var(--text-muted); margin-top: .15rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .delete-form { flex: 0 0 auto; }
 .delete-btn { border: 0; background: transparent; color: var(--text-muted); cursor: pointer; font: inherit; font-size: .8rem; padding: .25rem .1rem; opacity: .55; }
 .delete-btn:hover, .delete-btn:focus { color: #c2410c; opacity: 1; text-decoration: underline; }

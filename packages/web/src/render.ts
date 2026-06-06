@@ -80,10 +80,15 @@ export function renderList(items: CaptureSummary[]): string {
           const date = i.capturedAt.slice(0, 10);
           const rp = escapeHtml(String(i.readProgress ?? ""));
           const ra = escapeHtml(i.readAt ?? "");
+          const excerptHtml = i.excerpt
+            ? `<div class="excerpt">${escapeHtml(i.excerpt)}</div>`
+            : "";
           return (
             `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}" data-read-progress="${rp}" data-read-at="${ra}">` +
             `<div class="item-main"><a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
-            `<div class="muted">${escapeHtml(hostname)} · ${date}</div></div>` +
+            `<div class="muted">${escapeHtml(hostname)} · ${date}</div>` +
+            excerptHtml +
+            `</div>` +
             `<form class="delete-form" method="post" action="/captures/${escapeHtml(i.id)}/delete" data-title="${escapeHtml(i.title)}">` +
             `<button class="delete-btn" type="submit" title="删除">删除</button>` +
             `</form></div>`
@@ -166,12 +171,19 @@ export async function renderArticle(
     `<div class="topbar-right">${fontCtrl}${switcher}</div>` +
     `</header>`;
 
-  const { chars, minutes } = readingStats(capture.content);
+  const { chars: computedChars, minutes: computedMinutes } = readingStats(capture.content);
+  const chars = capture.wordCount ?? computedChars;
+  const minutes = Math.max(1, Math.round(chars / 300));
   const hostname = new URL(capture.sourceUrl).hostname;
+  const publishedLine = capture.publishedAt
+    ? ` · 发布于 ${escapeHtml(capture.publishedAt.slice(0, 10))}`
+    : "";
   const meta =
     `<p class="meta">${chars} 字 · ` +
     `<span class="meta-remaining">约 ${minutes} 分钟</span> · ` +
-    `<a href="${escapeHtml(capture.sourceUrl)}">${escapeHtml(hostname)} ↗</a></p>`;
+    `<a href="${escapeHtml(capture.sourceUrl)}">${escapeHtml(hostname)} ↗</a>` +
+    publishedLine +
+    `</p>`;
 
   const toc = extractToc(capture.content);
   const hasToc = toc.length >= 2;
