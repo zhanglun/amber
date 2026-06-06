@@ -8,7 +8,7 @@ import { FileStore } from "./file-store.js";
 function cap(over: Partial<Capture>): Capture {
   return {
     id: "c1", title: "T", content: "body", sourceUrl: "https://x/a",
-    sourceType: "url", createdAt: "2026-01-01T00:00:00.000Z", capturedAt: "2026-01-01T00:00:00.000Z",
+    sourceType: "url", capturedAt: "2026-01-01T00:00:00.000Z",
     ...over,
   };
 }
@@ -30,13 +30,31 @@ describe("FileStore", () => {
     expect(await store.get("nope")).toBeNull();
   });
 
-  it("list returns summaries sorted by createdAt desc", async () => {
+  it("list returns summaries sorted by capturedAt desc", async () => {
     const store = new FileStore(dir);
-    await store.insert(cap({ id: "old", createdAt: "2026-01-01T00:00:00.000Z" }));
-    await store.insert(cap({ id: "new", createdAt: "2026-02-01T00:00:00.000Z" }));
+    await store.insert(cap({ id: "old", capturedAt: "2026-01-01T00:00:00.000Z" }));
+    await store.insert(cap({ id: "new", capturedAt: "2026-02-01T00:00:00.000Z" }));
     const list = await store.list();
     expect(list.map((s) => s.id)).toEqual(["new", "old"]);
-    expect(list[0]).toEqual({ id: "new", title: "T", sourceUrl: "https://x/a", createdAt: "2026-02-01T00:00:00.000Z" });
+    expect(list[0]).toMatchObject({ id: "new", title: "T", sourceUrl: "https://x/a", capturedAt: "2026-02-01T00:00:00.000Z" });
+  });
+
+  it("list includes new optional fields when present", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({
+      id: "rich",
+      coverImage: "https://img/cover.jpg",
+      excerpt: "First para.",
+      wordCount: 42,
+      hasCode: true,
+      tags: ["tech", "js"],
+    }));
+    const list = await store.list();
+    expect(list[0].coverImage).toBe("https://img/cover.jpg");
+    expect(list[0].excerpt).toBe("First para.");
+    expect(list[0].wordCount).toBe(42);
+    expect(list[0].hasCode).toBe(true);
+    expect(list[0].tags).toEqual(["tech", "js"]);
   });
 
   it("findBySourceUrl finds a matching capture or null", async () => {
@@ -83,7 +101,7 @@ describe("FileStore", () => {
 
   it("updateReadStatus does not overwrite an existing readAt", async () => {
     const store = new FileStore(dir);
-    await store.insert(cap({ id: "r3", readAt: "2026-05-01T00:00:00.000Z" } as Capture));
+    await store.insert(cap({ id: "r3", readAt: "2026-05-01T00:00:00.000Z" }));
     await store.updateReadStatus("r3", { readProgress: 100, readAt: "2026-06-04T10:00:00.000Z" });
     const updated = await store.get("r3");
     expect(updated?.readAt).toBe("2026-05-01T00:00:00.000Z");
@@ -96,9 +114,50 @@ describe("FileStore", () => {
 
   it("list includes readProgress and readAt when present", async () => {
     const store = new FileStore(dir);
-    await store.insert(cap({ id: "rp1", readProgress: 55, readAt: "2026-06-04T00:00:00.000Z" } as Capture));
+    await store.insert(cap({ id: "rp1", readProgress: 55, readAt: "2026-06-04T00:00:00.000Z" }));
     const list = await store.list();
     expect(list[0].readProgress).toBe(55);
     expect(list[0].readAt).toBe("2026-06-04T00:00:00.000Z");
+  });
+
+  it("updateTags replaces tags on the capture", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "t1" }));
+    await store.updateTags("t1", ["a", "b"]);
+    expect((await store.get("t1"))?.tags).toEqual(["a", "b"]);
+  });
+
+  it("updateTags accepts empty array to clear tags", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "t2", tags: ["x"] }));
+    await store.updateTags("t2", []);
+    expect((await store.get("t2"))?.tags).toEqual([]);
+  });
+
+  it("updateTags is a no-op for unknown ids", async () => {
+    const store = new FileStore(dir);
+    await expect(store.updateTags("ghost", ["a"])).resolves.toBeUndefined();
+  });
+
+  it("recordVisit sets lastOpenedAt and increments readCount", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "v1" }));
+    await store.recordVisit("v1", "2026-06-05T10:00:00.000Z");
+    const updated = await store.get("v1");
+    expect(updated?.lastOpenedAt).toBe("2026-06-05T10:00:00.000Z");
+    expect(updated?.readCount).toBe(1);
+  });
+
+  it("recordVisit increments readCount on each call", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "v2" }));
+    await store.recordVisit("v2", "2026-06-05T10:00:00.000Z");
+    await store.recordVisit("v2", "2026-06-05T11:00:00.000Z");
+    expect((await store.get("v2"))?.readCount).toBe(2);
+  });
+
+  it("recordVisit is a no-op for unknown ids", async () => {
+    const store = new FileStore(dir);
+    await expect(store.recordVisit("ghost", "2026-06-05T10:00:00.000Z")).resolves.toBeUndefined();
   });
 });

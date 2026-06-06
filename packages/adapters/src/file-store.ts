@@ -37,12 +37,18 @@ export class FileStore implements Store {
 
   async list(): Promise<CaptureSummary[]> {
     const all = await this.readAll();
-    all.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    all.sort((a, b) => (a.capturedAt < b.capturedAt ? 1 : -1));
     return all.map((c) => ({
       id: c.id,
       title: c.title,
       sourceUrl: c.sourceUrl,
-      createdAt: c.createdAt,
+      capturedAt: c.capturedAt,
+      publishedAt: c.publishedAt,
+      coverImage: c.coverImage,
+      excerpt: c.excerpt,
+      wordCount: c.wordCount,
+      hasCode: c.hasCode,
+      tags: c.tags,
       readProgress: c.readProgress,
       readAt: c.readAt,
     }));
@@ -76,6 +82,21 @@ export class FileStore implements Store {
     if (status.readAt && !capture.readAt) {
       capture.readAt = status.readAt;
     }
+    await writeFile(this.file(id), JSON.stringify(capture, null, 2), "utf8");
+  }
+
+  async updateTags(id: string, tags: string[]): Promise<void> {
+    const capture = await this.get(id);
+    if (!capture) return;
+    capture.tags = tags;
+    await writeFile(this.file(id), JSON.stringify(capture, null, 2), "utf8");
+  }
+
+  async recordVisit(id: string, visitedAt: string): Promise<void> {
+    const capture = await this.get(id);
+    if (!capture) return;
+    capture.lastOpenedAt = visitedAt;
+    capture.readCount = (capture.readCount ?? 0) + 1;
     await writeFile(this.file(id), JSON.stringify(capture, null, 2), "utf8");
   }
 }
