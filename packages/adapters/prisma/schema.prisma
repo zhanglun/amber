@@ -1,0 +1,28 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Capture {
+  id           String    @id
+  title        String
+  content      String
+  sourceUrl    String    @unique
+  sourceType   String    @default("url")
+  author       String?
+  capturedAt   DateTime
+  publishedAt  String?
+  coverImage   String?
+  excerpt      String?
+  wordCount    Int?
+  hasCode      Boolean?
+  tags         String[]
+  readProgress Int?
+  readAt       DateTime?
+  lastOpenedAt DateTime?
+  readCount    Int       @default(0)
+}
