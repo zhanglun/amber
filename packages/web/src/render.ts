@@ -171,7 +171,7 @@ export async function renderArticle(
     `<div class="topbar-right">${fontCtrl}${switcher}</div>` +
     `</header>`;
 
-  const { chars: computedChars, minutes: computedMinutes } = readingStats(capture.content);
+  const { chars: computedChars } = readingStats(capture.content);
   const chars = capture.wordCount ?? computedChars;
   const minutes = Math.max(1, Math.round(chars / 300));
   const hostname = new URL(capture.sourceUrl).hostname;
