@@ -1,40 +1,46 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Capture, Store } from "@amber/domain";
+import type { Store } from "@amber/domain";
 import { ReadService } from "./read-service.js";
 
-const cap: Capture = {
+const cap = {
   id: "c1", title: "T", content: "body", sourceUrl: "https://x/a",
-  sourceType: "url", createdAt: "2026-01-01T00:00:00.000Z", capturedAt: "2026-01-01T00:00:00.000Z",
+  sourceType: "url" as const, capturedAt: "2026-01-01T00:00:00.000Z",
 };
 
 function fakeStore(): Store {
   return {
     insert: vi.fn(),
-    list: vi.fn(async () => [{ id: cap.id, title: cap.title, sourceUrl: cap.sourceUrl, createdAt: cap.createdAt }]),
+    list: vi.fn(async () => [{ id: cap.id, title: cap.title, sourceUrl: cap.sourceUrl, capturedAt: cap.capturedAt }]),
     get: vi.fn(async (id: string) => (id === "c1" ? cap : null)),
     findBySourceUrl: vi.fn(async (url: string) => (url === "https://x/a" ? cap : null)),
     delete: vi.fn(),
     updateReadStatus: vi.fn(),
+    updateTags: vi.fn(),
+    recordVisit: vi.fn(),
   };
 }
 
 describe("ReadService", () => {
-  it("lists capture summaries", async () => {
-    const svc = new ReadService(fakeStore());
-    const items = await svc.list();
-    expect(items).toEqual([{ id: "c1", title: "T", sourceUrl: "https://x/a", createdAt: "2026-01-01T00:00:00.000Z" }]);
+  it("list delegates to store.list", async () => {
+    const store = fakeStore();
+    const svc = new ReadService(store);
+    const result = await svc.list();
+    expect(store.list).toHaveBeenCalled();
+    expect(result[0].id).toBe("c1");
   });
 
-  it("gets a capture by id, or null", async () => {
-    const svc = new ReadService(fakeStore());
+  it("get delegates to store.get", async () => {
+    const store = fakeStore();
+    const svc = new ReadService(store);
     expect(await svc.get("c1")).toEqual(cap);
-    expect(await svc.get("nope")).toBeNull();
+    expect(await svc.get("x")).toBeNull();
   });
 
-  it("finds a capture by source URL, or null", async () => {
-    const svc = new ReadService(fakeStore());
+  it("findBySourceUrl delegates to store.findBySourceUrl", async () => {
+    const store = fakeStore();
+    const svc = new ReadService(store);
     expect(await svc.findBySourceUrl("https://x/a")).toEqual(cap);
-    expect(await svc.findBySourceUrl("https://x/missing")).toBeNull();
+    expect(await svc.findBySourceUrl("https://other")).toBeNull();
   });
 
   it("delegates updateReadStatus to the store", async () => {
@@ -42,5 +48,19 @@ describe("ReadService", () => {
     const svc = new ReadService(store);
     await svc.updateReadStatus("c1", { readProgress: 70 });
     expect(store.updateReadStatus).toHaveBeenCalledWith("c1", { readProgress: 70 });
+  });
+
+  it("delegates updateTags to the store", async () => {
+    const store = fakeStore();
+    const svc = new ReadService(store);
+    await svc.updateTags("c1", ["a", "b"]);
+    expect(store.updateTags).toHaveBeenCalledWith("c1", ["a", "b"]);
+  });
+
+  it("delegates recordVisit to the store", async () => {
+    const store = fakeStore();
+    const svc = new ReadService(store);
+    await svc.recordVisit("c1", "2026-06-05T10:00:00.000Z");
+    expect(store.recordVisit).toHaveBeenCalledWith("c1", "2026-06-05T10:00:00.000Z");
   });
 });

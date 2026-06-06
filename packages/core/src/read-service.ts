@@ -21,4 +21,12 @@ export class ReadService {
   ): Promise<void> {
     return this.store.updateReadStatus(id, status);
   }
+
+  updateTags(id: string, tags: string[]): Promise<void> {
+    return this.store.updateTags(id, tags);
+  }
+
+  recordVisit(id: string, visitedAt: string): Promise<void> {
+    return this.store.recordVisit(id, visitedAt);
+  }
 }
