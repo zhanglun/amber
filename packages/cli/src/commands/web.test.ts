@@ -31,6 +31,7 @@ function fakeRuntime(info: PidInfo | null): WebRuntime & { calls: string[] } {
       blobsDir: "/tmp/blobs",
       dataDir: "/tmp/amber-data",
       deleteCapture: async () => {},
+      dispose: async () => {},
       importService: {} as never,
       readService: {} as never,
     }),

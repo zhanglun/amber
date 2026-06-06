@@ -74,6 +74,15 @@ pre code { padding: 0; background: none; }
 .header-right { display: flex; align-items: center; gap: 1rem; }
 .search-bar input { border: 1px solid var(--border); border-radius: 6px; padding: .3rem .6rem; font-size: .85rem; background: var(--bg); color: var(--text); width: 180px; }
 .search-bar input:focus { outline: none; border-color: var(--link); }
+.tag-bar { display: flex; flex-wrap: wrap; gap: .4rem; margin: .6rem 0 1rem; }
+.tag-filter, .tag-filter-all { border: 1px solid var(--border); border-radius: 999px; padding: .15rem .6rem; font-size: .78rem; background: var(--bg); color: var(--text-muted); cursor: pointer; }
+.tag-filter.active, .tag-filter-all.active { background: var(--link); border-color: var(--link); color: #fff; }
+.tag-editor { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .35rem; align-items: center; }
+.tag-chip { display: inline-flex; align-items: center; gap: .2rem; border: 1px solid var(--border); border-radius: 999px; padding: .1rem .5rem; font-size: .75rem; color: var(--text-muted); }
+.tag-remove { border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: .85rem; line-height: 1; padding: 0; }
+.tag-remove:hover { color: var(--link); }
+.tag-add { border: 1px dashed var(--border); border-radius: 999px; background: none; color: var(--text-muted); cursor: pointer; font-size: .8rem; line-height: 1; padding: .1rem .45rem; }
+.tag-add:hover { color: var(--link); border-color: var(--link); }
 .group { margin-bottom: 1.5rem; }
 .group-label { font-size: .8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); padding-bottom: .3rem; margin-bottom: .5rem; }
 .group-label .count { font-weight: 400; margin-left: .4rem; }

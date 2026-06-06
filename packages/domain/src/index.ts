@@ -58,6 +58,8 @@ export interface Store {
   updateReadStatus(id: string, status: { readProgress: number; readAt?: string }): Promise<void>;
   updateTags(id: string, tags: string[]): Promise<void>;
   recordVisit(id: string, visitedAt: string): Promise<void>;
+  /** 释放底层资源（如数据库连接）。无连接的实现可不提供。 */
+  disconnect?(): Promise<void>;
 }
 
 /** 二进制/对象存储。`put` 返回公开 URL。 */
