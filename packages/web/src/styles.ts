@@ -54,7 +54,7 @@ pre code { padding: 0; background: none; }
 .muted { color: var(--text-muted); font-size: .85rem; }
 .header { display: flex; justify-content: space-between; align-items: center; padding: .8rem 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
 .item { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: .6rem 0; border-bottom: 1px solid var(--border); }
-.item-main { min-width: 0; }
+.item-main { min-width: 0; flex: 1; }
 .item-main a { overflow-wrap: anywhere; }
 .delete-form { flex: 0 0 auto; }
 .delete-btn { border: 0; background: transparent; color: var(--text-muted); cursor: pointer; font: inherit; font-size: .8rem; padding: .25rem .1rem; opacity: .55; }
