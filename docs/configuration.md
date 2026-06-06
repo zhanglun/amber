@@ -32,15 +32,15 @@ DATABASE_URL=postgres://amber:yourpassword@localhost:5432/amber
 
 ### 3. 初始化表结构
 
-Prisma schema 在 `packages/adapters/prisma/schema.prisma`，推送到数据库：
+Prisma schema 在 `packages/adapters/prisma/schema.prisma`，在根目录推送到数据库：
 
 ```bash
-pnpm --filter @amber/adapters exec prisma db push --schema=prisma/schema.prisma
+pnpm db:push
 ```
 
 成功输出：`Your database is now in sync with your Prisma schema.`
 
-> 后续 schema 变更同样用此命令同步。生产环境建议改用 `prisma migrate deploy`（有迁移历史记录）。
+> `db:push` 会先加载根目录 `.env` 再执行 `prisma db push`（`prisma` CLI 自身不会读根目录 `.env`，故由脚本注入环境变量）。后续 schema 变更同样用此命令同步。生产环境建议改用 `prisma migrate deploy`（有迁移历史记录）。
 
 ### 4. 启动
 
@@ -49,6 +49,29 @@ pnpm amber web
 ```
 
 `DATABASE_URL` 存在时，Amber 自动使用 PostgresStore，否则回退到文件存储。
+
+### 使用 Supabase
+
+Supabase 提供托管 PostgreSQL，按上面的步骤接入即可，但有两个坑要注意。
+
+**1. 密码必须 URL 编码**
+
+数据库密码若含特殊字符（`@ : / ? # & ,` 等），直接写进连接串会被解析错误（典型报错是 `Can't reach database server at` 后面跟一段乱码主机名）。两种处理方式：
+
+- 编码密码：`node -e "console.log(encodeURIComponent('你的密码'))"`，把输出填进连接串；
+- 或在 Dashboard「Reset database password」重置成只含字母数字的密码，省去编码。
+
+**2. 统一用 Session Pooler（5432）**
+
+Supabase 提供 Session pooler（5432）和 Transaction pooler（6543）。Amber 是常驻单进程，**统一用 Session pooler 即可，一个连接串同时满足建表和运行时**：
+
+```bash
+DATABASE_URL=postgresql://postgres.<project-ref>:<编码后的密码>@aws-1-<region>.pooler.supabase.com:5432/postgres
+```
+
+> Transaction pooler（6543）面向 serverless 大量瞬时连接，不支持 DDL 和 prepared statements，Prisma 需额外加 `?pgbouncer=true`，且无法用于 `prisma db push`。常驻进程没必要用它。
+
+`<project-ref>`、`<region>` 从 Dashboard 的 Connect 面板复制。配好后照常 `pnpm db:push` 建表、`pnpm amber web` 启动。
 
 ---
 

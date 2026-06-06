@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p packages/domain/tsconfig.json && tsc --noEmit -p packages/core/tsconfig.json && tsc --noEmit -p packages/adapters/tsconfig.json && tsc --noEmit -p packages/web/tsconfig.json && tsc --noEmit -p packages/cli/tsconfig.json",
-    "amber": "tsx packages/cli/src/main.ts"
+    "amber": "tsx packages/cli/src/main.ts",
+    "db:push": "test -f .env && { set -a; . ./.env; set +a; }; pnpm --filter @amber/adapters exec prisma db push --schema=prisma/schema.prisma"
   },
   "devDependencies": {
     "tsx": "^4.21.0",
