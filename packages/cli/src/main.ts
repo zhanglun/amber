@@ -5,6 +5,7 @@ import { listCommand } from "./commands/list.js";
 import { webCommand } from "./commands/web.js";
 import { deleteCommand } from "./commands/delete.js";
 import { reimportCommand } from "./commands/reimport.js";
+import { migrateCommand } from "./commands/migrate.js";
 
 const main = defineCommand({
   meta: { name: "amber", description: "Personal Knowledge Pipeline" },
@@ -14,6 +15,7 @@ const main = defineCommand({
     web: webCommand,
     delete: deleteCommand,
     reimport: reimportCommand,
+    migrate: migrateCommand,
   },
 });
 
