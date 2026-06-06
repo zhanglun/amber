@@ -18,6 +18,7 @@ export function toRawCapture(result: CaptureResult): RawCapture {
     markdown,
     author: result.author,
     publishedAt: result.publishedAt,
+    coverImage: result.coverImage,
     assets,
   };
 }
