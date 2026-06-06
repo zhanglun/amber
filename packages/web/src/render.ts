@@ -9,6 +9,7 @@ import {
   getDeleteConfirmScriptHtml,
   getReaderEnhancementsScriptHtml,
   getReadIndicatorScriptHtml,
+  getTagEditorScriptHtml,
 } from "./scripts.js";
 import { renderMarkdown } from "./highlight.js";
 import { extractToc, type TocItem } from "./toc.js";
@@ -44,6 +45,38 @@ export function escapeHtml(s: string): string {
     .replaceAll('"', "&quot;");
 }
 
+function collectTags(items: CaptureSummary[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of items) {
+    for (const t of item.tags ?? []) {
+      if (!seen.has(t)) {
+        seen.add(t);
+        out.push(t);
+      }
+    }
+  }
+  return out;
+}
+
+function renderTagBar(allTags: string[]): string {
+  if (allTags.length === 0) return "";
+  const chips = allTags
+    .map((t) => `<button class="tag-filter" type="button" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`)
+    .join("");
+  return `<div class="tag-bar"><button class="tag-filter-all" type="button">全部</button>${chips}</div>`;
+}
+
+function renderTagEditor(captureId: string, tags: string[]): string {
+  const chips = tags
+    .map(
+      (t) =>
+        `<span class="tag-chip" data-tag="${escapeHtml(t)}">${escapeHtml(t)}<button class="tag-remove" type="button" title="移除">×</button></span>`
+    )
+    .join("");
+  return `<div class="tag-editor" data-capture-id="${escapeHtml(captureId)}">${chips}<button class="tag-add" type="button" title="添加标签">+</button></div>`;
+}
+
 export function readingStats(markdown: string): { chars: number; minutes: number } {
   const chars = markdown.replace(/```[\s\S]*?```/g, "").replace(/\s/g, "").length;
   const minutes = Math.max(1, Math.round(chars / 300));
@@ -65,6 +98,7 @@ export function renderList(items: CaptureSummary[]): string {
   const searchBar = getSearchBarHtml();
   const switcher = getThemeSwitcherHtml();
   const header = `<div class="header"><h1>Amber</h1><div class="header-right">${searchBar}${switcher}</div></div>`;
+  const tagBar = renderTagBar(collectTags(items));
 
   if (items.length === 0) {
     const body = header + "<p class='muted'>No captures yet. Run: amber import &lt;url&gt;</p>";
@@ -80,14 +114,17 @@ export function renderList(items: CaptureSummary[]): string {
           const date = i.capturedAt.slice(0, 10);
           const rp = escapeHtml(String(i.readProgress ?? ""));
           const ra = escapeHtml(i.readAt ?? "");
+          const tags = i.tags ?? [];
+          const tagsAttr = escapeHtml(JSON.stringify(tags));
           const excerptHtml = i.excerpt
             ? `<div class="excerpt">${escapeHtml(i.excerpt)}</div>`
             : "";
           return (
-            `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}" data-read-progress="${rp}" data-read-at="${ra}">` +
+            `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}" data-tags="${tagsAttr}" data-read-progress="${rp}" data-read-at="${ra}">` +
             `<div class="item-main"><a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
             `<div class="muted">${escapeHtml(hostname)} · ${date}</div>` +
             excerptHtml +
+            renderTagEditor(i.id, tags) +
             `</div>` +
             `<form class="delete-form" method="post" action="/captures/${escapeHtml(i.id)}/delete" data-title="${escapeHtml(i.title)}">` +
             `<button class="delete-btn" type="submit" title="删除">删除</button>` +
@@ -104,7 +141,7 @@ export function renderList(items: CaptureSummary[]): string {
     })
     .join("");
 
-  const body = header + sectionsHtml + getListFilterScriptHtml() + getDeleteConfirmScriptHtml() + getReadIndicatorScriptHtml();
+  const body = header + tagBar + sectionsHtml + getListFilterScriptHtml() + getDeleteConfirmScriptHtml() + getReadIndicatorScriptHtml() + getTagEditorScriptHtml();
   return page("Amber", body);
 }
 
@@ -204,6 +241,7 @@ export async function renderArticle(
     `<main class="article-main"><article class="article-content">` +
     `<h1 class="article-title-anchor">${title}</h1>` +
     meta +
+    renderTagEditor(capture.id, capture.tags ?? []) +
     (hasToc ? renderMobileToc(toc) : "") +
     content +
     footer +
@@ -213,6 +251,7 @@ export async function renderArticle(
     `<button class="scroll-top-btn" title="回到顶部" aria-label="回到顶部">↑</button>` +
     `</div>` +
     getReaderHeaderScriptHtml() +
-    getReaderEnhancementsScriptHtml({ hasPrev: !!neighbors.prev, hasNext: !!neighbors.next });
+    getReaderEnhancementsScriptHtml({ hasPrev: !!neighbors.prev, hasNext: !!neighbors.next }) +
+    getTagEditorScriptHtml();
   return page(capture.title, body, "article-body");
 }

@@ -214,3 +214,52 @@ describe("renderArticle", () => {
     expect(html).toContain("not-a-date");
   });
 });
+
+describe("renderList tags", () => {
+  it("renders a top tag bar with distinct tags from all items", () => {
+    const items: CaptureSummary[] = [
+      { id: "a", title: "A", sourceUrl: "https://a.com", capturedAt: "2026-06-08T00:00:00.000Z", tags: ["react", "ui"] },
+      { id: "b", title: "B", sourceUrl: "https://b.com", capturedAt: "2026-06-08T00:00:00.000Z", tags: ["react", "ai"] },
+    ];
+    const html = renderList(items);
+    expect(html).toContain("tag-bar");
+    expect(html).toContain('class="tag-filter-all"');
+    expect(html).toContain('data-tag="react"');
+    expect(html).toContain('data-tag="ui"');
+    expect(html).toContain('data-tag="ai"');
+    expect(html.match(/<button class="tag-filter" type="button" data-tag="react">/g)?.length).toBe(1);
+  });
+
+  it("omits the tag bar when no item has tags", () => {
+    const items: CaptureSummary[] = [
+      { id: "a", title: "A", sourceUrl: "https://a.com", capturedAt: "2026-06-08T00:00:00.000Z" },
+    ];
+    expect(renderList(items)).not.toContain("tag-bar");
+  });
+
+  it("puts each item's tags into data-tags as JSON and renders an editor", () => {
+    const items: CaptureSummary[] = [
+      { id: "a", title: "A", sourceUrl: "https://a.com", capturedAt: "2026-06-08T00:00:00.000Z", tags: ["react"] },
+    ];
+    const html = renderList(items);
+    expect(html).toContain('data-tags="[&quot;react&quot;]"');
+    expect(html).toContain('class="tag-editor" data-capture-id="a"');
+    expect(html).toContain('class="tag-add"');
+  });
+});
+
+describe("renderArticle tags", () => {
+  it("renders an editable tag region for the capture", async () => {
+    const html = await renderArticle({ ...CAPTURE, tags: ["react", "ui"] });
+    expect(html).toContain(`class="tag-editor" data-capture-id="${CAPTURE.id}"`);
+    expect(html).toContain('data-tag="react"');
+    expect(html).toContain('data-tag="ui"');
+    expect(html).toContain('class="tag-add"');
+  });
+
+  it("renders an empty tag editor (just the add button) when no tags", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).toContain('class="tag-editor"');
+    expect(html).toContain('class="tag-add"');
+  });
+});
