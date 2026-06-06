@@ -1,18 +1,16 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import type { Capture, CaptureSummary, Store } from "@amber/domain";
 
-// Prisma returns DateTime fields as JS Date objects; null means optional field not set
-type SummaryRow = {
-  id: string; title: string; sourceUrl: string; capturedAt: Date;
-  publishedAt: string | null; coverImage: string | null; excerpt: string | null;
-  wordCount: number | null; hasCode: boolean | null; tags: string[];
-  readProgress: number | null; readAt: Date | null;
-};
+// Prisma inferred types for the two query shapes used below
+type SummaryRow = Prisma.CaptureGetPayload<{
+  select: {
+    id: true; title: true; sourceUrl: true; capturedAt: true;
+    publishedAt: true; coverImage: true; excerpt: true; wordCount: true;
+    hasCode: true; tags: true; readProgress: true; readAt: true;
+  };
+}>;
 
-type FullRow = SummaryRow & {
-  content: string; sourceType: string; author: string | null;
-  lastOpenedAt: Date | null; readCount: number;
-};
+type FullRow = Prisma.CaptureGetPayload<object>;
 
 function rowToSummary(row: SummaryRow): CaptureSummary {
   return {
@@ -31,13 +29,13 @@ function rowToSummary(row: SummaryRow): CaptureSummary {
   };
 }
 
-function rowToCapture(row: FullRow): Capture {
+function rowToCapture(row: NonNullable<FullRow>): Capture {
   return {
     id: row.id,
     title: row.title,
     content: row.content,
     sourceUrl: row.sourceUrl,
-    sourceType: "url",
+    sourceType: row.sourceType as Capture["sourceType"],
     author: row.author ?? undefined,
     capturedAt: row.capturedAt.toISOString(),
     publishedAt: row.publishedAt ?? undefined,
@@ -104,23 +102,23 @@ export class PostgresStore implements Store {
         hasCode: true, tags: true, readProgress: true, readAt: true,
       },
     });
-    return rows.map((r) => rowToSummary(r as SummaryRow));
+    return rows.map(rowToSummary);
   }
 
   async get(id: string): Promise<Capture | null> {
     const row = await this.prisma.capture.findUnique({ where: { id } });
-    return row ? rowToCapture(row as unknown as FullRow) : null;
+    return row ? rowToCapture(row) : null;
   }
 
   async findBySourceUrl(url: string): Promise<Capture | null> {
     const row = await this.prisma.capture.findUnique({
       where: { sourceUrl: url },
     });
-    return row ? rowToCapture(row as unknown as FullRow) : null;
+    return row ? rowToCapture(row) : null;
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.capture.delete({ where: { id } }).catch(() => {});
+    await this.prisma.capture.delete({ where: { id } }).catch((e: unknown) => { if ((e as { code?: string })?.code !== "P2025") throw e; });
   }
 
   async updateReadStatus(
@@ -146,7 +144,7 @@ export class PostgresStore implements Store {
   async updateTags(id: string, tags: string[]): Promise<void> {
     await this.prisma.capture
       .update({ where: { id }, data: { tags } })
-      .catch(() => {});
+      .catch((e: unknown) => { if ((e as { code?: string })?.code !== "P2025") throw e; });
   }
 
   async recordVisit(id: string, visitedAt: string): Promise<void> {
@@ -158,6 +156,6 @@ export class PostgresStore implements Store {
           readCount: { increment: 1 },
         },
       })
-      .catch(() => {});
+      .catch((e: unknown) => { if ((e as { code?: string })?.code !== "P2025") throw e; });
   }
 }
