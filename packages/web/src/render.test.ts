@@ -201,4 +201,16 @@ describe("renderArticle", () => {
     const html = await renderArticle({ ...CAPTURE, publishedAt: "2024-03-15" });
     expect(html).toContain("2024-03-15");
   });
+
+  it("publishedAt with timezone offset shows the calendar date, not UTC date", async () => {
+    // "2024-03-15T01:00:00+08:00" is UTC 2024-03-14 — must still show 2024-03-15
+    const html = await renderArticle({ ...CAPTURE, publishedAt: "2024-03-15T01:00:00+08:00" });
+    expect(html).toContain("2024-03-15");
+    expect(html).not.toContain("2024-03-14");
+  });
+
+  it("publishedAt with invalid format shows the raw string", async () => {
+    const html = await renderArticle({ ...CAPTURE, publishedAt: "not-a-date" });
+    expect(html).toContain("not-a-date");
+  });
 });

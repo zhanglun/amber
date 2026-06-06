@@ -177,8 +177,10 @@ export async function renderArticle(
   const hostname = new URL(capture.sourceUrl).hostname;
   const publishedLine = (() => {
     if (!capture.publishedAt) return "";
-    const d = new Date(capture.publishedAt);
-    const dateStr = isNaN(d.getTime()) ? capture.publishedAt : d.toISOString().slice(0, 10);
+    // Prefer ISO prefix to avoid UTC conversion shifting the date across midnight.
+    const dateStr = /^\d{4}-\d{2}-\d{2}/.test(capture.publishedAt)
+      ? capture.publishedAt.slice(0, 10)
+      : (() => { const d = new Date(capture.publishedAt!); return isNaN(d.getTime()) ? capture.publishedAt! : d.toISOString().slice(0, 10); })();
     return ` · 发布于 ${escapeHtml(dateStr)}`;
   })();
   const meta =
