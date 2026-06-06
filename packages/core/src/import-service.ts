@@ -1,5 +1,6 @@
 import type { BlobStore, Capture, Source, Store } from "@amber/domain";
 import { assetKey } from "./asset-key.js";
+import { computeExcerpt, computeHasCode, computeWordCount } from "./content-stats.js";
 
 export interface ImportDeps {
   now?: () => Date;
@@ -24,8 +25,6 @@ export class ImportService {
     this.newId = deps.newId ?? (() => crypto.randomUUID());
   }
 
-  /** 导入一个 URL。返回 capture id（若已导入则返回既有 id）。
-   *  传入 options.forceId 时跳过去重检查，用指定 id 覆盖写入。 */
   async run(url: string, options?: ImportOptions): Promise<string> {
     if (!options?.forceId) {
       const existing = await this.store.findBySourceUrl(url);
@@ -43,7 +42,7 @@ export class ImportService {
       content = content.replaceAll(asset.placeholder, publicUrl);
     }
 
-    const nowIso = this.now().toISOString();
+    const capturedAt = this.now().toISOString();
     const capture: Capture = {
       id,
       title: raw.title,
@@ -51,8 +50,12 @@ export class ImportService {
       sourceUrl: url,
       sourceType: "url",
       author: raw.author,
-      createdAt: raw.publishedAt ?? nowIso,
-      capturedAt: nowIso,
+      capturedAt,
+      publishedAt: raw.publishedAt,
+      coverImage: raw.coverImage,
+      excerpt: computeExcerpt(content),
+      wordCount: computeWordCount(content),
+      hasCode: computeHasCode(content),
     };
     await this.store.insert(capture);
     return id;

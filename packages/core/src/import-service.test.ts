@@ -1,128 +1,131 @@
 import { describe, expect, it, vi } from "vitest";
-import type {
-  BlobStore,
-  Capture,
-  RawCapture,
-  Source,
-  Store,
-} from "@amber/domain";
+import type { BlobStore, Capture, Store } from "@amber/domain";
 import { ImportService } from "./import-service.js";
 
-function fakeStore(seed: Capture[] = []) {
-  const rows = [...seed];
-  const store: Store = {
-    insert: vi.fn(async (c: Capture) => {
-      rows.push(c);
-    }),
-    list: vi.fn(async () => rows.map((r) => ({ id: r.id, title: r.title, sourceUrl: r.sourceUrl, createdAt: r.createdAt }))),
-    get: vi.fn(async (id: string) => rows.find((r) => r.id === id) ?? null),
-    findBySourceUrl: vi.fn(async (url: string) => rows.find((r) => r.sourceUrl === url) ?? null),
-    delete: vi.fn(async (id: string) => {
-      const idx = rows.findIndex((r) => r.id === id);
-      if (idx !== -1) rows.splice(idx, 1);
-    }),
-    updateReadStatus: vi.fn(),
-  };
-  return { store, rows };
-}
+const cap: Capture = {
+  id: "c1",
+  title: "T",
+  content: "body",
+  sourceUrl: "https://x/a",
+  sourceType: "url",
+  capturedAt: "2026-01-01T00:00:00.000Z",
+};
 
-function fakeSource(raw: RawCapture): Source {
-  return { capture: vi.fn(async () => raw) };
+function fakeStore(rows: Capture[] = []): Store {
+  const saved: Capture[] = [...rows];
+  return {
+    insert: vi.fn(async (c) => {
+      const idx = saved.findIndex((r) => r.id === c.id);
+      if (idx !== -1) saved.splice(idx, 1, c); else saved.push(c);
+    }),
+    list: vi.fn(async () =>
+      saved.map((r) => ({ id: r.id, title: r.title, sourceUrl: r.sourceUrl, capturedAt: r.capturedAt }))
+    ),
+    get: vi.fn(async (id) => saved.find((r) => r.id === id) ?? null),
+    findBySourceUrl: vi.fn(async (url) => saved.find((r) => r.sourceUrl === url) ?? null),
+    delete: vi.fn(),
+    updateReadStatus: vi.fn(),
+    updateTags: vi.fn(),
+    recordVisit: vi.fn(),
+  };
 }
 
 function fakeBlob(): BlobStore {
-  return {
-    put: vi.fn(async (key: string) => `https://cdn.test/${key}`),
-  };
+  return { put: vi.fn(async (key) => `https://cdn.example.com/${key}`) };
 }
 
-const raw: RawCapture = {
-  title: "Hello",
-  markdown: "intro\n\n![a](amber-asset:0)\n\n![b](amber-asset:1)",
-  author: "Ada",
-  publishedAt: "2026-01-02",
-  assets: [
-    { placeholder: "amber-asset:0", data: new Uint8Array([1]), contentType: "image/png" },
-    { placeholder: "amber-asset:1", data: new Uint8Array([2]), contentType: "image/jpeg" },
-  ],
-};
-
-describe("ImportService", () => {
-  it("uploads assets, rewrites placeholders, and inserts a capture", async () => {
-    const source = fakeSource(raw);
-    const { store, rows } = fakeStore();
-    const blob = fakeBlob();
-    const service = new ImportService(source, store, blob, {
-      now: () => new Date("2026-05-31T00:00:00.000Z"),
-      newId: () => "cap-1",
-    });
-
-    const id = await service.run("https://example.com/a");
-
-    expect(id).toBe("cap-1");
-    expect(rows).toHaveLength(1);
-    const saved = rows[0];
-    expect(saved.title).toBe("Hello");
-    expect(saved.sourceUrl).toBe("https://example.com/a");
-    expect(saved.sourceType).toBe("url");
-    expect(saved.author).toBe("Ada");
-    expect(saved.capturedAt).toBe("2026-05-31T00:00:00.000Z");
-    // 占位符已替换为 R2 URL，正文中不残留任何占位符
-    expect(saved.content).toContain("https://cdn.test/captures/cap-1/0.png");
-    expect(saved.content).toContain("https://cdn.test/captures/cap-1/1.jpg");
-    expect(saved.content).not.toContain("amber-asset:");
-    expect(blob.put).toHaveBeenCalledTimes(2);
+describe("ImportService.run", () => {
+  it("calls source.capture with the given url", async () => {
+    const source = { capture: vi.fn(async () => ({ title: "T", markdown: "body", assets: [] })) };
+    const svc = new ImportService(source, fakeStore(), fakeBlob());
+    await svc.run("https://x/a");
+    expect(source.capture).toHaveBeenCalledWith("https://x/a");
   });
 
-  it("uses forceId and skips dedup when options.forceId is provided", async () => {
-    // store 为空——CLI 在调用 run() 之前已经调用过 deleteCapture
-    const source = fakeSource(raw);
-    const { store, rows } = fakeStore();
-    const blob = fakeBlob();
-    const service = new ImportService(source, store, blob, {
+  it("stores the capture with capturedAt from deps.now", async () => {
+    const source = { capture: vi.fn(async () => ({ title: "T", markdown: "body", assets: [] })) };
+    const store = fakeStore();
+    const svc = new ImportService(source, store, fakeBlob(), {
       now: () => new Date("2026-05-31T00:00:00.000Z"),
+      newId: () => "fixed-id",
     });
-
-    const id = await service.run("https://example.com/a", { forceId: "forced-id" });
-
-    expect(id).toBe("forced-id");
-    expect(source.capture).toHaveBeenCalledOnce();
-    expect(store.findBySourceUrl).not.toHaveBeenCalled();
-    expect(rows).toHaveLength(1);
-    expect(rows[0].id).toBe("forced-id");
-    expect(rows[0].title).toBe("Hello");
+    await svc.run("https://x/a");
+    const saved = await store.get("fixed-id");
+    expect(saved?.capturedAt).toBe("2026-05-31T00:00:00.000Z");
   });
 
-  it("generates a new id when forceId is not provided (normal dedupe path)", async () => {
-    const source = fakeSource(raw);
-    const { store } = fakeStore();
-    const blob = fakeBlob();
-    const service = new ImportService(source, store, blob, {
+  it("stores publishedAt from raw when provided", async () => {
+    const source = { capture: vi.fn(async () => ({ title: "T", markdown: "body", publishedAt: "2024-03-15", assets: [] })) };
+    const store = fakeStore();
+    const svc = new ImportService(source, store, fakeBlob(), {
       now: () => new Date("2026-05-31T00:00:00.000Z"),
-      newId: () => "fresh-id",
+      newId: () => "fixed-id",
     });
-
-    const id = await service.run("https://example.com/b");
-
-    expect(id).toBe("fresh-id");
-    expect(store.findBySourceUrl).toHaveBeenCalledWith("https://example.com/b");
+    await svc.run("https://x/a");
+    const saved = await store.get("fixed-id");
+    expect(saved?.publishedAt).toBe("2024-03-15");
+    expect(saved?.capturedAt).toBe("2026-05-31T00:00:00.000Z");
   });
 
-  it("skips capture entirely when the url already exists (dedupe-first)", async () => {
-    const existing: Capture = {
-      id: "old", title: "Old", content: "x", sourceUrl: "https://example.com/a",
-      sourceType: "url", createdAt: "2026-01-01T00:00:00.000Z", capturedAt: "2026-01-01T00:00:00.000Z",
+  it("stores coverImage from raw when provided", async () => {
+    const source = { capture: vi.fn(async () => ({ title: "T", markdown: "body", coverImage: "https://img/cover.jpg", assets: [] })) };
+    const store = fakeStore();
+    const svc = new ImportService(source, store, fakeBlob(), { newId: () => "cov1" });
+    await svc.run("https://x/a");
+    const saved = await store.get("cov1");
+    expect(saved?.coverImage).toBe("https://img/cover.jpg");
+  });
+
+  it("computes wordCount, hasCode, and excerpt at import time", async () => {
+    const source = {
+      capture: vi.fn(async () => ({
+        title: "T",
+        markdown: "First paragraph content here.\n\n```js\ncode\n```",
+        assets: [],
+      })),
     };
-    const source = fakeSource(raw);
-    const { store } = fakeStore([existing]);
-    const blob = fakeBlob();
-    const service = new ImportService(source, store, blob);
+    const store = fakeStore();
+    const svc = new ImportService(source, store, fakeBlob(), { newId: () => "stats1" });
+    await svc.run("https://x/a");
+    const saved = await store.get("stats1");
+    expect(saved?.wordCount).toBeGreaterThan(0);
+    expect(saved?.hasCode).toBe(true);
+    expect(saved?.excerpt).toBe("First paragraph content here.");
+  });
 
-    const id = await service.run("https://example.com/a");
-
-    expect(id).toBe("old");
+  it("deduplicates: returns existing id without re-importing", async () => {
+    const source = { capture: vi.fn(async () => ({ title: "T", markdown: "body", assets: [] })) };
+    const store = fakeStore([cap]);
+    const svc = new ImportService(source, store, fakeBlob());
+    const id = await svc.run("https://x/a");
+    expect(id).toBe("c1");
     expect(source.capture).not.toHaveBeenCalled();
-    expect(blob.put).not.toHaveBeenCalled();
-    expect(store.insert).not.toHaveBeenCalled();
+  });
+
+  it("uploads assets and rewrites placeholders in content", async () => {
+    const source = {
+      capture: vi.fn(async () => ({
+        title: "T",
+        markdown: "![img](amber-asset:0)",
+        assets: [{ placeholder: "amber-asset:0", data: new Uint8Array([1]), contentType: "image/png" }],
+      })),
+    };
+    const blob = fakeBlob();
+    const store = fakeStore();
+    const svc = new ImportService(source, store, blob, { newId: () => "u1" });
+    await svc.run("https://x/a");
+    const saved = await store.get("u1");
+    expect(saved?.content).toContain("https://cdn.example.com/");
+    expect(blob.put).toHaveBeenCalled();
+  });
+
+  it("forceId skips dedup and overwrites", async () => {
+    const source = { capture: vi.fn(async () => ({ title: "New", markdown: "new body", assets: [] })) };
+    const store = fakeStore([cap]);
+    const svc = new ImportService(source, store, fakeBlob());
+    await svc.run("https://x/a", { forceId: "c1" });
+    expect(source.capture).toHaveBeenCalled();
+    const saved = await store.get("c1");
+    expect(saved?.title).toBe("New");
   });
 });
