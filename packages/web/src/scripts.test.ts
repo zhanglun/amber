@@ -11,6 +11,7 @@ import {
   getReaderEnhancementsScriptHtml,
   getReadIndicatorScriptHtml,
   tagFilterMatch,
+  getTagEditorScriptHtml,
 } from "./scripts.js";
 
 describe("getThemeSwitcherHtml", () => {
@@ -65,6 +66,12 @@ describe("getListFilterScriptHtml", () => {
 
   it("updates count element", () => {
     expect(getListFilterScriptHtml()).toContain(".count");
+  });
+
+  it("reads item tags and tag-filter chips", () => {
+    const html = getListFilterScriptHtml();
+    expect(html).toContain("data-tags");
+    expect(html).toContain("tag-filter");
   });
 });
 
@@ -210,5 +217,18 @@ describe("tagFilterMatch", () => {
   it("requires BOTH query and active tag to pass (AND)", () => {
     expect(tagFilterMatch(["react"], ["react"], "nomatch", "T", "h")).toBe(false);
     expect(tagFilterMatch(["react"], ["react"], "title", "Title", "h")).toBe(true);
+  });
+});
+
+describe("getTagEditorScriptHtml", () => {
+  it("PATCHes the tags endpoint", () => {
+    const html = getTagEditorScriptHtml();
+    expect(html).toContain("/tags");
+    expect(html).toContain("PATCH");
+  });
+  it("handles add and remove controls", () => {
+    const html = getTagEditorScriptHtml();
+    expect(html).toContain("tag-add");
+    expect(html).toContain("tag-remove");
   });
 });

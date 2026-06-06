@@ -27,22 +27,47 @@ export function getListFilterScriptHtml(): string {
   return `<script>
 (function(){
   var inp=document.getElementById('search');
-  if(!inp)return;
-  inp.addEventListener('input',function(){
-    var q=this.value.trim().toLowerCase();
+  var chips=document.querySelectorAll('.tag-filter[data-tag]');
+  var allChip=document.querySelector('.tag-filter-all');
+  var active=new Set();
+  function itemTags(item){try{return JSON.parse(item.getAttribute('data-tags')||'[]');}catch(e){return [];}}
+  function apply(){
+    var q=((inp&&inp.value)||'').trim().toLowerCase();
     document.querySelectorAll('.item[data-title]').forEach(function(item){
-      var match=!q||(item.getAttribute('data-title')||'').includes(q)||(item.getAttribute('data-host')||'').includes(q);
-      item.style.display=match?'':'none';
+      var title=item.getAttribute('data-title')||'';
+      var host=item.getAttribute('data-host')||'';
+      var tags=itemTags(item);
+      var textOk=!q||title.indexOf(q)>=0||host.indexOf(q)>=0;
+      var tagOk=active.size===0||tags.some(function(t){return active.has(t);});
+      item.style.display=(textOk&&tagOk)?'':'none';
     });
     document.querySelectorAll('[data-group]').forEach(function(group){
       var items=group.querySelectorAll('.item[data-title]');
-      var n=0;
-      items.forEach(function(i){if(i.style.display!=='none')n++;});
+      var n=0;items.forEach(function(i){if(i.style.display!=='none')n++;});
       group.style.display=n===0?'none':'';
       var el=group.querySelector('.count');
       if(el)el.textContent=n;
     });
+  }
+  if(inp)inp.addEventListener('input',apply);
+  chips.forEach(function(chip){
+    chip.addEventListener('click',function(){
+      var t=chip.getAttribute('data-tag');
+      if(active.has(t)){active.delete(t);chip.classList.remove('active');}
+      else{active.add(t);chip.classList.add('active');}
+      if(allChip)allChip.classList.toggle('active',active.size===0);
+      apply();
+    });
   });
+  if(allChip){
+    allChip.classList.add('active');
+    allChip.addEventListener('click',function(){
+      active.clear();
+      chips.forEach(function(c){c.classList.remove('active');});
+      allChip.classList.add('active');
+      apply();
+    });
+  }
 })();
 </script>`;
 }
@@ -243,4 +268,57 @@ export function tagFilterMatch(
   const tagOk =
     activeTags.length === 0 || activeTags.some((t) => itemTags.includes(t));
   return textOk && tagOk;
+}
+
+export function getTagEditorScriptHtml(): string {
+  return `<script>
+(function(){
+  function tagsOf(editor){
+    return Array.prototype.map.call(
+      editor.querySelectorAll('.tag-chip[data-tag]'),
+      function(c){return c.getAttribute('data-tag');}
+    );
+  }
+  function save(id,tags){
+    return fetch('/captures/'+encodeURIComponent(id)+'/tags',{
+      method:'PATCH',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({tags:tags})
+    }).catch(function(){});
+  }
+  function makeChip(tag){
+    var span=document.createElement('span');
+    span.className='tag-chip';
+    span.setAttribute('data-tag',tag);
+    span.textContent=tag;
+    var btn=document.createElement('button');
+    btn.className='tag-remove';
+    btn.type='button';
+    btn.title='移除';
+    btn.textContent='×';
+    span.appendChild(btn);
+    return span;
+  }
+  document.querySelectorAll('.tag-editor[data-capture-id]').forEach(function(editor){
+    var id=editor.getAttribute('data-capture-id');
+    editor.addEventListener('click',function(ev){
+      var t=ev.target;
+      if(t.classList&&t.classList.contains('tag-remove')){
+        var chip=t.parentNode;
+        chip.parentNode.removeChild(chip);
+        save(id,tagsOf(editor));
+        return;
+      }
+      if(t.classList&&t.classList.contains('tag-add')){
+        var name=window.prompt('新标签');
+        if(!name)return;
+        name=name.trim();
+        if(!name||tagsOf(editor).indexOf(name)>=0)return;
+        editor.insertBefore(makeChip(name),t);
+        save(id,tagsOf(editor));
+      }
+    });
+  });
+})();
+</script>`;
 }
