@@ -6,15 +6,24 @@ export interface Capture {
   sourceUrl: string;
   sourceType: "url";
   author?: string;
-  createdAt: string;
-  capturedAt: string;
-  readProgress?: number; // 0–100，滚动百分比整数
-  readAt?: string;       // ISO 8601，首次读完时写入，不随进度回退
+  capturedAt: string;      // 用户保存的时间（ISO 8601，始终有值）
+  publishedAt?: string;    // 原文发布时间（ISO 8601，可选）
+  coverImage?: string;     // 封面图 URL（来自 dino）
+  excerpt?: string;        // 导入时计算的纯文字摘要（≤150字）
+  wordCount?: number;      // 导入时计算的字符数（不含代码块和空白）
+  hasCode?: boolean;       // 导入时计算：正文是否含代码块
+  tags?: string[];         // 用户自定义标签
+  readProgress?: number;   // 0–100，滚动百分比整数
+  readAt?: string;         // ISO 8601，首次读完时写入，不随进度回退
+  lastOpenedAt?: string;   // ISO 8601，最近一次打开时间
+  readCount?: number;      // 打开次数（每次访问 /captures/:id 自增）
 }
 
 export type CaptureSummary = Pick<
   Capture,
-  "id" | "title" | "sourceUrl" | "createdAt" | "readProgress" | "readAt"
+  | "id" | "title" | "sourceUrl" | "capturedAt" | "publishedAt"
+  | "coverImage" | "excerpt" | "wordCount" | "hasCode"
+  | "tags" | "readProgress" | "readAt"
 >;
 
 /** 一个二进制资源（图片），由 markdown 中的占位符引用。 */
@@ -30,6 +39,7 @@ export interface RawCapture {
   markdown: string;
   author?: string;
   publishedAt?: string;
+  coverImage?: string;
   assets: Asset[];
 }
 
@@ -46,6 +56,8 @@ export interface Store {
   findBySourceUrl(url: string): Promise<Capture | null>;
   delete(id: string): Promise<void>;
   updateReadStatus(id: string, status: { readProgress: number; readAt?: string }): Promise<void>;
+  updateTags(id: string, tags: string[]): Promise<void>;
+  recordVisit(id: string, visitedAt: string): Promise<void>;
 }
 
 /** 二进制/对象存储。`put` 返回公开 URL。 */
