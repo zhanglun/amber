@@ -226,3 +226,21 @@ export function getReadIndicatorScriptHtml(): string {
 })();
 </script>`;
 }
+
+/** 列表筛选判定：标签按精确成员 OR，搜索文本按标题/来源子串，二者 AND。 */
+export function tagFilterMatch(
+  itemTags: string[],
+  activeTags: string[],
+  query: string,
+  title: string,
+  host: string,
+): boolean {
+  const q = query.trim().toLowerCase();
+  const textOk =
+    q === "" ||
+    title.toLowerCase().includes(q) ||
+    host.toLowerCase().includes(q);
+  const tagOk =
+    activeTags.length === 0 || activeTags.some((t) => itemTags.includes(t));
+  return textOk && tagOk;
+}

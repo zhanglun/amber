@@ -10,6 +10,7 @@ import {
   calcRemainingMinutes,
   getReaderEnhancementsScriptHtml,
   getReadIndicatorScriptHtml,
+  tagFilterMatch,
 } from "./scripts.js";
 
 describe("getThemeSwitcherHtml", () => {
@@ -183,5 +184,31 @@ describe("getReadIndicatorScriptHtml", () => {
 
   it("applies title-read class for read captures", () => {
     expect(getReadIndicatorScriptHtml()).toContain("title-read");
+  });
+});
+
+describe("tagFilterMatch", () => {
+  it("passes when no query and no active tags", () => {
+    expect(tagFilterMatch(["react"], [], "", "Some Title", "example.com")).toBe(true);
+  });
+
+  it("matches active tag by exact membership (OR)", () => {
+    expect(tagFilterMatch(["react", "ui"], ["ai", "ui"], "", "T", "h")).toBe(true);
+    expect(tagFilterMatch(["react"], ["ai", "ui"], "", "T", "h")).toBe(false);
+  });
+
+  it("does not substring-match tags (re does not match react)", () => {
+    expect(tagFilterMatch(["react"], ["re"], "", "T", "h")).toBe(false);
+  });
+
+  it("matches query as substring of title or host (case-insensitive)", () => {
+    expect(tagFilterMatch([], [], "wiki", "A Wikipedia Page", "x.com")).toBe(true);
+    expect(tagFilterMatch([], [], "example", "T", "example.com")).toBe(true);
+    expect(tagFilterMatch([], [], "zzz", "T", "h")).toBe(false);
+  });
+
+  it("requires BOTH query and active tag to pass (AND)", () => {
+    expect(tagFilterMatch(["react"], ["react"], "nomatch", "T", "h")).toBe(false);
+    expect(tagFilterMatch(["react"], ["react"], "title", "Title", "h")).toBe(true);
   });
 });
