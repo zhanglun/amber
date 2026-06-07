@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReadService } from "@amber/core";
 import type { Capture } from "@amber/domain";
 import { contentTypeForPath, createApp } from "./index.js";
@@ -151,5 +151,28 @@ describe("contentTypeForPath", () => {
     expect(contentTypeForPath("captures/c1/2.webm")).toBe("video/webm");
     expect(contentTypeForPath("captures/c1/2.ogv")).toBe("video/ogg");
     expect(contentTypeForPath("captures/c1/2.mov")).toBe("video/quicktime");
+  });
+});
+
+describe("createApp requestLog option", () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it("logs a request line when requestLog is enabled", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const app = createApp(fakeReadService(), {
+      blobsDir: "/tmp",
+      deleteCapture: async () => {},
+      requestLog: true,
+    });
+    const res = await app.request("/");
+    expect(res.status).toBe(200);
+    expect(log.mock.calls.map((c) => String(c[0])).join("\n")).toContain("GET / 200");
+  });
+
+  it("does not log when requestLog is omitted", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const app = createApp(fakeReadService(), { blobsDir: "/tmp", deleteCapture: async () => {} });
+    await app.request("/");
+    expect(log.mock.calls.length).toBe(0);
   });
 });

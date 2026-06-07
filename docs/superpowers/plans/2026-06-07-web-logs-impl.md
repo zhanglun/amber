@@ -377,7 +377,7 @@ export function installLogging(dataDir: string, options: InstallLoggingOptions =
   const logsDir = join(dataDir, LOG_DIR_NAME);
 
   mkdirSync(logsDir, { recursive: true });
-  cleanupExpiredLogs(logsDir, now(), keepDays);
+  cleanupExpiredLogs(dataDir, now(), keepDays);
 
   let openedDate = now();
   let fd = openSync(join(logsDir, logFileName(openedDate)), "a");

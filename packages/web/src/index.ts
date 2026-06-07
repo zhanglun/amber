@@ -5,6 +5,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import type { ReadService } from "@amber/core";
 import { renderArticle, renderList } from "./render.js";
+import { errorHandler, requestLogger } from "./request-log.js";
 
 const MIME: Record<string, string> = {
   ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -21,10 +22,16 @@ export interface WebOptions {
   blobsDir: string;
   deleteCapture: (id: string) => Promise<void>;
   onReady?: () => void;
+  requestLog?: boolean;
 }
 
 export function createApp(readService: ReadService, options: WebOptions): Hono {
   const app = new Hono();
+
+  if (options.requestLog) {
+    app.use(requestLogger());
+    app.onError(errorHandler());
+  }
 
   app.get("/", async (c) => {
     const items = await readService.list();
@@ -87,6 +94,10 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
 }
 
 export function startServer(readService: ReadService, options: WebOptions & { port: number }): void {
-  const app = createApp(readService, { blobsDir: options.blobsDir, deleteCapture: options.deleteCapture });
+  const app = createApp(readService, {
+    blobsDir: options.blobsDir,
+    deleteCapture: options.deleteCapture,
+    requestLog: true,
+  });
   serve({ fetch: app.fetch, port: options.port }, () => options.onReady?.());
 }
