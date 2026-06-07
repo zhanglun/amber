@@ -1,0 +1,37 @@
+import { describe, expect, it } from "vitest";
+import { dateStamp, logFileName, pickLatestLogFile, shouldRotate } from "./web-logs.js";
+
+describe("dateStamp", () => {
+  it("formats local date as YYYY-MM-DD", () => {
+    expect(dateStamp(new Date(2026, 5, 7))).toBe("2026-06-07");
+    expect(dateStamp(new Date(2026, 0, 1))).toBe("2026-01-01");
+  });
+});
+
+describe("logFileName", () => {
+  it("builds web-<date>.log", () => {
+    expect(logFileName(new Date(2026, 5, 7))).toBe("web-2026-06-07.log");
+  });
+});
+
+describe("pickLatestLogFile", () => {
+  it("returns the most recent matching file", () => {
+    const files = ["web-2026-06-05.log", "web-2026-06-07.log", "web-2026-06-06.log"];
+    expect(pickLatestLogFile(files)).toBe("web-2026-06-07.log");
+  });
+  it("ignores non-matching files", () => {
+    expect(pickLatestLogFile([".web.pid", "notes.txt", "web-2026-06-01.log"])).toBe("web-2026-06-01.log");
+  });
+  it("returns null when there are no log files", () => {
+    expect(pickLatestLogFile([".web.pid", "other.log"])).toBeNull();
+  });
+});
+
+describe("shouldRotate", () => {
+  it("is false on the same calendar day", () => {
+    expect(shouldRotate(new Date(2026, 5, 7, 1), new Date(2026, 5, 7, 23))).toBe(false);
+  });
+  it("is true across days", () => {
+    expect(shouldRotate(new Date(2026, 5, 7, 23), new Date(2026, 5, 8, 0))).toBe(true);
+  });
+});
