@@ -149,16 +149,18 @@ amber web logs [--lines=N] [--follow]
 
 ```
 记 start = Date.now()
-await next()                       // 成功返回后才记日志
+await next()
 ms = Date.now() - start
 console.log(formatRequestLine(c.req.method, c.req.path, c.res.status, ms, now()))
 ```
 
-要点（来自设计审查，必须遵守）：
-- **只在 `next()` 成功返回后记请求行**。若下游 handler 抛错，`await next()` 会抛、后续不执行——这类请求**不**记请求行，改由 `onError` 记错误行兜底。**不要**用 `try/finally` 补记：`finally` 里 onError 尚未运行、`c.res.status` 还不是 500，会记到错误状态码。一个请求最多一条日志。
-- 正常的 **404 是 Hono 正常返回（不抛错）**，因此会被正常记成请求行。
+要点（已用真实 Hono 4.6 实测验证）：
+- **每个请求都在 `next()` 返回后记一条请求行**，覆盖 200 / 404 / 500。**实测**：Hono 在 handler 抛错时先运行 `onError`（设置 500 响应），再让 `await next()` **正常返回**（不向中间件重新抛出），因此 next() 之后 `c.res.status` 已是 500，可直接取用——**无需** try/catch，也不会取到错误状态码。
+- 抛错的请求产生**两条互补日志**：`onError` 的错误堆栈行（先）+ 中间件的请求行（后，status=500）。前者给堆栈、后者给访问摘要，不重复，符合 access-log + error-log 惯例。
 - **耗时 `ms` 用真实 `Date.now()` 起止相减**；**时间戳用可注入的 `now()`**（固定 `now()` 会让 ms 恒为 0，故两者分开）。纯函数把 `ms`（数字）与 `now`（时间戳）分开接收，保证 ms 真实、时间戳可测。
 - **用 `c.req.path` 而非 `c.req.url`**：path 不含 query string，避免把查询参数写进日志（有意为之）。
+
+> 验证记录（小 Hono app + `app.request()` 实测）：`/ok`→`["after-next status=200"]`；`/boom`→`["onError:BOOM","after-next status=500"]`（onError 先跑、next 不抛、status 已是 500）；`/nope`→`["after-next status=404"]`。
 
 ### onError 处理器
 
@@ -168,6 +170,7 @@ return c.html("<p>出错了。<a href='/'>返回</a></p>", 500)
 ```
 
 - 自定义 `onError` 会替换 Hono 默认处理器，因此**必须自己 `console.error`**，否则丢失错误日志；不会与默认处理器重复打印。
+- `onError` 在中间件的请求行**之前**运行（见上验证），故同一请求的错误堆栈行排在请求行前面，属正常顺序。
 - 返回最简 500 HTML 页，替代 Hono 默认纯文本。
 
 ### 接入与开关（关键：不污染现有测试）
@@ -181,7 +184,7 @@ return c.html("<p>出错了。<a href='/'>返回</a></p>", 500)
 ### 测试
 
 - `request-log.test.ts`：`formatRequestLine` / `formatErrorLine` 纯函数单测，注入固定 `now`，断言精确字符串。
-- 中间件 + onError：构造一个挂了「正常路由」和「抛错路由」的小 Hono app，用 `app.request()` 触发，spy `console.log`/`console.error`：① 正常请求 → `console.log` 收到格式化请求行、且响应正常；② 抛错请求 → 返回 500、`console.error` 收到错误行、`console.log` **没有**该请求的请求行。
+- 中间件 + onError：构造一个挂了「正常路由」和「抛错路由」的小 Hono app，用 `app.request()` 触发，spy `console.log`/`console.error`：① 正常请求 → `console.log` 收到格式化请求行、响应正常；② 抛错请求 → 返回 500、`console.error` 收到错误堆栈行、`console.log` **收到** status=500 的请求行（两条互补日志）。
 - 现有 `index.test.ts` 不改动。
 
 ### 已知取舍
