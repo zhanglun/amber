@@ -1,4 +1,9 @@
+import { readdirSync, readFileSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
+
 const LOG_FILE_RE = /^web-(\d{4}-\d{2}-\d{2})\.log$/;
+
+export const LOG_DIR_NAME = "logs";
 
 export function dateStamp(date: Date): string {
   const y = date.getFullYear();
@@ -35,4 +40,34 @@ export function lastLines(text: string, n: number): string {
   if (trimmed === "") return "";
   const lines = trimmed.split("\n");
   return lines.slice(Math.max(0, lines.length - n)).join("\n");
+}
+
+export function readLog(dataDir: string, lines: number): string | null {
+  const logsDir = join(dataDir, LOG_DIR_NAME);
+  let names: string[];
+  try {
+    names = readdirSync(logsDir);
+  } catch {
+    return null;
+  }
+  const latest = pickLatestLogFile(names);
+  if (!latest) return null;
+  const text = readFileSync(join(logsDir, latest), "utf8");
+  return lastLines(text, lines);
+}
+
+export function cleanupExpiredLogs(logsDir: string, today: Date, keepDays: number): void {
+  let names: string[];
+  try {
+    names = readdirSync(logsDir);
+  } catch {
+    return;
+  }
+  for (const f of expiredLogFiles(names, today, keepDays)) {
+    try {
+      unlinkSync(join(logsDir, f));
+    } catch {
+      // ignore: best-effort cleanup
+    }
+  }
 }

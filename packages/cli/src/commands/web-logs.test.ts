@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { dateStamp, expiredLogFiles, lastLines, logFileName, pickLatestLogFile, shouldRotate } from "./web-logs.js";
+import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it, afterEach, beforeEach } from "vitest";
+import {
+  cleanupExpiredLogs, dateStamp, expiredLogFiles, lastLines,
+  logFileName, pickLatestLogFile, readLog, shouldRotate,
+} from "./web-logs.js";
 
 describe("dateStamp", () => {
   it("formats local date as YYYY-MM-DD", () => {
@@ -62,5 +68,36 @@ describe("lastLines", () => {
   });
   it("returns empty string for empty input", () => {
     expect(lastLines("", 5)).toBe("");
+  });
+});
+
+describe("readLog (real fs)", () => {
+  let dir: string;
+  beforeEach(async () => { dir = await mkdtemp(join(tmpdir(), "amber-weblogs-")); });
+  afterEach(async () => { await rm(dir, { recursive: true, force: true }); });
+
+  it("returns null when logs dir is absent", () => {
+    expect(readLog(dir, 200)).toBeNull();
+  });
+
+  it("reads last n lines of the latest log file", async () => {
+    const logs = join(dir, "logs");
+    await mkdir(logs, { recursive: true });
+    await writeFile(join(logs, "web-2026-06-06.log"), "old\n");
+    await writeFile(join(logs, "web-2026-06-07.log"), "l1\nl2\nl3\n");
+    expect(readLog(dir, 2)).toBe("l2\nl3");
+  });
+});
+
+describe("cleanupExpiredLogs (real fs)", () => {
+  let dir: string;
+  beforeEach(async () => { dir = await mkdtemp(join(tmpdir(), "amber-weblogs-")); });
+  afterEach(async () => { await rm(dir, { recursive: true, force: true }); });
+
+  it("deletes only expired log files", async () => {
+    await writeFile(join(dir, "web-2026-05-31.log"), "x");
+    await writeFile(join(dir, "web-2026-06-07.log"), "x");
+    cleanupExpiredLogs(dir, new Date(2026, 5, 8), 7);
+    expect((await readdir(dir)).sort()).toEqual(["web-2026-06-07.log"]);
   });
 });
