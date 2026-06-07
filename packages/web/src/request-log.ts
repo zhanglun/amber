@@ -1,3 +1,5 @@
+import type { ErrorHandler, MiddlewareHandler } from "hono";
+
 export function formatRequestLine(
   method: string,
   path: string,
@@ -16,4 +18,22 @@ export function formatErrorLine(
 ): string {
   const detail = err instanceof Error ? (err.stack ?? err.message) : String(err);
   return `[${now.toISOString()}] ERROR ${method} ${path}: ${detail}`;
+}
+
+export function requestLogger(now: () => Date = () => new Date()): MiddlewareHandler {
+  return async (c, next) => {
+    const start = Date.now();
+    await next();
+    const ms = Date.now() - start;
+    // 已验证：handler 抛错时 Hono 先跑 onError 设 500，再让 next() 正常返回，
+    // 因此这里的 c.res.status 已是最终状态码（含 500），无需 try/catch。
+    console.log(formatRequestLine(c.req.method, c.req.path, c.res.status, ms, now()));
+  };
+}
+
+export function errorHandler(now: () => Date = () => new Date()): ErrorHandler {
+  return (err, c) => {
+    console.error(formatErrorLine(c.req.method, c.req.path, err, now()));
+    return c.html("<p>出错了。<a href='/'>返回</a></p>", 500);
+  };
 }
