@@ -30,7 +30,7 @@
 - Create: `packages/web/src/request-log.ts`
 - Test: `packages/web/src/request-log.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 创建 `packages/web/src/request-log.test.ts`：
 
@@ -58,12 +58,12 @@ describe("formatErrorLine", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试，确认失败**
+- [x] **Step 2: 运行测试，确认失败**
 
 Run: `pnpm exec vitest run packages/web/src/request-log.test.ts`
 Expected: FAIL（`Cannot find module './request-log.js'`）
 
-- [ ] **Step 3: 写最小实现**
+- [x] **Step 3: 写最小实现**
 
 创建 `packages/web/src/request-log.ts`：
 
@@ -89,12 +89,12 @@ export function formatErrorLine(
 }
 ```
 
-- [ ] **Step 4: 运行测试，确认通过**
+- [x] **Step 4: 运行测试，确认通过**
 
 Run: `pnpm exec vitest run packages/web/src/request-log.test.ts`
 Expected: PASS（3 个用例）
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add packages/web/src/request-log.ts packages/web/src/request-log.test.ts
@@ -109,7 +109,7 @@ git commit -m "feat(web): 请求日志与错误日志格式化纯函数"
 - Modify: `packages/web/src/request-log.ts`
 - Test: `packages/web/src/request-log.test.ts`
 
-- [ ] **Step 1: 追加失败测试**
+- [x] **Step 1: 追加失败测试**
 
 在 `request-log.test.ts` 顶部 import 改为：
 
@@ -153,12 +153,12 @@ describe("requestLogger + errorHandler (real Hono)", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试，确认失败**
+- [x] **Step 2: 运行测试，确认失败**
 
 Run: `pnpm exec vitest run packages/web/src/request-log.test.ts`
 Expected: FAIL（`requestLogger`/`errorHandler` 未导出）
 
-- [ ] **Step 3: 写最小实现**
+- [x] **Step 3: 写最小实现**
 
 在 `request-log.ts` 顶部加类型 import，并追加两个工厂：
 
@@ -186,17 +186,17 @@ export function errorHandler(now: () => Date = () => new Date()): ErrorHandler {
 }
 ```
 
-- [ ] **Step 4: 运行测试，确认通过**
+- [x] **Step 4: 运行测试，确认通过**
 
 Run: `pnpm exec vitest run packages/web/src/request-log.test.ts`
 Expected: PASS（5 个用例）
 
-- [ ] **Step 5: typecheck**
+- [x] **Step 5: typecheck**
 
 Run: `pnpm exec tsc --noEmit -p packages/web/tsconfig.json`
 Expected: 无错误
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add packages/web/src/request-log.ts packages/web/src/request-log.test.ts
@@ -211,7 +211,7 @@ git commit -m "feat(web): 请求日志中间件与自定义 onError"
 - Modify: `packages/web/src/index.ts`
 - Test: `packages/web/src/index.test.ts`（新增 1 个用例）
 
-- [ ] **Step 1: 新增失败测试**
+- [x] **Step 1: 新增失败测试**
 
 在 `packages/web/src/index.test.ts` 末尾追加（如已有 `vi` 的 import 则复用；否则把顶部 vitest import 加上 `vi`）：
 
@@ -252,12 +252,12 @@ describe("createApp requestLog option", () => {
 
 > 注：`createApp` 已在该测试文件被 import；若没有，则补 `import { createApp } from "./index.js";`。`readService` 用最小 stub 即可（`/` 路由只调用 `list()`）。
 
-- [ ] **Step 2: 运行测试，确认失败**
+- [x] **Step 2: 运行测试，确认失败**
 
 Run: `pnpm exec vitest run packages/web/src/index.test.ts`
 Expected: FAIL（`requestLog` 不是 `WebOptions` 的属性 / 没有日志输出）
 
-- [ ] **Step 3: 改 index.ts**
+- [x] **Step 3: 改 index.ts**
 
 3a. `WebOptions` 接口加一行：
 
@@ -295,17 +295,17 @@ import { errorHandler, requestLogger } from "./request-log.js";
   });
 ```
 
-- [ ] **Step 4: 运行测试，确认通过**
+- [x] **Step 4: 运行测试，确认通过**
 
 Run: `pnpm exec vitest run packages/web/src/index.test.ts`
 Expected: PASS（含新增 2 个用例，原有 11 个不变）
 
-- [ ] **Step 5: typecheck + 全量测试**
+- [x] **Step 5: typecheck + 全量测试**
 
 Run: `pnpm exec tsc --noEmit -p packages/web/tsconfig.json && pnpm test`
 Expected: typecheck 无错误；全量测试全绿（Postgres 跳过）。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add packages/web/src/index.ts packages/web/src/index.test.ts
@@ -318,7 +318,7 @@ git commit -m "feat(web): createApp 按 requestLog 选项挂载日志，startSer
 
 **Files:** 无（仅运行验证）
 
-- [ ] **Step 1: 前台起服务并访问**
+- [x] **Step 1: 前台起服务并访问**
 
 ```bash
 pnpm amber web stop || true
@@ -328,14 +328,14 @@ curl -s --retry-connrefused --retry 15 --retry-delay 1 -o /dev/null http://local
 curl -s -o /dev/null http://localhost:7799/nope
 ```
 
-- [ ] **Step 2: 查看日志文件**
+- [x] **Step 2: 查看日志文件**
 
 ```bash
 cat /tmp/amber-p2test/logs/web-*.log
 ```
 Expected: 看到形如 `[<iso>] GET / 200 Nms` 与 `[<iso>] GET /nope 404 Nms` 的行。
 
-- [ ] **Step 3: 清理**
+- [x] **Step 3: 清理**
 
 ```bash
 pkill -f "web serve --port=7799" || true
