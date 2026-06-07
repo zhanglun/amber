@@ -117,10 +117,82 @@ amber web logs [--lines=N] [--follow]
 - **`lastLines` 读整文件**：把文件全读进内存再取尾部。本地日志量级可接受；若未来日志显著变大，再改为从文件末尾反向读。
 - **生产环境双写**：前台模式下日志同时进文件和 stdout（被 journald/docker 再存一份），磁盘上有轻微重复。这是「单一可读落点」的代价，可接受；若某些部署只想要 stdout、不想要 app 自管文件，后续可加一个 `--no-log-file` 开关或环境变量关闭文件写入（本期不做）。
 
-## Phase 2（本期不做）
+## Phase 2：应用级日志（请求日志 + onError）
 
-- `@amber/web` 应用级日志增强：显式 `app.onError`（带时间戳的堆栈 + 干净 500 页）、Hono `logger()` 请求中间件。
-- 推迟原因：① `packages/web/src/index.ts` 正被并发的 tag 工作改动，本期同改易冲突；② Hono 默认 `onError` 已 `console.error`，本设计的 tee 已能捕获错误堆栈，核心排障目标不依赖它。待 tag 工作落定后单独做。
+> Phase 1（上文）已实现：单落点文件、tee、`logs`/`serve` 子命令、崩溃同步落盘。Phase 2 在此基础上补「写什么」——让正常请求与受控错误都进日志。Phase 1 的 tee 已能捕获**崩溃和任何 stdout/stderr 输出**，但健康请求（成功 200）本身不产生任何输出，所以需要应用级日志。
+
+### 背景
+
+`packages/web/src/index.ts` 的 `createApp` 目前**没有** `onError`、**没有**请求日志中间件。Hono 默认 `onError` 会 `console.error(err)`（已被 Phase 1 tee 捕获），但：
+- 正常请求无任何日志，无法观察访问情况；
+- 默认错误行无时间戳，500 响应是纯文本。
+
+### 目标
+
+1. 每个请求产出一条带 ISO 时间戳的单行访问日志。
+2. 受控错误（handler 抛错）产出带时间戳的错误行 + 返回干净的 500 页。
+3. 输出仍走 `console.*` → Phase 1 tee → 同一日志文件 + stdout，不新增任何文件逻辑。
+4. **对现有 11 个 `index.test.ts` 测试零改动、零噪音。**
+
+### 架构与文件
+
+新建 `packages/web/src/request-log.ts`（把日志逻辑从已不小的 `index.ts` 隔离，单一职责、可独立测试）。导出：
+
+- `formatRequestLine(method: string, path: string, status: number, ms: number, now: Date): string`
+  纯函数 → `[<now.toISOString()>] <method> <path> <status> <ms>ms`
+- `formatErrorLine(method: string, path: string, err: unknown, now: Date): string`
+  纯函数 → `[<now.toISOString()>] ERROR <method> <path>: <stack>`
+- `requestLogger(now?: () => Date)` → Hono 中间件
+- `errorHandler(now?: () => Date)` → 返回一个 `app.onError` 处理器
+
+### 请求日志中间件
+
+```
+记 start = Date.now()
+await next()                       // 成功返回后才记日志
+ms = Date.now() - start
+console.log(formatRequestLine(c.req.method, c.req.path, c.res.status, ms, now()))
+```
+
+要点（来自设计审查，必须遵守）：
+- **只在 `next()` 成功返回后记请求行**。若下游 handler 抛错，`await next()` 会抛、后续不执行——这类请求**不**记请求行，改由 `onError` 记错误行兜底。**不要**用 `try/finally` 补记：`finally` 里 onError 尚未运行、`c.res.status` 还不是 500，会记到错误状态码。一个请求最多一条日志。
+- 正常的 **404 是 Hono 正常返回（不抛错）**，因此会被正常记成请求行。
+- **耗时 `ms` 用真实 `Date.now()` 起止相减**；**时间戳用可注入的 `now()`**（固定 `now()` 会让 ms 恒为 0，故两者分开）。纯函数把 `ms`（数字）与 `now`（时间戳）分开接收，保证 ms 真实、时间戳可测。
+- **用 `c.req.path` 而非 `c.req.url`**：path 不含 query string，避免把查询参数写进日志（有意为之）。
+
+### onError 处理器
+
+```
+console.error(formatErrorLine(c.req.method, c.req.path, err, now()))
+return c.html("<p>出错了。<a href='/'>返回</a></p>", 500)
+```
+
+- 自定义 `onError` 会替换 Hono 默认处理器，因此**必须自己 `console.error`**，否则丢失错误日志；不会与默认处理器重复打印。
+- 返回最简 500 HTML 页，替代 Hono 默认纯文本。
+
+### 接入与开关（关键：不污染现有测试）
+
+`WebOptions` 增加 `requestLog?: boolean`：
+- 为 `true`：在**路由注册之前** `app.use(requestLogger())`，并 `app.onError(errorHandler())`。中间件必须在路由前注册（Hono 中间件顺序敏感，注册晚于路由则不生效）。
+- 默认 / `false`：两者都不挂——现有 `index.test.ts`（不传该选项）行为不变、无噪音。
+
+`startServer` 传 `requestLog: true`，故本地 daemon 与生产 `serve` 都开启。
+
+### 测试
+
+- `request-log.test.ts`：`formatRequestLine` / `formatErrorLine` 纯函数单测，注入固定 `now`，断言精确字符串。
+- 中间件 + onError：构造一个挂了「正常路由」和「抛错路由」的小 Hono app，用 `app.request()` 触发，spy `console.log`/`console.error`：① 正常请求 → `console.log` 收到格式化请求行、且响应正常；② 抛错请求 → 返回 500、`console.error` 收到错误行、`console.log` **没有**该请求的请求行。
+- 现有 `index.test.ts` 不改动。
+
+### 已知取舍
+
+- **500 页对 API 端点也返回 HTML**：`PATCH /captures/:id/read` 等返回 204/JSON 的端点出错时会收到 HTML 500 页。错误罕见且 HTML 可读，可接受，不单独处理。
+- 请求日志依赖 Phase 1 的 tee 才会落文件；若 `requestLog: true` 但未经 `serve()`（未安装 tee）直接用 `createApp`，日志只到 stdout——这正是 `startServer` 始终经由 `serve()` 的原因。
+
+### Phase 2 影响文件
+
+- 新建 `packages/web/src/request-log.ts` + `packages/web/src/request-log.test.ts`
+- `packages/web/src/index.ts`：`WebOptions` 加 `requestLog?`、`createApp` 条件挂载中间件与 onError、`startServer` 传 `requestLog: true`
 
 ## 影响文件
 
