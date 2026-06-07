@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dateStamp, logFileName, pickLatestLogFile, shouldRotate } from "./web-logs.js";
+import { dateStamp, expiredLogFiles, lastLines, logFileName, pickLatestLogFile, shouldRotate } from "./web-logs.js";
 
 describe("dateStamp", () => {
   it("formats local date as YYYY-MM-DD", () => {
@@ -33,5 +33,34 @@ describe("shouldRotate", () => {
   });
   it("is true across days", () => {
     expect(shouldRotate(new Date(2026, 5, 7, 23), new Date(2026, 5, 8, 0))).toBe(true);
+  });
+});
+
+describe("expiredLogFiles", () => {
+  const files = ["web-2026-05-31.log", "web-2026-06-01.log", "web-2026-06-07.log", "keep.txt"];
+  it("returns files older than keepDays before today", () => {
+    // today=2026-06-08, keepDays=7 -> cutoff=2026-06-01, expire dates < 2026-06-01
+    expect(expiredLogFiles(files, new Date(2026, 5, 8), 7)).toEqual(["web-2026-05-31.log"]);
+  });
+  it("keeps the cutoff date itself (boundary)", () => {
+    expect(expiredLogFiles(["web-2026-06-01.log"], new Date(2026, 5, 8), 7)).toEqual([]);
+  });
+  it("ignores non-log files", () => {
+    expect(expiredLogFiles(["keep.txt"], new Date(2026, 5, 8), 7)).toEqual([]);
+  });
+});
+
+describe("lastLines", () => {
+  it("returns the last n lines", () => {
+    expect(lastLines("a\nb\nc\nd", 2)).toBe("c\nd");
+  });
+  it("drops a single trailing newline before counting", () => {
+    expect(lastLines("a\nb\nc\n", 2)).toBe("b\nc");
+  });
+  it("returns all lines when fewer than n", () => {
+    expect(lastLines("a\nb", 10)).toBe("a\nb");
+  });
+  it("returns empty string for empty input", () => {
+    expect(lastLines("", 5)).toBe("");
   });
 });

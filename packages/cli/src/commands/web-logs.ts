@@ -19,3 +19,20 @@ export function pickLatestLogFile(filenames: string[]): string | null {
 export function shouldRotate(openedDate: Date, now: Date): boolean {
   return dateStamp(openedDate) !== dateStamp(now);
 }
+
+export function expiredLogFiles(filenames: string[], today: Date, keepDays: number): string[] {
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() - keepDays);
+  const cutoffStamp = dateStamp(cutoff);
+  return filenames.filter((f) => {
+    const m = LOG_FILE_RE.exec(f);
+    return m !== null && m[1] < cutoffStamp;
+  });
+}
+
+export function lastLines(text: string, n: number): string {
+  const trimmed = text.endsWith("\n") ? text.slice(0, -1) : text;
+  if (trimmed === "") return "";
+  const lines = trimmed.split("\n");
+  return lines.slice(Math.max(0, lines.length - n)).join("\n");
+}
