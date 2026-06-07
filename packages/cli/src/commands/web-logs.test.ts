@@ -69,6 +69,9 @@ describe("lastLines", () => {
   it("returns empty string for empty input", () => {
     expect(lastLines("", 5)).toBe("");
   });
+  it("strips all trailing newlines", () => {
+    expect(lastLines("\n", 5)).toBe("");
+  });
 });
 
 describe("readLog (real fs)", () => {
@@ -95,9 +98,15 @@ describe("cleanupExpiredLogs (real fs)", () => {
   afterEach(async () => { await rm(dir, { recursive: true, force: true }); });
 
   it("deletes only expired log files", async () => {
-    await writeFile(join(dir, "web-2026-05-31.log"), "x");
-    await writeFile(join(dir, "web-2026-06-07.log"), "x");
+    const logs = join(dir, "logs");
+    await mkdir(logs, { recursive: true });
+    await writeFile(join(logs, "web-2026-05-31.log"), "x");
+    await writeFile(join(logs, "web-2026-06-07.log"), "x");
     cleanupExpiredLogs(dir, new Date(2026, 5, 8), 7);
-    expect((await readdir(dir)).sort()).toEqual(["web-2026-06-07.log"]);
+    expect((await readdir(logs)).sort()).toEqual(["web-2026-06-07.log"]);
+  });
+
+  it("does not throw when logs dir is absent", () => {
+    expect(() => cleanupExpiredLogs(join(dir, "nope"), new Date(2026, 5, 8), 7)).not.toThrow();
   });
 });

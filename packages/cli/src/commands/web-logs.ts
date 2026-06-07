@@ -36,7 +36,7 @@ export function expiredLogFiles(filenames: string[], today: Date, keepDays: numb
 }
 
 export function lastLines(text: string, n: number): string {
-  const trimmed = text.endsWith("\n") ? text.slice(0, -1) : text;
+  const trimmed = text.replace(/\n+$/, "");
   if (trimmed === "") return "";
   const lines = trimmed.split("\n");
   return lines.slice(Math.max(0, lines.length - n)).join("\n");
@@ -52,11 +52,17 @@ export function readLog(dataDir: string, lines: number): string | null {
   }
   const latest = pickLatestLogFile(names);
   if (!latest) return null;
-  const text = readFileSync(join(logsDir, latest), "utf8");
+  let text: string;
+  try {
+    text = readFileSync(join(logsDir, latest), "utf8");
+  } catch {
+    return null;
+  }
   return lastLines(text, lines);
 }
 
-export function cleanupExpiredLogs(logsDir: string, today: Date, keepDays: number): void {
+export function cleanupExpiredLogs(dataDir: string, today: Date, keepDays: number): void {
+  const logsDir = join(dataDir, LOG_DIR_NAME);
   let names: string[];
   try {
     names = readdirSync(logsDir);
