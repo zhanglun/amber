@@ -36,8 +36,8 @@ importers:
         specifier: ^6.0.0
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
       dino:
-        specifier: file:../../../dino
-        version: file:../dino
+        specifier: github:zhanglun/dino#v0.2.4
+        version: https://codeload.github.com/zhanglun/dino/tar.gz/10583c6a3e227a1ad8c5e1d49f61098e20202940
     devDependencies:
       prisma:
         specifier: ^6.0.0
@@ -1122,8 +1122,9 @@ packages:
     resolution: {integrity: sha512-DPi0FmjiSU5EvQV0++GFDOJ9ASQUVFh5kD+OzOnYdi7n3Wpm9hWWGfB/O2blfHcMVTL5WkQXSnRiK9makhrcnw==}
     engines: {node: '>=0.3.1'}
 
-  dino@file:../dino:
-    resolution: {directory: ../dino, type: directory}
+  dino@https://codeload.github.com/zhanglun/dino/tar.gz/10583c6a3e227a1ad8c5e1d49f61098e20202940:
+    resolution: {tarball: https://codeload.github.com/zhanglun/dino/tar.gz/10583c6a3e227a1ad8c5e1d49f61098e20202940}
+    version: 0.2.4
     engines: {node: '>=24'}
     hasBin: true
 
@@ -2621,7 +2622,7 @@ snapshots:
 
   diff@8.0.4: {}
 
-  dino@file:../dino:
+  dino@https://codeload.github.com/zhanglun/dino/tar.gz/10583c6a3e227a1ad8c5e1d49f61098e20202940:
     dependencies:
       '@iarna/toml': 2.2.5
       commander: 14.0.3
