@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env
 .superpowers/
+.omo/
 *.log
 packages/adapters/src/generated/
 amber-data/
