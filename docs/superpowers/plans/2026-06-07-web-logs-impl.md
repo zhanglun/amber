@@ -221,7 +221,7 @@ git commit -m "feat(cli): web 日志过期判定与取尾行纯函数"
 `web-logs.test.ts` 顶部补 import：
 
 ```ts
-import { mkdtemp, rm, writeFile, readdir } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach } from "vitest";
@@ -250,9 +250,6 @@ describe("readLog (real fs)", () => {
 
   it("reads last n lines of the latest log file", async () => {
     const logs = join(dir, "logs");
-    await mkdtemp(join(tmpdir(), "x-")); // noop to keep import used
-    await writeFile(join(dir, "logs-marker"), ""); // ensure dir creation below
-    const { mkdir } = await import("node:fs/promises");
     await mkdir(logs, { recursive: true });
     await writeFile(join(logs, "web-2026-06-06.log"), "old\n");
     await writeFile(join(logs, "web-2026-06-07.log"), "l1\nl2\nl3\n");
@@ -266,8 +263,6 @@ describe("cleanupExpiredLogs (real fs)", () => {
   afterEach(async () => { await rm(dir, { recursive: true, force: true }); });
 
   it("deletes only expired log files", async () => {
-    const { mkdir } = await import("node:fs/promises");
-    await mkdir(dir, { recursive: true });
     await writeFile(join(dir, "web-2026-05-31.log"), "x");
     await writeFile(join(dir, "web-2026-06-07.log"), "x");
     cleanupExpiredLogs(dir, new Date(2026, 5, 8), 7);
@@ -347,17 +342,16 @@ git commit -m "feat(cli): web 日志读取与过期清理"
 
 - [ ] **Step 1: 实现 installLogging 与 followLog**
 
-`web-logs.ts` 顶部 import 扩展为：
+`web-logs.ts` 顶部的 `node:fs` import 扩展为下面这行（**替换** Task 3 加的那条 `import { readdirSync, readFileSync, unlinkSync } from "node:fs"`，合并为一条）：
 
 ```ts
 import {
-  appendFileSync, closeSync, createReadStream, mkdirSync,
-  openSync, readdirSync, readFileSync, statSync, unlinkSync, watch, writeSync,
+  appendFileSync, closeSync, mkdirSync, openSync,
+  readdirSync, readFileSync, statSync, unlinkSync, writeSync,
 } from "node:fs";
-import { join } from "node:path";
 ```
 
-> 说明：`createReadStream`/`watch` 实际未用到（follow 用轮询），如 lint 报未使用就删掉它们，只保留 `statSync` 等用到的。
+`import { join } from "node:path"` 已在 Task 3 引入，保持不变。
 
 追加类型与函数：
 
@@ -455,10 +449,11 @@ export function installLogging(dataDir: string, options: InstallLoggingOptions =
  */
 export function followLog(dataDir: string): Promise<void> {
   const logsDir = join(dataDir, LOG_DIR_NAME);
+  // logs 是独立 CLI 进程，stdout 未被 tee，直接写即可。
   return new Promise<void>(() => {
     let file: string | null = null;
     let offset = 0;
-    const tick = (): void => {
+    setInterval(() => {
       let names: string[];
       try { names = readdirSync(logsDir); } catch { return; }
       const latest = pickLatestLogFile(names);
@@ -467,13 +462,11 @@ export function followLog(dataDir: string): Promise<void> {
       if (latest !== file) { file = latest; offset = 0; }
       let size: number;
       try { size = statSync(full).size; } catch { return; }
-      if (size <= offset) { return; }
-      const buf = readFileSync(full).subarray(offset);
+      if (size <= offset) return;
+      const chunk = readFileSync(full).subarray(offset);
       offset = size;
-      origWrite(buf.toString("utf8"));
-    };
-    const origWrite = (s: string): void => { process.stdout.write(s); };
-    setInterval(tick, 500);
+      process.stdout.write(chunk.toString("utf8"));
+    }, 500);
   });
 }
 ```
