@@ -232,8 +232,12 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
     async logs(opts) {
       const dataDir = runtime.getDataDir();
       const content = runtime.readLog(dataDir, opts.lines);
-      if (content === null || content === "") {
+      if (content === null) {
         runtime.log.info("No logs yet. Start the web UI first.");
+        return;
+      }
+      if (content === "") {
+        runtime.log.info("Log file is empty — the server hasn't printed anything yet.");
         return;
       }
       process.stdout.write(content + "\n");

@@ -124,6 +124,8 @@ export function installLogging(dataDir: string, options: InstallLoggingOptions =
       fd = openSync(join(logsDir, logFileName(openedDate)), "a");
     }
     try {
+      // 分支看似重复，但 writeSync 不接受 string | Uint8Array 联合类型，
+      // 需靠 typeof 收窄到各自的重载。
       if (typeof chunk === "string") {
         writeSync(fd, chunk);
       } else {
