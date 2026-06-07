@@ -1,5 +1,5 @@
 import { runCommand } from "citty";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   createWebActions,
   createWebCommand,
@@ -97,7 +97,7 @@ describe("webCommand", () => {
 });
 
 describe("createWebActions", () => {
-  it("serve installs logging and closes it on shutdown is wired (smoke)", async () => {
+  it("serve installs logging and writes pid (smoke)", async () => {
     const runtime = fakeRuntime(null);
     // startServer is a no-op mock, so serve resolves after wiring
     await createWebActions(runtime).serve(7788, { openBrowser: false });
@@ -117,6 +117,21 @@ describe("createWebActions", () => {
     const runtime = fakeRuntime(null); // readLog returns null
     await createWebActions(runtime).logs({ lines: 200, follow: false });
     expect(runtime.calls).toContain("info:No logs yet. Start the web UI first.");
+  });
+
+  it("logs writes content to stdout when logs exist", async () => {
+    const runtime = { ...fakeRuntime(null), readLog: () => "line1\nline2" };
+    const writes: string[] = [];
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
+      writes.push(String(chunk));
+      return true;
+    });
+    try {
+      await createWebActions(runtime).logs({ lines: 200, follow: false });
+    } finally {
+      spy.mockRestore();
+    }
+    expect(writes.join("")).toContain("line1\nline2");
   });
 
   it("restarts on the existing port when no restart port is provided", async () => {

@@ -167,30 +167,35 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
     async serve(port, opts = { openBrowser: true }) {
       const dataDir = runtime.getDataDir();
       const logHandle: LogHandle = runtime.installLogging(dataDir);
-      const { readService, blobsDir, deleteCapture, dispose } = runtime.buildServices();
-      const url = `http://localhost:${port}`;
+      try {
+        const { readService, blobsDir, deleteCapture, dispose } = runtime.buildServices();
+        const url = `http://localhost:${port}`;
 
-      await runtime.writePid(dataDir, {
-        pid: process.pid,
-        port,
-        dataDir,
-        startedAt: runtime.now().toISOString(),
-      });
+        await runtime.writePid(dataDir, {
+          pid: process.pid,
+          port,
+          dataDir,
+          startedAt: runtime.now().toISOString(),
+        });
 
-      const cleanup = async () => {
-        await runtime.unlinkPid(dataDir).catch(() => {});
-        await dispose().catch(() => {});
+        const cleanup = async () => {
+          await runtime.unlinkPid(dataDir).catch(() => {});
+          await dispose().catch(() => {});
+          logHandle.close();
+        };
+        process.once("SIGINT", () => { void cleanup().then(() => process.exit(0)); });
+        process.once("SIGTERM", () => { void cleanup().then(() => process.exit(0)); });
+
+        runtime.startServer(readService, {
+          blobsDir,
+          deleteCapture,
+          port,
+          onReady: opts.openBrowser ? () => runtime.openBrowser(url) : undefined,
+        });
+      } catch (err) {
         logHandle.close();
-      };
-      process.once("SIGINT", () => { void cleanup().then(() => process.exit(0)); });
-      process.once("SIGTERM", () => { void cleanup().then(() => process.exit(0)); });
-
-      runtime.startServer(readService, {
-        blobsDir,
-        deleteCapture,
-        port,
-        onReady: opts.openBrowser ? () => runtime.openBrowser(url) : undefined,
-      });
+        throw err;
+      }
     },
     async start(port) {
       const dataDir = runtime.getDataDir();
@@ -227,7 +232,7 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
     async logs(opts) {
       const dataDir = runtime.getDataDir();
       const content = runtime.readLog(dataDir, opts.lines);
-      if (content === null) {
+      if (content === null || content === "") {
         runtime.log.info("No logs yet. Start the web UI first.");
         return;
       }
@@ -287,7 +292,10 @@ function createLogsCommand(actions: WebActions) {
       lines: { type: "string", description: "Number of lines to show", default: "200" },
       follow: { type: "boolean", alias: "f", description: "Follow new log output", default: false },
     },
-    run: ({ args }) => actions.logs({ lines: Number(args.lines), follow: Boolean(args.follow) }),
+    run: ({ args }) => {
+      const lines = Number(args.lines);
+      return actions.logs({ lines: Number.isFinite(lines) ? lines : 200, follow: Boolean(args.follow) });
+    },
   });
 }
 
