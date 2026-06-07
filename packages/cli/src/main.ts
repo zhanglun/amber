@@ -8,6 +8,7 @@ import { deleteCommand } from "./commands/delete.js";
 import { reimportCommand } from "./commands/reimport.js";
 import { migrateCommand } from "./commands/migrate.js";
 import { tagCommand } from "./commands/tag.js";
+import { doctorCommand } from "./commands/doctor.js";
 
 const main = defineCommand({
   meta: { name: "amber", description: "Personal Knowledge Pipeline" },
@@ -19,6 +20,7 @@ const main = defineCommand({
     reimport: reimportCommand,
     migrate: migrateCommand,
     tag: tagCommand,
+    doctor: doctorCommand,
   },
 });
 

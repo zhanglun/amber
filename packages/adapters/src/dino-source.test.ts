@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CaptureResult } from "dino";
-import { toRawCapture } from "./dino-source.js";
+import { explainCaptureError, mentionsBrowserAttempt, toRawCapture } from "./dino-source.js";
 
 describe("toRawCapture", () => {
   const result: CaptureResult = {
@@ -35,5 +35,34 @@ describe("toRawCapture", () => {
     const noCover: CaptureResult = { ...result, coverImage: undefined };
     const raw = toRawCapture(noCover);
     expect(raw.coverImage).toBeUndefined();
+  });
+});
+
+describe("mentionsBrowserAttempt", () => {
+  it("detects a failed browser attempt in dino's joined error", () => {
+    expect(mentionsBrowserAttempt("static missing article content; browser failed: x")).toBe(true);
+  });
+  it("detects a failed stealth attempt", () => {
+    expect(mentionsBrowserAttempt("stealth failed: Executable doesn't exist")).toBe(true);
+  });
+  it("detects a failed browser-state attempt", () => {
+    expect(mentionsBrowserAttempt("browser-state failed: boom")).toBe(true);
+  });
+  it("is false for a pure static failure", () => {
+    expect(mentionsBrowserAttempt("static missing article content")).toBe(false);
+  });
+  it("is case-insensitive", () => {
+    expect(mentionsBrowserAttempt("Browser Failed: nope")).toBe(true);
+  });
+});
+
+describe("explainCaptureError", () => {
+  it("appends the amber doctor hint when a browser attempt failed", () => {
+    const out = explainCaptureError("static missing article content; browser failed: x");
+    expect(out).toContain("static missing article content; browser failed: x");
+    expect(out).toContain("amber doctor");
+  });
+  it("returns the original message unchanged for non-browser failures", () => {
+    expect(explainCaptureError("static missing article content")).toBe("static missing article content");
   });
 });

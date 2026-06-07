@@ -10,6 +10,7 @@ Personal Knowledge Pipeline — 把网页文章保存到本地，离线阅读、
 - `amber delete <id>` — 删除一条记录
 - `amber reimport <id>` — 重新抓取某条内容（更新正文）
 - `amber migrate` — 将文件存储数据迁移到 PostgreSQL
+- `amber doctor` — 检查（缺失时自动安装）抓取动态站点所需的浏览器
 
 ## 快速开始（文件存储，零配置）
 
@@ -25,6 +26,16 @@ pnpm amber web
 ```
 
 所有数据默认写入 `./amber-data/`，无需数据库。
+
+### 抓取动态站点（浏览器）
+
+静态博客/新闻站开箱即用。对依赖 JavaScript 渲染的站点，抓取会自动尝试用无头浏览器（Chromium），首次使用前需安装一次：
+
+```bash
+pnpm amber doctor   # 检查并按需安装 Chromium（约 150MB）
+```
+
+未安装时，抓取这类站点会失败并提示运行 `amber doctor`。
 
 ## 存储模式
 
