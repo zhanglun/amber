@@ -5,6 +5,7 @@ import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
 import { startServer } from "@amber/web";
 import { buildServices } from "../wiring.js";
+import { installLogging, readLog, followLog, type LogHandle } from "./web-logs.js";
 
 export interface PidInfo {
   pid: number;
@@ -16,7 +17,8 @@ export interface PidInfo {
 export interface WebActions {
   isBackground(): boolean;
   restart(port: number, portExplicit: boolean): Promise<void>;
-  serve(port: number): Promise<void>;
+  serve(port: number, opts?: { openBrowser: boolean }): Promise<void>;
+  logs(opts: { lines: number; follow: boolean }): Promise<void>;
   start(port: number): Promise<void>;
   status(): Promise<void>;
   stop(): Promise<PidInfo | null>;
@@ -25,11 +27,14 @@ export interface WebActions {
 export interface WebRuntime {
   buildServices: typeof buildServices;
   getDataDir(): string;
+  installLogging: typeof installLogging;
   isAlive(pid: number): boolean;
   kill(pid: number, signal: NodeJS.Signals): void;
   log: Pick<typeof p.log, "info" | "message" | "success" | "warn">;
   now(): Date;
   openBrowser(url: string): void;
+  readLog: typeof readLog;
+  followLog: typeof followLog;
   readPid(dataDir: string): Promise<PidInfo | null>;
   spawnDaemon(port: number): void;
   startServer: typeof startServer;
@@ -103,11 +108,14 @@ async function unlinkPid(dataDir: string): Promise<void> {
 const defaultRuntime: WebRuntime = {
   buildServices,
   getDataDir,
+  installLogging,
   isAlive,
   kill: (pid, signal) => process.kill(pid, signal),
   log: p.log,
   now: () => new Date(),
   openBrowser,
+  readLog,
+  followLog,
   readPid,
   spawnDaemon,
   startServer,
@@ -156,8 +164,9 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
       runtime.log.success(`Web UI restarting on port ${restartPort}…`);
       runtime.log.info('"amber web status" to check  |  "amber web stop" to stop');
     },
-    async serve(port) {
+    async serve(port, opts = { openBrowser: true }) {
       const dataDir = runtime.getDataDir();
+      const logHandle: LogHandle = runtime.installLogging(dataDir);
       const { readService, blobsDir, deleteCapture, dispose } = runtime.buildServices();
       const url = `http://localhost:${port}`;
 
@@ -171,11 +180,17 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
       const cleanup = async () => {
         await runtime.unlinkPid(dataDir).catch(() => {});
         await dispose().catch(() => {});
+        logHandle.close();
       };
       process.once("SIGINT", () => { void cleanup().then(() => process.exit(0)); });
       process.once("SIGTERM", () => { void cleanup().then(() => process.exit(0)); });
 
-      runtime.startServer(readService, { blobsDir, deleteCapture, port, onReady: () => runtime.openBrowser(url) });
+      runtime.startServer(readService, {
+        blobsDir,
+        deleteCapture,
+        port,
+        onReady: opts.openBrowser ? () => runtime.openBrowser(url) : undefined,
+      });
     },
     async start(port) {
       const dataDir = runtime.getDataDir();
@@ -208,6 +223,18 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
           `  Started  ${new Date(info.startedAt).toLocaleString()}`,
         ].join("\n"),
       );
+    },
+    async logs(opts) {
+      const dataDir = runtime.getDataDir();
+      const content = runtime.readLog(dataDir, opts.lines);
+      if (content === null) {
+        runtime.log.info("No logs yet. Start the web UI first.");
+        return;
+      }
+      process.stdout.write(content + "\n");
+      if (opts.follow) {
+        await runtime.followLog(dataDir);
+      }
     },
     async stop() {
       return stopExisting(runtime);
@@ -268,7 +295,7 @@ export function createWebCommand(actions: WebActions = createWebActions()) {
       if (hasWebSubcommand(rawArgs)) return;
       const port = Number(args.port);
       if (actions.isBackground()) {
-        await actions.serve(port);
+        await actions.serve(port, { openBrowser: true });
         return;
       }
       await actions.start(port);

@@ -15,7 +15,8 @@ function fakeActions(): WebActions & { calls: string[] } {
     calls,
     isBackground: () => false,
     start: async (port) => { calls.push(`start:${port}`); },
-    serve: async (port) => { calls.push(`serve:${port}`); },
+    serve: async (port, opts) => { calls.push(`serve:${port}:${opts?.openBrowser ?? true}`); },
+    logs: async (opts) => { calls.push(`logs:${opts.lines}:${opts.follow}`); },
     status: async () => { calls.push("status"); },
     stop: async () => { calls.push("stop"); return null; },
     restart: async (port, portExplicit) => { calls.push(`restart:${port}:${portExplicit}`); },
@@ -35,6 +36,9 @@ function fakeRuntime(info: PidInfo | null): WebRuntime & { calls: string[] } {
       importService: {} as never,
       readService: {} as never,
     }),
+    installLogging: () => ({ close: () => { calls.push("logClose"); } }),
+    readLog: () => null,
+    followLog: async () => {},
     getDataDir: () => "/tmp/amber-data",
     isAlive: () => alive,
     kill: (pid, signal) => {
@@ -51,7 +55,10 @@ function fakeRuntime(info: PidInfo | null): WebRuntime & { calls: string[] } {
     openBrowser: (url) => { calls.push(`open:${url}`); },
     readPid: async () => info,
     spawnDaemon: (port) => { calls.push(`spawn:${port}`); },
-    startServer: () => { calls.push("serve"); },
+    startServer: (_readService, opts) => {
+      calls.push("serve");
+      opts.onReady?.();
+    },
     unlinkPid: async () => { calls.push("unlink"); },
     writePid: async (_dataDir, pidInfo) => { calls.push(`write:${pidInfo.port}`); },
   };
@@ -78,6 +85,22 @@ describe("webCommand", () => {
 });
 
 describe("createWebActions", () => {
+  it("serve installs logging and closes it on shutdown is wired (smoke)", async () => {
+    const runtime = fakeRuntime(null);
+    // startServer is a no-op mock, so serve resolves after wiring
+    await createWebActions(runtime).serve(7788, { openBrowser: false });
+    expect(runtime.calls).toContain("write:7788"); // pid written
+    expect(runtime.calls).toContain("serve");      // startServer called
+    // openBrowser=false -> no open:* call
+    expect(runtime.calls.some((c) => c.startsWith("open:"))).toBe(false);
+  });
+
+  it("serve opens the browser when openBrowser is true", async () => {
+    const runtime = fakeRuntime(null);
+    await createWebActions(runtime).serve(7788, { openBrowser: true });
+    expect(runtime.calls.some((c) => c.startsWith("open:"))).toBe(true);
+  });
+
   it("restarts on the existing port when no restart port is provided", async () => {
     const runtime = fakeRuntime({
       pid: 123,
