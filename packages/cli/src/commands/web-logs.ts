@@ -1,6 +1,6 @@
 import {
   appendFileSync, closeSync, mkdirSync, openSync,
-  readdirSync, readFileSync, statSync, unlinkSync, writeSync,
+  readdirSync, readFileSync, readSync, statSync, unlinkSync, writeSync,
 } from "node:fs";
 import { join } from "node:path";
 
@@ -83,6 +83,8 @@ export function cleanupExpiredLogs(dataDir: string, today: Date, keepDays: numbe
 
 export const DEFAULT_KEEP_DAYS = 7;
 
+let logInstalled = false;
+
 export interface LogHandle {
   close(): void;
 }
@@ -97,6 +99,10 @@ export interface InstallLoggingOptions {
  * 跨天自动重开文件，崩溃时同步落盘。返回的 close() 恢复原始 write 并关闭 fd。
  */
 export function installLogging(dataDir: string, options: InstallLoggingOptions = {}): LogHandle {
+  if (logInstalled) {
+    throw new Error("installLogging called twice in the same process");
+  }
+  logInstalled = true;
   const keepDays = options.keepDays ?? DEFAULT_KEEP_DAYS;
   const now = options.now ?? (() => new Date());
   const logsDir = join(dataDir, LOG_DIR_NAME);
@@ -121,7 +127,7 @@ export function installLogging(dataDir: string, options: InstallLoggingOptions =
       if (typeof chunk === "string") {
         writeSync(fd, chunk);
       } else {
-        writeSync(fd, Buffer.from(chunk));
+        writeSync(fd, chunk);
       }
     } catch {
       // ignore: never let logging crash the server
@@ -146,10 +152,11 @@ export function installLogging(dataDir: string, options: InstallLoggingOptions =
 
   const onFatal = (label: string) => (err: unknown): void => {
     const stack = err instanceof Error ? (err.stack ?? err.message) : String(err);
+    const ts = now();
     try {
       appendFileSync(
-        join(logsDir, logFileName(now())),
-        `\n[${now().toISOString()}] ${label}: ${stack}\n`,
+        join(logsDir, logFileName(ts)),
+        `\n[${ts.toISOString()}] ${label}: ${stack}\n`,
       );
     } catch {
       // ignore
@@ -163,6 +170,7 @@ export function installLogging(dataDir: string, options: InstallLoggingOptions =
 
   return {
     close(): void {
+      logInstalled = false;
       process.stdout.write = origStdout;
       process.stderr.write = origStderr;
       process.off("uncaughtException", uncaught);
@@ -181,6 +189,7 @@ export function followLog(dataDir: string): Promise<void> {
   // logs 是独立 CLI 进程，stdout 未被 tee，直接写即可。
   return new Promise<void>(() => {
     let file: string | null = null;
+    let fd: number | null = null;
     let offset = 0;
     setInterval(() => {
       let names: string[];
@@ -188,13 +197,21 @@ export function followLog(dataDir: string): Promise<void> {
       const latest = pickLatestLogFile(names);
       if (!latest) return;
       const full = join(logsDir, latest);
-      if (latest !== file) { file = latest; offset = 0; }
+      if (latest !== file) {
+        if (fd !== null) { try { closeSync(fd); } catch { /* ignore */ } }
+        try { fd = openSync(full, "r"); } catch { fd = null; return; }
+        file = latest;
+        offset = 0;
+      }
+      if (fd === null) return;
       let size: number;
       try { size = statSync(full).size; } catch { return; }
       if (size <= offset) return;
-      const chunk = readFileSync(full).subarray(offset);
-      offset = size;
-      process.stdout.write(chunk.toString("utf8"));
+      const buf = Buffer.allocUnsafe(size - offset);
+      let bytesRead: number;
+      try { bytesRead = readSync(fd, buf, 0, buf.length, offset); } catch { return; }
+      offset += bytesRead;
+      process.stdout.write(buf.subarray(0, bytesRead).toString("utf8"));
     }, 500);
   });
 }
