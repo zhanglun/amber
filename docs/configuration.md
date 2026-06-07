@@ -141,3 +141,33 @@ PostgreSQL + R2 是推荐的生产配置，两者独立，可以单独启用：
 
 - **删除时 R2 对象不清理**：`amber delete` 删除 Postgres 记录和本地 blob，但不删除 R2 中的对象（`BlobStore` 接口目前没有 `delete` 方法）。
 - **blob 迁移需手动完成**：`amber migrate` 只迁移 capture 元数据，blob 文件需手动上传到 R2（可用 `rclone` 或 Cloudflare Dashboard）。
+
+---
+
+## 生产部署（Node.js）
+
+生产环境用前台命令运行，交给进程管理器守护：
+
+```bash
+amber web serve --port=7788
+```
+
+`amber web serve` 与本地 `amber web` 的区别：前台运行、不自动开浏览器，但日志写入**同一个文件** `<AMBER_DATA_DIR>/logs/web-YYYY-MM-DD.log`，同时输出到 stdout。
+
+查看日志两种方式都可用：
+
+- `amber web logs [--lines=N] [--follow]` —— 读日志文件，跨环境一致
+- 进程管理器自带的 stdout 捕获，如 `journalctl -u amber -f`、`docker logs -f <container>`、`pm2 logs amber`
+
+systemd unit 示例：
+
+```ini
+[Service]
+WorkingDirectory=/opt/amber
+Environment=AMBER_DATA_DIR=/var/lib/amber
+Environment=DATABASE_URL=postgresql://...
+ExecStart=/usr/bin/pnpm amber web serve --port=7788
+Restart=always
+```
+
+日志按日期拆分、默认保留 7 天（`serve` 启动时清理过期文件）。
