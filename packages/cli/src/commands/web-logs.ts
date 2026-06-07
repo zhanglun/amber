@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync, unlinkSync } from "node:fs";
+import {
+  appendFileSync, closeSync, mkdirSync, openSync,
+  readdirSync, readFileSync, statSync, unlinkSync, writeSync,
+} from "node:fs";
 import { join } from "node:path";
 
 const LOG_FILE_RE = /^web-(\d{4}-\d{2}-\d{2})\.log$/;
@@ -76,4 +79,122 @@ export function cleanupExpiredLogs(dataDir: string, today: Date, keepDays: numbe
       // ignore: best-effort cleanup
     }
   }
+}
+
+export const DEFAULT_KEEP_DAYS = 7;
+
+export interface LogHandle {
+  close(): void;
+}
+
+export interface InstallLoggingOptions {
+  keepDays?: number;
+  now?: () => Date;
+}
+
+/**
+ * 在当前进程内安装日志：tee process.stdout/stderr 到按日期拆分的文件，
+ * 跨天自动重开文件，崩溃时同步落盘。返回的 close() 恢复原始 write 并关闭 fd。
+ */
+export function installLogging(dataDir: string, options: InstallLoggingOptions = {}): LogHandle {
+  const keepDays = options.keepDays ?? DEFAULT_KEEP_DAYS;
+  const now = options.now ?? (() => new Date());
+  const logsDir = join(dataDir, LOG_DIR_NAME);
+
+  mkdirSync(logsDir, { recursive: true });
+  cleanupExpiredLogs(dataDir, now(), keepDays);
+
+  let openedDate = now();
+  let fd = openSync(join(logsDir, logFileName(openedDate)), "a");
+
+  const origStdout = process.stdout.write.bind(process.stdout);
+  const origStderr = process.stderr.write.bind(process.stderr);
+
+  function writeToFile(chunk: string | Uint8Array): void {
+    const current = now();
+    if (shouldRotate(openedDate, current)) {
+      try { closeSync(fd); } catch { /* ignore */ }
+      openedDate = current;
+      fd = openSync(join(logsDir, logFileName(openedDate)), "a");
+    }
+    try {
+      if (typeof chunk === "string") {
+        writeSync(fd, chunk);
+      } else {
+        writeSync(fd, Buffer.from(chunk));
+      }
+    } catch {
+      // ignore: never let logging crash the server
+    }
+  }
+
+  function makeTee(orig: typeof process.stdout.write): typeof process.stdout.write {
+    return function (
+      this: unknown,
+      chunk: string | Uint8Array,
+      encoding?: BufferEncoding | ((err?: Error) => void),
+      cb?: (err?: Error) => void,
+    ): boolean {
+      writeToFile(chunk);
+      // 保留完整签名与返回值（背压布尔）
+      return (orig as (...a: unknown[]) => boolean)(chunk, encoding, cb);
+    } as typeof process.stdout.write;
+  }
+
+  process.stdout.write = makeTee(origStdout);
+  process.stderr.write = makeTee(origStderr);
+
+  const onFatal = (label: string) => (err: unknown): void => {
+    const stack = err instanceof Error ? (err.stack ?? err.message) : String(err);
+    try {
+      appendFileSync(
+        join(logsDir, logFileName(now())),
+        `\n[${now().toISOString()}] ${label}: ${stack}\n`,
+      );
+    } catch {
+      // ignore
+    }
+    process.exit(1);
+  };
+  const uncaught = onFatal("uncaughtException");
+  const unhandled = onFatal("unhandledRejection");
+  process.on("uncaughtException", uncaught);
+  process.on("unhandledRejection", unhandled);
+
+  return {
+    close(): void {
+      process.stdout.write = origStdout;
+      process.stderr.write = origStderr;
+      process.off("uncaughtException", uncaught);
+      process.off("unhandledRejection", unhandled);
+      try { closeSync(fd); } catch { /* ignore */ }
+    },
+  };
+}
+
+/**
+ * tail -f 风格跟随最新日志文件：每 500ms 从上次读到的偏移读增量并打印。
+ * 该 Promise 不主动 resolve；进程在 Ctrl-C 时退出。
+ */
+export function followLog(dataDir: string): Promise<void> {
+  const logsDir = join(dataDir, LOG_DIR_NAME);
+  // logs 是独立 CLI 进程，stdout 未被 tee，直接写即可。
+  return new Promise<void>(() => {
+    let file: string | null = null;
+    let offset = 0;
+    setInterval(() => {
+      let names: string[];
+      try { names = readdirSync(logsDir); } catch { return; }
+      const latest = pickLatestLogFile(names);
+      if (!latest) return;
+      const full = join(logsDir, latest);
+      if (latest !== file) { file = latest; offset = 0; }
+      let size: number;
+      try { size = statSync(full).size; } catch { return; }
+      if (size <= offset) return;
+      const chunk = readFileSync(full).subarray(offset);
+      offset = size;
+      process.stdout.write(chunk.toString("utf8"));
+    }, 500);
+  });
 }
