@@ -82,6 +82,18 @@ describe("webCommand", () => {
     await runCommand(createWebCommand(actions), { rawArgs: ["restart", "--port=8899"] });
     expect(actions.calls).toEqual(["restart:8899:true"]);
   });
+
+  it("routes the serve subcommand with openBrowser=false", async () => {
+    const actions = fakeActions();
+    await runCommand(createWebCommand(actions), { rawArgs: ["serve", "--port=9000"] });
+    expect(actions.calls).toEqual(["serve:9000:false"]);
+  });
+
+  it("routes the logs subcommand with parsed args", async () => {
+    const actions = fakeActions();
+    await runCommand(createWebCommand(actions), { rawArgs: ["logs", "--lines=50", "--follow"] });
+    expect(actions.calls).toEqual(["logs:50:true"]);
+  });
 });
 
 describe("createWebActions", () => {
@@ -99,6 +111,12 @@ describe("createWebActions", () => {
     const runtime = fakeRuntime(null);
     await createWebActions(runtime).serve(7788, { openBrowser: true });
     expect(runtime.calls.some((c) => c.startsWith("open:"))).toBe(true);
+  });
+
+  it("logs prints a friendly message when there are no logs", async () => {
+    const runtime = fakeRuntime(null); // readLog returns null
+    await createWebActions(runtime).logs({ lines: 200, follow: false });
+    expect(runtime.calls).toContain("info:No logs yet. Start the web UI first.");
   });
 
   it("restarts on the existing port when no restart port is provided", async () => {

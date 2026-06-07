@@ -270,7 +270,28 @@ function createRestartCommand(actions: WebActions) {
   });
 }
 
-const WEB_SUBCOMMANDS = new Set(["restart", "status", "stop"]);
+function createServeCommand(actions: WebActions) {
+  return defineCommand({
+    meta: { name: "serve", description: "Run the web UI in the foreground (for production / supervisors)" },
+    args: {
+      port: { type: "string", description: "Port to listen on", default: process.env.AMBER_PORT ?? "7788" },
+    },
+    run: ({ args }) => actions.serve(Number(args.port), { openBrowser: false }),
+  });
+}
+
+function createLogsCommand(actions: WebActions) {
+  return defineCommand({
+    meta: { name: "logs", description: "View web UI server logs" },
+    args: {
+      lines: { type: "string", description: "Number of lines to show", default: "200" },
+      follow: { type: "boolean", alias: "f", description: "Follow new log output", default: false },
+    },
+    run: ({ args }) => actions.logs({ lines: Number(args.lines), follow: Boolean(args.follow) }),
+  });
+}
+
+const WEB_SUBCOMMANDS = new Set(["restart", "status", "stop", "logs", "serve"]);
 
 function hasWebSubcommand(rawArgs: string[]): boolean {
   return rawArgs.some((arg) => WEB_SUBCOMMANDS.has(arg));
@@ -290,6 +311,8 @@ export function createWebCommand(actions: WebActions = createWebActions()) {
       restart: createRestartCommand(actions),
       status: createStatusCommand(actions),
       stop: createStopCommand(actions),
+      logs: createLogsCommand(actions),
+      serve: createServeCommand(actions),
     },
     async run({ args, rawArgs }) {
       if (hasWebSubcommand(rawArgs)) return;
