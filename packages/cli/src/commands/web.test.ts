@@ -15,7 +15,7 @@ function fakeActions(): WebActions & { calls: string[] } {
     calls,
     isBackground: () => false,
     start: async (port) => { calls.push(`start:${port}`); },
-    serve: async (port, opts) => { calls.push(`serve:${port}:${opts?.openBrowser ?? true}`); },
+    serve: async (port, opts) => { calls.push(`serve:${port}:${opts?.openBrowser ?? true}:${opts?.hostname ?? "undefined"}`); },
     logs: async (opts) => { calls.push(`logs:${opts.lines}:${opts.follow}`); },
     status: async () => { calls.push("status"); },
     stop: async () => { calls.push("stop"); return null; },
@@ -56,7 +56,7 @@ function fakeRuntime(info: PidInfo | null): WebRuntime & { calls: string[] } {
     readPid: async () => info,
     spawnDaemon: (port) => { calls.push(`spawn:${port}`); },
     startServer: (_readService, opts) => {
-      calls.push("serve");
+      calls.push(`startServer:${opts.hostname ?? "undefined"}`);
       opts.onReady?.();
     },
     unlinkPid: async () => { calls.push("unlink"); },
@@ -86,7 +86,13 @@ describe("webCommand", () => {
   it("routes the serve subcommand with openBrowser=false", async () => {
     const actions = fakeActions();
     await runCommand(createWebCommand(actions), { rawArgs: ["serve", "--port=9000"] });
-    expect(actions.calls).toEqual(["serve:9000:false"]);
+    expect(actions.calls).toEqual(["serve:9000:false:0.0.0.0"]);
+  });
+
+  it("routes the serve subcommand with custom host", async () => {
+    const actions = fakeActions();
+    await runCommand(createWebCommand(actions), { rawArgs: ["serve", "--host=127.0.0.1"] });
+    expect(actions.calls).toEqual(["serve:7788:false:127.0.0.1"]);
   });
 
   it("routes the logs subcommand with parsed args", async () => {
@@ -102,7 +108,7 @@ describe("createWebActions", () => {
     // startServer is a no-op mock, so serve resolves after wiring
     await createWebActions(runtime).serve(7788, { openBrowser: false });
     expect(runtime.calls).toContain("write:7788"); // pid written
-    expect(runtime.calls).toContain("serve");      // startServer called
+    expect(runtime.calls).toContain("startServer:undefined");      // startServer called
     // openBrowser=false -> no open:* call
     expect(runtime.calls.some((c) => c.startsWith("open:"))).toBe(false);
   });
@@ -111,6 +117,26 @@ describe("createWebActions", () => {
     const runtime = fakeRuntime(null);
     await createWebActions(runtime).serve(7788, { openBrowser: true });
     expect(runtime.calls.some((c) => c.startsWith("open:"))).toBe(true);
+  });
+
+  it("serve passes hostname to startServer", async () => {
+    const runtime = fakeRuntime(null);
+    await createWebActions(runtime).serve(7788, { openBrowser: false, hostname: "0.0.0.0" });
+    expect(runtime.calls).toContain("startServer:0.0.0.0");
+  });
+
+  it("serve prints Vite-style local and network addresses", async () => {
+    const runtime = fakeRuntime(null);
+    await createWebActions(runtime).serve(7788, { openBrowser: false });
+    const local = runtime.calls.find((c) => c.includes("➜") && c.includes("Local"));
+    expect(local).toBeTruthy();
+    expect(local).toContain("localhost:7788");
+  });
+
+  it("serve defaults hostname to undefined when not provided", async () => {
+    const runtime = fakeRuntime(null);
+    await createWebActions(runtime).serve(7788, { openBrowser: false });
+    expect(runtime.calls).toContain("startServer:undefined");
   });
 
   it("logs prints a friendly message when there are no logs", async () => {

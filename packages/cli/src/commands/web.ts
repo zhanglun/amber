@@ -1,5 +1,6 @@
 import { spawn, exec } from "node:child_process";
 import { readFile, unlink, writeFile } from "node:fs/promises";
+import { networkInterfaces } from "node:os";
 import { join, resolve } from "node:path";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
@@ -17,7 +18,7 @@ export interface PidInfo {
 export interface WebActions {
   isBackground(): boolean;
   restart(port: number, portExplicit: boolean): Promise<void>;
-  serve(port: number, opts?: { openBrowser: boolean }): Promise<void>;
+  serve(port: number, opts?: { openBrowser: boolean; hostname?: string }): Promise<void>;
   logs(opts: { lines: number; follow: boolean }): Promise<void>;
   start(port: number): Promise<void>;
   status(): Promise<void>;
@@ -74,6 +75,19 @@ function openBrowser(url: string): void {
     : process.platform === "win32" ? `start "" "${url}"`
     : `xdg-open "${url}"`;
   exec(cmd);
+}
+
+/** 获取本机可访问的地址列表（类 Vite 风格）。 */
+function getNetworkAddresses(port: number): { local: string; network: string | null } {
+  const local = `http://localhost:${port}`;
+  for (const iface of Object.values(networkInterfaces())) {
+    for (const addr of iface ?? []) {
+      if (addr.family === "IPv4" && !addr.internal) {
+        return { local, network: `http://${addr.address}:${port}` };
+      }
+    }
+  }
+  return { local, network: null };
 }
 
 export function daemonProcessArgs(argv: string[], port: number): string[] {
@@ -169,7 +183,7 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
       const logHandle: LogHandle = runtime.installLogging(dataDir);
       try {
         const { readService, blobsDir, deleteCapture, dispose } = runtime.buildServices();
-        const url = `http://localhost:${port}`;
+        const addresses = getNetworkAddresses(port);
 
         await runtime.writePid(dataDir, {
           pid: process.pid,
@@ -190,7 +204,13 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
           blobsDir,
           deleteCapture,
           port,
-          onReady: opts.openBrowser ? () => runtime.openBrowser(url) : undefined,
+          hostname: opts.hostname,
+          onReady: () => {
+            runtime.log.success("Web UI ready:");
+            runtime.log.info(`  ➜  Local:   ${addresses.local}`);
+            if (addresses.network) runtime.log.info(`  ➜  Network: ${addresses.network}`);
+            if (opts.openBrowser) runtime.openBrowser(addresses.local);
+          },
         });
       } catch (err) {
         logHandle.close();
@@ -209,6 +229,9 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
 
       runtime.spawnDaemon(port);
       runtime.log.success(`Web UI starting on port ${port}…`);
+      const addresses = getNetworkAddresses(port);
+      runtime.log.info(`  ➜  Local:   ${addresses.local}`);
+      if (addresses.network) runtime.log.info(`  ➜  Network: ${addresses.network}`);
       runtime.log.info('"amber web status" to check  |  "amber web stop" to stop');
     },
     async status() {
@@ -284,8 +307,9 @@ function createServeCommand(actions: WebActions) {
     meta: { name: "serve", description: "Run the web UI in the foreground (for production / supervisors)" },
     args: {
       port: { type: "string", description: "Port to listen on", default: process.env.AMBER_PORT ?? "7788" },
+      host: { type: "string", description: "Hostname to listen on", default: "0.0.0.0" },
     },
-    run: ({ args }) => actions.serve(Number(args.port), { openBrowser: false }),
+    run: ({ args }) => actions.serve(Number(args.port), { openBrowser: false, hostname: args.host as string }),
   });
 }
 
@@ -330,7 +354,7 @@ export function createWebCommand(actions: WebActions = createWebActions()) {
       if (hasWebSubcommand(rawArgs)) return;
       const port = Number(args.port);
       if (actions.isBackground()) {
-        await actions.serve(port, { openBrowser: true });
+        await actions.serve(port, { openBrowser: true, hostname: "localhost" });
         return;
       }
       await actions.start(port);

@@ -93,11 +93,11 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
   return app;
 }
 
-export function startServer(readService: ReadService, options: WebOptions & { port: number }): void {
+export function startServer(readService: ReadService, options: WebOptions & { port: number; hostname?: string }): void {
   const app = createApp(readService, {
     blobsDir: options.blobsDir,
     deleteCapture: options.deleteCapture,
     requestLog: true,
   });
-  serve({ fetch: app.fetch, port: options.port }, () => options.onReady?.());
+  serve({ fetch: app.fetch, port: options.port, hostname: options.hostname }, () => options.onReady?.());
 }

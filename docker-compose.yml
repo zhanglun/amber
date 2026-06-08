@@ -1,0 +1,29 @@
+services:
+  web:
+    build: .
+    ports:
+      - "${AMBER_PORT:-7788}:7788"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://amber:${PG_PASSWORD:-amber}@postgres:5432/amber
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: amber
+      POSTGRES_USER: amber
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-amber}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U amber"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

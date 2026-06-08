@@ -1,0 +1,10 @@
+node_modules/
+**/node_modules/
+amber-data/
+dist/
+.env
+.git/
+.omo/
+.superpowers/
+*.log
+packages/adapters/src/generated/
