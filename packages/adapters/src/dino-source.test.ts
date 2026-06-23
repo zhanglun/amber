@@ -36,6 +36,21 @@ describe("toRawCapture", () => {
     const raw = toRawCapture(noCover);
     expect(raw.coverImage).toBeUndefined();
   });
+
+  it("converts residual <table> HTML to a pipe table", () => {
+    const withTable: CaptureResult = {
+      ...result,
+      markdown:
+        `<p>intro</p>\n\n` +
+        `<table><tbody><tr><td>序号</td><td>标题</td></tr>` +
+        `<tr><td>1</td><td>破题</td></tr></tbody></table>`,
+      assets: [],
+    };
+    const raw = toRawCapture(withTable);
+    expect(raw.markdown).not.toContain("<table");
+    expect(raw.markdown).toContain("| 序号 | 标题 |");
+    expect(raw.markdown).toContain("intro");
+  });
 });
 
 describe("mentionsBrowserAttempt", () => {

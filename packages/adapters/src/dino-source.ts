@@ -1,10 +1,15 @@
 import { capture as dinoCapture, type CaptureResult } from "dino";
 import type { Asset, RawCapture, Source } from "@amber/domain";
+import { convertResidualTables } from "./markdown-table-fallback.js";
 
 /**
  * 把 dino 的 CaptureResult 转成 amber 的 RawCapture。
  * dino 的图片引用是本地路径（assets/image-001.png）；amber 用占位符（amber-asset:N）。
  * 只替换 markdown 链接/图片语法 `](path)` 内的路径，避免误伤正文。
+ *
+ * asset 占位符替换之后再兜底转换残留的 `<table>` HTML：dino 对无表头 table
+ * 已尽力转换，但仍可能残留（如旧版本 capture）；amber web 端禁用内联 HTML，
+ * 残留 table 会被当字符串转义，所以这里扫一遍，多行转 pipe table、单行拍平。
  */
 export function toRawCapture(result: CaptureResult): RawCapture {
   let markdown = result.markdown;
@@ -13,6 +18,7 @@ export function toRawCapture(result: CaptureResult): RawCapture {
     markdown = markdown.split(`](${a.path})`).join(`](${placeholder})`);
     return { placeholder, data: a.data, contentType: a.contentType };
   });
+  markdown = convertResidualTables(markdown);
   return {
     title: result.title,
     markdown,
