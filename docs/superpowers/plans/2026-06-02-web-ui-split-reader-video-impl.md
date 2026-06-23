@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **状态说明（2026-06-23 核实）：** 本计划部分实现。Task 1/2 的 split-reader shell（`renderLibrary` / `.app-shell` / `.sidebar` / `.reader`）**已被后续计划 [2026-06-03-focused-reader-toc](./2026-06-03-web-ui-focused-reader-toc-impl.md) 主动替换**——后者改为 `renderList` + `renderArticle`（focused reader + TOC）方案，split-reader shell 未进入最终代码。Task 3/4（原生视频渲染 + MIME 类型）已完整实现并保留。下方 Task 1/2 checkbox 标记为 `~[ ]~`（已废弃/被替换），不作勾选。
+
 **Goal:** Build a dense split-reader Web UI with native video rendering for local video blobs.
 
 **Architecture:** Keep the Web UI server-rendered with TypeScript string templates. Replace separate list/article page rendering with a single `renderLibrary(items, selectedCapture)` shell, and add video-link rendering inside the existing Markdown renderer.
@@ -29,7 +31,7 @@ All modified Web source files must stay below 500 lines.
 - Modify: `packages/web/src/styles.ts`
 - Modify: `packages/web/src/render.test.ts`
 
-- [ ] **Step 1: Write failing render tests**
+- ~[ ]~ **Step 1: Write failing render tests**
 
 Add tests asserting:
 
@@ -69,21 +71,21 @@ it("renders an empty reader state when no capture is selected", async () => {
 });
 ```
 
-- [ ] **Step 2: Verify tests fail**
+- ~[ ]~ **Step 2: Verify tests fail**
 
 Run: `pnpm exec vitest run packages/web/src/render.test.ts`
 
 Expected: FAIL because `renderLibrary` is not exported and split classes do not exist.
 
-- [ ] **Step 3: Implement split shell**
+- ~[ ]~ **Step 3: Implement split shell**
 
 Implement `renderLibrary(items, selectedCapture)` in `render.ts`, move list rendering into `renderSidebar`, and render the selected article in `renderReader`.
 
-- [ ] **Step 4: Add split layout styles**
+- ~[ ]~ **Step 4: Add split layout styles**
 
 Add `.app-shell`, `.sidebar`, `.reader`, `.reader-inner`, `.sidebar-header`, `.sidebar-item`, and `.sidebar-item.active` styles in `styles.ts`.
 
-- [ ] **Step 5: Verify render tests pass**
+- ~[ ]~ **Step 5: Verify render tests pass**
 
 Run: `pnpm exec vitest run packages/web/src/render.test.ts packages/web/src/styles.test.ts`
 
@@ -95,7 +97,7 @@ Expected: PASS.
 - Modify: `packages/web/src/index.ts`
 - Add: `packages/web/src/index.test.ts`
 
-- [ ] **Step 1: Write failing route tests**
+- ~[ ]~ **Step 1: Write failing route tests**
 
 Create `packages/web/src/index.test.ts` with tests using `createApp` and a fake `ReadService`:
 
@@ -118,17 +120,17 @@ it("renders the selected capture on /captures/:id", async () => {
 });
 ```
 
-- [ ] **Step 2: Verify route tests fail**
+- ~[ ]~ **Step 2: Verify route tests fail**
 
 Run: `pnpm exec vitest run packages/web/src/index.test.ts`
 
 Expected: FAIL because routes still call separate render functions.
 
-- [ ] **Step 3: Implement route integration**
+- ~[ ]~ **Step 3: Implement route integration**
 
 Update `/` and `/captures/:id` to call `renderLibrary(items, selectedCapture)`.
 
-- [ ] **Step 4: Verify route tests pass**
+- ~[ ]~ **Step 4: Verify route tests pass**
 
 Run: `pnpm exec vitest run packages/web/src/index.test.ts packages/web/src/render.test.ts`
 
@@ -144,7 +146,7 @@ Expected: PASS.
 - Modify: `packages/web/src/styles.ts`
 - Modify: `packages/web/src/styles.test.ts`
 
-- [ ] **Step 1: Write failing Markdown video test**
+- [x] **Step 1: Write failing Markdown video test**
 
 Add to `packages/web/src/highlight.test.ts`:
 
@@ -159,7 +161,7 @@ it("renders local video links as native video embeds", async () => {
 });
 ```
 
-- [ ] **Step 2: Write failing MIME test**
+- [x] **Step 2: Write failing MIME test**
 
 Add to `packages/web/src/index.test.ts`:
 
@@ -170,21 +172,21 @@ expect(contentTypeForPath("captures/c1/2.ogv")).toBe("video/ogg");
 expect(contentTypeForPath("captures/c1/2.mov")).toBe("video/quicktime");
 ```
 
-- [ ] **Step 3: Verify video tests fail**
+- [x] **Step 3: Verify video tests fail**
 
 Run: `pnpm exec vitest run packages/web/src/highlight.test.ts packages/web/src/index.test.ts`
 
 Expected: FAIL because video links render as normal anchors and MIME helper is not exported yet.
 
-- [ ] **Step 4: Implement video rendering**
+- [x] **Step 4: Implement video rendering**
 
 Customize Markdown-it `link_open` / `link_close` renderer in `highlight.ts` for local video extensions.
 
-- [ ] **Step 5: Implement MIME helper and styles**
+- [x] **Step 5: Implement MIME helper and styles**
 
 Export `contentTypeForPath(path)` from `index.ts`, use it in the blob route, and add `.video-embed` styles.
 
-- [ ] **Step 6: Verify video tests pass**
+- [x] **Step 6: Verify video tests pass**
 
 Run: `pnpm exec vitest run packages/web/src/highlight.test.ts packages/web/src/index.test.ts packages/web/src/styles.test.ts`
 
@@ -195,19 +197,19 @@ Expected: PASS.
 **Files:**
 - No additional files.
 
-- [ ] **Step 1: Run Web package tests**
+- [x] **Step 1: Run Web package tests**
 
 Run: `pnpm exec vitest run packages/web`
 
 Expected: PASS.
 
-- [ ] **Step 2: Run typecheck**
+- [x] **Step 2: Run typecheck**
 
 Run: `pnpm run typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 3: Check file lengths**
+- [x] **Step 3: Check file lengths**
 
 Run: `wc -l packages/web/src/*.ts packages/web/src/*.test.ts`
 

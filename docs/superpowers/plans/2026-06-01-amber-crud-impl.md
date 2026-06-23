@@ -39,7 +39,7 @@
 - 修改：`packages/core/src/import-service.test.ts`（fake store 需同步更新）
 - 修改：`packages/core/src/read-service.test.ts`（同上）
 
-- [ ] **步骤 1：向 Store 接口添加 `delete`**
+- [x] **步骤 1：向 Store 接口添加 `delete`**
 
 在 `packages/domain/src/index.ts` 中，替换 `Store` 接口块：
 
@@ -54,7 +54,7 @@ export interface Store {
 }
 ```
 
-- [ ] **步骤 2：更新 `import-service.test.ts` 中的 fake store**
+- [x] **步骤 2：更新 `import-service.test.ts` 中的 fake store**
 
 在 `packages/core/src/import-service.test.ts` 中，向 `fakeStore` 工厂函数添加 `delete`。替换 `const store: Store = {` 块：
 
@@ -73,7 +73,7 @@ const store: Store = {
 };
 ```
 
-- [ ] **步骤 3：更新 `read-service.test.ts` 中的 fake store**
+- [x] **步骤 3：更新 `read-service.test.ts` 中的 fake store**
 
 在 `packages/core/src/read-service.test.ts` 中，向 `fakeStore` 工厂函数添加 `delete`。替换 `return {` 块：
 
@@ -87,7 +87,7 @@ return {
 };
 ```
 
-- [ ] **步骤 4：运行范围限定的类型检查（仅 domain + core）**
+- [x] **步骤 4：运行范围限定的类型检查（仅 domain + core）**
 
 `FileStore` 直到任务 5 才实现 `delete`，此时运行全量 typecheck 会在 adapters 报错。只检查已改动的两个包：
 
@@ -99,7 +99,7 @@ cd /Users/zhanglun/Documents/mine/amber && \
 
 预期：退出码 0，无报错。
 
-- [ ] **步骤 5：运行测试**
+- [x] **步骤 5：运行测试**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm test
@@ -107,7 +107,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm test
 
 预期：所有现有测试通过（本任务尚未新增行为）。
 
-- [ ] **步骤 6：提交**
+- [x] **步骤 6：提交**
 
 ```bash
 git add packages/domain/src/index.ts packages/core/src/import-service.test.ts packages/core/src/read-service.test.ts
@@ -123,7 +123,7 @@ git commit -m "feat(domain): add delete to Store interface"
 - 修改：`packages/core/src/asset-key.ts`
 - 修改：`packages/core/src/index.ts`
 
-- [ ] **步骤 1：编写失败测试**
+- [x] **步骤 1：编写失败测试**
 
 完整替换 `packages/core/src/asset-key.test.ts`（import 行也需要更新）：
 
@@ -152,7 +152,7 @@ describe("captureAssetPrefix", () => {
 });
 ```
 
-- [ ] **步骤 2：运行测试，确认失败**
+- [x] **步骤 2：运行测试，确认失败**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/src/asset-key.test.ts
@@ -160,7 +160,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/sr
 
 预期：FAIL — `captureAssetPrefix` 未导出。
 
-- [ ] **步骤 3：实现 `captureAssetPrefix`**
+- [x] **步骤 3：实现 `captureAssetPrefix`**
 
 在 `packages/core/src/asset-key.ts` 中，在现有 `assetKey` 函数后追加：
 
@@ -170,7 +170,7 @@ export function captureAssetPrefix(captureId: string): string {
 }
 ```
 
-- [ ] **步骤 4：从 core index 导出**
+- [x] **步骤 4：从 core index 导出**
 
 在 `packages/core/src/index.ts` 中，更新 asset-key 的导出行：
 
@@ -178,7 +178,7 @@ export function captureAssetPrefix(captureId: string): string {
 export { assetKey, captureAssetPrefix } from "./asset-key.js";
 ```
 
-- [ ] **步骤 5：运行测试，确认通过**
+- [x] **步骤 5：运行测试，确认通过**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/src/asset-key.test.ts
@@ -186,7 +186,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/sr
 
 预期：4 条测试全部通过。
 
-- [ ] **步骤 6：提交**
+- [x] **步骤 6：提交**
 
 ```bash
 git add packages/core/src/asset-key.ts packages/core/src/asset-key.test.ts packages/core/src/index.ts
@@ -201,7 +201,7 @@ git commit -m "feat(core): add captureAssetPrefix for blob directory cleanup"
 - 修改：`packages/core/src/read-service.test.ts`
 - 修改：`packages/core/src/read-service.ts`
 
-- [ ] **步骤 1：编写失败测试**
+- [x] **步骤 1：编写失败测试**
 
 完整替换 `packages/core/src/read-service.test.ts`——`fakeStore` 中的 `findBySourceUrl` 需要从 `vi.fn()` 升级为有真实返回值的 stub，才能验证新测试的委托逻辑：
 
@@ -246,7 +246,7 @@ describe("ReadService", () => {
 });
 ```
 
-- [ ] **步骤 2：运行测试，确认失败**
+- [x] **步骤 2：运行测试，确认失败**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/src/read-service.test.ts
@@ -254,7 +254,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/sr
 
 预期：FAIL — `svc.findBySourceUrl is not a function`。
 
-- [ ] **步骤 3：实现 `findBySourceUrl`**
+- [x] **步骤 3：实现 `findBySourceUrl`**
 
 完整替换 `packages/core/src/read-service.ts`：
 
@@ -278,7 +278,7 @@ export class ReadService {
 }
 ```
 
-- [ ] **步骤 4：运行测试，确认通过**
+- [x] **步骤 4：运行测试，确认通过**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/src/read-service.test.ts
@@ -286,7 +286,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/sr
 
 预期：3 条测试全部通过。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add packages/core/src/read-service.ts packages/core/src/read-service.test.ts
@@ -301,7 +301,7 @@ git commit -m "feat(core): expose findBySourceUrl on ReadService"
 - 修改：`packages/core/src/import-service.test.ts`
 - 修改：`packages/core/src/import-service.ts`
 
-- [ ] **步骤 1：编写失败测试**
+- [x] **步骤 1：编写失败测试**
 
 在 `packages/core/src/import-service.test.ts` 中，在 `describe("ImportService", ...)` 块内（现有两条测试之后）追加两条新测试：
 
@@ -341,7 +341,7 @@ it("generates a new id when forceId is not provided (normal dedupe path)", async
 });
 ```
 
-- [ ] **步骤 2：运行测试，确认失败**
+- [x] **步骤 2：运行测试，确认失败**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/src/import-service.test.ts
@@ -349,7 +349,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/sr
 
 预期：FAIL — `run` 不接受第二个参数。
 
-- [ ] **步骤 3：实现 `options` 参数**
+- [x] **步骤 3：实现 `options` 参数**
 
 完整替换 `packages/core/src/import-service.ts`：
 
@@ -416,7 +416,7 @@ export class ImportService {
 }
 ```
 
-- [ ] **步骤 4：运行测试，确认全部通过**
+- [x] **步骤 4：运行测试，确认全部通过**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/src/import-service.test.ts
@@ -424,7 +424,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/core/sr
 
 预期：4 条测试全部通过。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add packages/core/src/import-service.ts packages/core/src/import-service.test.ts
@@ -439,7 +439,7 @@ git commit -m "feat(core): add forceId option to ImportService.run"
 - 修改：`packages/adapters/src/file-store.test.ts`
 - 修改：`packages/adapters/src/file-store.ts`
 
-- [ ] **步骤 1：编写失败测试**
+- [x] **步骤 1：编写失败测试**
 
 在 `packages/adapters/src/file-store.test.ts` 的 `describe("FileStore", ...)` 块内追加：
 
@@ -458,7 +458,7 @@ it("delete is a no-op for unknown ids", async () => {
 });
 ```
 
-- [ ] **步骤 2：运行测试，确认失败**
+- [x] **步骤 2：运行测试，确认失败**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/adapters/src/file-store.test.ts
@@ -466,7 +466,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/adapter
 
 预期：FAIL — `store.delete is not a function`。
 
-- [ ] **步骤 3：实现 `delete`**
+- [x] **步骤 3：实现 `delete`**
 
 完整替换 `packages/adapters/src/file-store.ts`（更新 import 行并添加方法）：
 
@@ -534,7 +534,7 @@ export class FileStore implements Store {
 }
 ```
 
-- [ ] **步骤 4：运行测试，确认通过**
+- [x] **步骤 4：运行测试，确认通过**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/adapters/src/file-store.test.ts
@@ -542,7 +542,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm exec vitest run packages/adapter
 
 预期：7 条测试全部通过。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add packages/adapters/src/file-store.ts packages/adapters/src/file-store.test.ts
@@ -556,7 +556,7 @@ git commit -m "feat(adapters): implement FileStore.delete"
 **涉及文件：**
 - 修改：`packages/cli/src/wiring.ts`
 
-- [ ] **步骤 1：更新 `wiring.ts`**
+- [x] **步骤 1：更新 `wiring.ts`**
 
 完整替换 `packages/cli/src/wiring.ts`：
 
@@ -589,7 +589,7 @@ export function buildServices() {
 }
 ```
 
-- [ ] **步骤 2：运行全量类型检查**
+- [x] **步骤 2：运行全量类型检查**
 
 全部实现到位，可以跑全量 typecheck 了：
 
@@ -599,7 +599,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm typecheck
 
 预期：退出码 0。
 
-- [ ] **步骤 3：运行完整测试套件**
+- [x] **步骤 3：运行完整测试套件**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm test
@@ -607,7 +607,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm test
 
 预期：所有测试通过。
 
-- [ ] **步骤 4：提交**
+- [x] **步骤 4：提交**
 
 ```bash
 git add packages/cli/src/wiring.ts
@@ -622,7 +622,7 @@ git commit -m "feat(cli): add deleteCapture helper to wiring"
 - 新建：`packages/cli/src/commands/delete.ts`
 - 修改：`packages/cli/src/main.ts`
 
-- [ ] **步骤 1：创建 delete 命令**
+- [x] **步骤 1：创建 delete 命令**
 
 新建 `packages/cli/src/commands/delete.ts`：
 
@@ -663,7 +663,7 @@ export const deleteCommand = defineCommand({
 });
 ```
 
-- [ ] **步骤 2：在 `main.ts` 中注册命令**
+- [x] **步骤 2：在 `main.ts` 中注册命令**
 
 在 `packages/cli/src/main.ts` 中添加 import 并注册命令：
 
@@ -688,7 +688,7 @@ const main = defineCommand({
 runMain(main);
 ```
 
-- [ ] **步骤 3：运行类型检查**
+- [x] **步骤 3：运行类型检查**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm typecheck
@@ -696,7 +696,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm typecheck
 
 预期：退出码 0。
 
-- [ ] **步骤 4：冒烟测试——验证错误路径**
+- [x] **步骤 4：冒烟测试——验证错误路径**
 
 用一个不存在的 id 运行，验证错误处理：
 
@@ -706,7 +706,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm amber delete nonexistent-id
 
 预期：输出错误信息 "Capture not found: nonexistent-id"，退出码 1。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add packages/cli/src/commands/delete.ts packages/cli/src/main.ts
@@ -721,7 +721,7 @@ git commit -m "feat(cli): add amber delete command"
 - 新建：`packages/cli/src/commands/reimport.ts`
 - 修改：`packages/cli/src/main.ts`
 
-- [ ] **步骤 1：创建 reimport 命令**
+- [x] **步骤 1：创建 reimport 命令**
 
 新建 `packages/cli/src/commands/reimport.ts`：
 
@@ -761,7 +761,7 @@ export const reimportCommand = defineCommand({
 });
 ```
 
-- [ ] **步骤 2：在 `main.ts` 中注册命令**
+- [x] **步骤 2：在 `main.ts` 中注册命令**
 
 在 `packages/cli/src/main.ts` 中添加 import 并注册（包含任务 7 已添加的 deleteCommand）：
 
@@ -788,7 +788,7 @@ const main = defineCommand({
 runMain(main);
 ```
 
-- [ ] **步骤 3：运行类型检查**
+- [x] **步骤 3：运行类型检查**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm typecheck
@@ -796,7 +796,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm typecheck
 
 预期：退出码 0。
 
-- [ ] **步骤 4：冒烟测试——验证错误路径**
+- [x] **步骤 4：冒烟测试——验证错误路径**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm amber reimport nonexistent-id
@@ -804,7 +804,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm amber reimport nonexistent-id
 
 预期：输出错误信息 "Capture not found: nonexistent-id"，退出码 1。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add packages/cli/src/commands/reimport.ts packages/cli/src/main.ts
@@ -818,7 +818,7 @@ git commit -m "feat(cli): add amber reimport command"
 **涉及文件：**
 - 修改：`packages/cli/src/commands/import.ts`
 
-- [ ] **步骤 1：更新 import 命令**
+- [x] **步骤 1：更新 import 命令**
 
 完整替换 `packages/cli/src/commands/import.ts`：
 
@@ -868,7 +868,7 @@ export const importCommand = defineCommand({
 });
 ```
 
-- [ ] **步骤 2：运行类型检查**
+- [x] **步骤 2：运行类型检查**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm typecheck
@@ -876,7 +876,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm typecheck
 
 预期：退出码 0。
 
-- [ ] **步骤 3：运行完整测试套件**
+- [x] **步骤 3：运行完整测试套件**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm test
@@ -884,7 +884,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm test
 
 预期：所有测试通过。
 
-- [ ] **步骤 4：冒烟测试——对未导入的 URL 使用 `--force`**
+- [x] **步骤 4：冒烟测试——对未导入的 URL 使用 `--force`**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm amber import --force https://example.com
@@ -892,7 +892,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm amber import --force https://exa
 
 预期：正常运行（无旧记录 → 不触发删除，走普通导入流程）。
 
-- [ ] **步骤 5：提交**
+- [x] **步骤 5：提交**
 
 ```bash
 git add packages/cli/src/commands/import.ts

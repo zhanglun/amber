@@ -29,7 +29,7 @@
 - Modify: `packages/web/src/scripts.ts`
 - Modify: `packages/web/src/scripts.test.ts`
 
-- [ ] **Step 1：更新 `scripts.test.ts`**
+- [x] **Step 1：更新 `scripts.test.ts`**
 
 **1a** 将文件顶部已有的 import 改为（添加两个新函数名）：
 ```ts
@@ -68,7 +68,7 @@ describe("getListFilterScriptHtml", () => {
 });
 ```
 
-- [ ] **Step 2：运行确认失败**
+- [x] **Step 2：运行确认失败**
 
 ```bash
 pnpm vitest run packages/web/src/scripts.test.ts --reporter verbose
@@ -76,7 +76,7 @@ pnpm vitest run packages/web/src/scripts.test.ts --reporter verbose
 
 预期：新增的 5 个测试 FAIL（`getSearchBarHtml is not a function` 等）
 
-- [ ] **Step 3：在 `scripts.ts` 末尾追加两个函数**
+- [x] **Step 3：在 `scripts.ts` 末尾追加两个函数**
 
 ```ts
 export function getSearchBarHtml(): string {
@@ -108,7 +108,7 @@ export function getListFilterScriptHtml(): string {
 }
 ```
 
-- [ ] **Step 4：运行确认全部通过**
+- [x] **Step 4：运行确认全部通过**
 
 ```bash
 pnpm vitest run packages/web/src/scripts.test.ts --reporter verbose
@@ -116,7 +116,7 @@ pnpm vitest run packages/web/src/scripts.test.ts --reporter verbose
 
 预期：所有测试 PASS（原有 4 个 + 新增 5 个，共 9 个）
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add packages/web/src/scripts.ts packages/web/src/scripts.test.ts
@@ -131,7 +131,7 @@ git commit -m "feat(web): add search bar and list filter script to scripts modul
 - Modify: `packages/web/src/styles.ts`
 - Modify: `packages/web/src/styles.test.ts`
 
-- [ ] **Step 1：在 `styles.test.ts` 中新增断言**
+- [x] **Step 1：在 `styles.test.ts` 中新增断言**
 
 在 `describe("getStyles", ...)` 的 `it` 列表末尾追加：
 
@@ -145,7 +145,7 @@ git commit -m "feat(web): add search bar and list filter script to scripts modul
   });
 ```
 
-- [ ] **Step 2：运行确认失败**
+- [x] **Step 2：运行确认失败**
 
 ```bash
 pnpm vitest run packages/web/src/styles.test.ts --reporter verbose
@@ -153,7 +153,7 @@ pnpm vitest run packages/web/src/styles.test.ts --reporter verbose
 
 预期：新增断言 FAIL
 
-- [ ] **Step 3：在 `styles.ts` 的 `getStyles()` 返回字符串中，在 `</style>` 之前追加以下 CSS**
+- [x] **Step 3：在 `styles.ts` 的 `getStyles()` 返回字符串中，在 `</style>` 之前追加以下 CSS**
 
 找到 `styles.ts` 中：
 ```
@@ -173,7 +173,7 @@ pnpm vitest run packages/web/src/styles.test.ts --reporter verbose
 </style>
 ```
 
-- [ ] **Step 4：运行确认全部通过**
+- [x] **Step 4：运行确认全部通过**
 
 ```bash
 pnpm vitest run packages/web/src/styles.test.ts --reporter verbose
@@ -181,7 +181,7 @@ pnpm vitest run packages/web/src/styles.test.ts --reporter verbose
 
 预期：4 个测试全部 PASS
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add packages/web/src/styles.ts packages/web/src/styles.test.ts
@@ -196,7 +196,7 @@ git commit -m "feat(web): add search bar and group label styles"
 - Modify: `packages/web/src/render.ts`
 - Modify: `packages/web/src/render.test.ts`
 
-- [ ] **Step 1：在 `render.test.ts` 中添加 `groupByWeek` 测试**
+- [x] **Step 1：在 `render.test.ts` 中添加 `groupByWeek` 测试**
 
 在文件顶部 import 行改为：
 ```ts
@@ -272,7 +272,7 @@ describe("groupByWeek", () => {
 });
 ```
 
-- [ ] **Step 2：运行确认失败**
+- [x] **Step 2：运行确认失败**
 
 ```bash
 pnpm vitest run packages/web/src/render.test.ts --reporter verbose
@@ -280,7 +280,7 @@ pnpm vitest run packages/web/src/render.test.ts --reporter verbose
 
 预期：`groupByWeek` 相关测试 FAIL（`groupByWeek is not a function`）
 
-- [ ] **Step 3：在 `render.ts` 中 `escapeHtml` 之前添加 `Group` interface 和 `groupByWeek`**
+- [x] **Step 3：在 `render.ts` 中 `escapeHtml` 之前添加 `Group` interface 和 `groupByWeek`**
 
 在 `render.ts` 顶部 import 之后、`escapeHtml` 之前插入：
 
@@ -317,7 +317,7 @@ export function groupByWeek(items: CaptureSummary[]): Group[] {
 }
 ```
 
-- [ ] **Step 4：运行确认全部通过**
+- [x] **Step 4：运行确认全部通过**
 
 ```bash
 pnpm vitest run packages/web/src/render.test.ts --reporter verbose
@@ -325,7 +325,7 @@ pnpm vitest run packages/web/src/render.test.ts --reporter verbose
 
 预期：所有已有测试 + 新增 `groupByWeek` 测试全部 PASS
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add packages/web/src/render.ts packages/web/src/render.test.ts
@@ -340,7 +340,7 @@ git commit -m "feat(web): add groupByWeek utility for relative week grouping"
 - Modify: `packages/web/src/render.ts`
 - Modify: `packages/web/src/render.test.ts`
 
-- [ ] **Step 1：更新 `render.test.ts` 中 `renderList` 的测试**
+- [x] **Step 1：更新 `render.test.ts` 中 `renderList` 的测试**
 
 将 `describe("renderList", ...)` 整块替换为：
 
@@ -392,7 +392,7 @@ describe("renderList", () => {
 });
 ```
 
-- [ ] **Step 2：运行确认新增断言失败**
+- [x] **Step 2：运行确认新增断言失败**
 
 ```bash
 pnpm vitest run packages/web/src/render.test.ts --reporter verbose
@@ -400,7 +400,7 @@ pnpm vitest run packages/web/src/render.test.ts --reporter verbose
 
 预期：`includes search input`、`renders grouped sections`、`data-title` 相关断言 FAIL
 
-- [ ] **Step 3：更新 `render.ts` 中的 import 行**
+- [x] **Step 3：更新 `render.ts` 中的 import 行**
 
 将顶部 import 从：
 ```ts
@@ -411,7 +411,7 @@ import { getThemeSwitcherHtml, getThemeScriptHtml } from "./scripts.js";
 import { getThemeSwitcherHtml, getThemeScriptHtml, getSearchBarHtml, getListFilterScriptHtml } from "./scripts.js";
 ```
 
-- [ ] **Step 4：用以下实现替换 `render.ts` 中的 `renderList` 函数**
+- [x] **Step 4：用以下实现替换 `render.ts` 中的 `renderList` 函数**
 
 ```ts
 export function renderList(items: CaptureSummary[]): string {
@@ -451,7 +451,7 @@ export function renderList(items: CaptureSummary[]): string {
 }
 ```
 
-- [ ] **Step 5：运行全部 render 测试确认通过**
+- [x] **Step 5：运行全部 render 测试确认通过**
 
 ```bash
 pnpm vitest run packages/web/src/render.test.ts --reporter verbose
@@ -459,7 +459,7 @@ pnpm vitest run packages/web/src/render.test.ts --reporter verbose
 
 预期：所有测试 PASS
 
-- [ ] **Step 6：运行全量测试 + typecheck**
+- [x] **Step 6：运行全量测试 + typecheck**
 
 ```bash
 pnpm test && pnpm typecheck
@@ -467,7 +467,7 @@ pnpm test && pnpm typecheck
 
 预期：全部 PASS，零 typecheck 错误
 
-- [ ] **Step 7：提交**
+- [x] **Step 7：提交**
 
 ```bash
 git add packages/web/src/render.ts packages/web/src/render.test.ts

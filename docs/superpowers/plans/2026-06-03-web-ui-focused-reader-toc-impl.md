@@ -31,7 +31,7 @@ All Web source files must remain under 500 lines.
 - Create: `packages/web/src/toc.ts`
 - Create: `packages/web/src/toc.test.ts`
 
-- [ ] **Step 1: Write failing TOC tests**
+- [x] **Step 1: Write failing TOC tests**
 
 Create tests for:
 
@@ -70,13 +70,13 @@ describe("extractToc", () => {
 });
 ```
 
-- [ ] **Step 2: Verify TOC tests fail**
+- [x] **Step 2: Verify TOC tests fail**
 
 Run: `pnpm exec vitest run packages/web/src/toc.test.ts`
 
 Expected: FAIL because `toc.ts` does not exist.
 
-- [ ] **Step 3: Implement `toc.ts`**
+- [x] **Step 3: Implement `toc.ts`**
 
 Implement:
 
@@ -86,7 +86,7 @@ Implement:
 - lightweight inline markdown cleanup
 - slug generation and duplicate suffixes
 
-- [ ] **Step 4: Verify TOC tests pass**
+- [x] **Step 4: Verify TOC tests pass**
 
 Run: `pnpm exec vitest run packages/web/src/toc.test.ts`
 
@@ -98,7 +98,7 @@ Expected: PASS.
 - Modify: `packages/web/src/highlight.ts`
 - Modify: `packages/web/src/highlight.test.ts`
 
-- [ ] **Step 1: Write failing heading id test**
+- [x] **Step 1: Write failing heading id test**
 
 Add tests:
 
@@ -116,17 +116,17 @@ it("adds toc ids to h2 and h3 headings by order", async () => {
 });
 ```
 
-- [ ] **Step 2: Verify heading id test fails**
+- [x] **Step 2: Verify heading id test fails**
 
 Run: `pnpm exec vitest run packages/web/src/highlight.test.ts`
 
 Expected: FAIL because `renderMarkdown` does not accept an options object yet.
 
-- [ ] **Step 3: Implement heading renderer**
+- [x] **Step 3: Implement heading renderer**
 
 Update `renderMarkdown(content, options?: { toc?: TocItem[] })`. Install a Markdown-it heading renderer that consumes `options.toc` by occurrence order for h2/h3.
 
-- [ ] **Step 4: Verify highlight tests pass**
+- [x] **Step 4: Verify highlight tests pass**
 
 Run: `pnpm exec vitest run packages/web/src/highlight.test.ts`
 
@@ -140,7 +140,7 @@ Expected: PASS.
 - Modify: `packages/web/src/styles.ts`
 - Modify: `packages/web/src/styles.test.ts`
 
-- [ ] **Step 1: Write failing render tests**
+- [x] **Step 1: Write failing render tests**
 
 Update tests so:
 
@@ -148,13 +148,13 @@ Update tests so:
 - `renderArticle` with fewer than two TOC headings does not contain `class="toc"`.
 - `renderLibrary` tests are removed.
 
-- [ ] **Step 2: Verify render tests fail**
+- [x] **Step 2: Verify render tests fail**
 
 Run: `pnpm exec vitest run packages/web/src/render.test.ts packages/web/src/styles.test.ts`
 
 Expected: FAIL because focused TOC article shell does not exist yet and old split-reader styles are still asserted.
 
-- [ ] **Step 3: Implement focused article renderer**
+- [x] **Step 3: Implement focused article renderer**
 
 In `render.ts`:
 
@@ -164,7 +164,7 @@ In `render.ts`:
 - call `renderMarkdown(capture.content, { toc })`
 - remove `renderLibrary`, `renderSidebar`, and `renderReader`
 
-- [ ] **Step 4: Implement focused reader styles**
+- [x] **Step 4: Implement focused reader styles**
 
 In `styles.ts`:
 
@@ -172,7 +172,7 @@ In `styles.ts`:
 - add `.toc`, `.toc-title`, `.toc-list`, `.toc-item`, `.toc-item.level-3`, `.toc-mobile`
 - remove unused split-reader-specific styles if no longer used
 
-- [ ] **Step 5: Verify render/style tests pass**
+- [x] **Step 5: Verify render/style tests pass**
 
 Run: `pnpm exec vitest run packages/web/src/render.test.ts packages/web/src/styles.test.ts`
 
@@ -184,20 +184,20 @@ Expected: PASS.
 - Modify: `packages/web/src/index.ts`
 - Modify: `packages/web/src/index.test.ts`
 
-- [ ] **Step 1: Write failing route tests**
+- [x] **Step 1: Write failing route tests**
 
 Update tests so:
 
 - `/` contains list/search content and does not contain `.article-shell`.
 - `/captures/:id` contains `.article-shell`, selected title, and `.toc`.
 
-- [ ] **Step 2: Verify route tests fail**
+- [x] **Step 2: Verify route tests fail**
 
 Run: `pnpm exec vitest run packages/web/src/index.test.ts`
 
 Expected: FAIL because routes still use `renderLibrary`.
 
-- [ ] **Step 3: Implement route changes**
+- [x] **Step 3: Implement route changes**
 
 Update `index.ts`:
 
@@ -205,7 +205,7 @@ Update `index.ts`:
 - `/` calls `renderList(await readService.list())`
 - `/captures/:id` only fetches selected capture and calls `renderArticle(capture)`
 
-- [ ] **Step 4: Verify route tests pass**
+- [x] **Step 4: Verify route tests pass**
 
 Run: `pnpm exec vitest run packages/web/src/index.test.ts`
 
@@ -216,19 +216,19 @@ Expected: PASS.
 **Files:**
 - No additional files.
 
-- [ ] **Step 1: Run Web tests**
+- [x] **Step 1: Run Web tests**
 
 Run: `pnpm exec vitest run packages/web`
 
 Expected: PASS.
 
-- [ ] **Step 2: Run typecheck**
+- [x] **Step 2: Run typecheck**
 
 Run: `pnpm run typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 3: Check file lengths**
+- [x] **Step 3: Check file lengths**
 
 Run: `wc -l packages/web/src/*.ts packages/web/src/*.test.ts`
 

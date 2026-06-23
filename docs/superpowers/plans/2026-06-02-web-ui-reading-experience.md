@@ -32,7 +32,7 @@
 **Files:**
 - Modify: `packages/web/package.json`
 
-- [ ] **Step 1：在 `packages/web` 目录下安装 shiki**
+- [x] **Step 1：在 `packages/web` 目录下安装 shiki**
 
 ```bash
 cd packages/web && pnpm add shiki && cd ../..
@@ -40,11 +40,11 @@ cd packages/web && pnpm add shiki && cd ../..
 
 预期：`packages/web/package.json` 的 `dependencies` 中新增 `"shiki": "^x.y.z"`
 
-- [ ] **Step 2：将版本号改为精确版本（去掉 `^`）**
+- [x] **Step 2：将版本号改为精确版本（去掉 `^`）**
 
 打开 `packages/web/package.json`，找到 shiki 行，将 `"^x.y.z"` 改为 `"x.y.z"`（精确版本号以 Step 1 安装后实际写入的为准）。
 
-- [ ] **Step 3：运行现有测试确认无回归**
+- [x] **Step 3：运行现有测试确认无回归**
 
 ```bash
 pnpm vitest run packages/web/src --reporter verbose
@@ -52,7 +52,7 @@ pnpm vitest run packages/web/src --reporter verbose
 
 预期：4 个已有测试全部 PASS，无新失败。
 
-- [ ] **Step 4：提交**
+- [x] **Step 4：提交**
 
 ```bash
 git add packages/web/package.json pnpm-lock.yaml
@@ -67,7 +67,7 @@ git commit -m "feat(web): add shiki dependency"
 - Create: `packages/web/src/styles.ts`
 - Create: `packages/web/src/styles.test.ts`
 
-- [ ] **Step 1：创建失败测试**
+- [x] **Step 1：创建失败测试**
 
 新建 `packages/web/src/styles.test.ts`：
 
@@ -96,7 +96,7 @@ describe("getStyles", () => {
 });
 ```
 
-- [ ] **Step 2：运行确认失败**
+- [x] **Step 2：运行确认失败**
 
 ```bash
 pnpm vitest run packages/web/src/styles.test.ts --reporter verbose
@@ -104,7 +104,7 @@ pnpm vitest run packages/web/src/styles.test.ts --reporter verbose
 
 预期：FAIL — `Cannot find module './styles.js'`
 
-- [ ] **Step 3：创建 `packages/web/src/styles.ts`**
+- [x] **Step 3：创建 `packages/web/src/styles.ts`**
 
 ```ts
 export function getStyles(): string {
@@ -177,7 +177,7 @@ pre code { padding: 0; background: none; }
 }
 ```
 
-- [ ] **Step 4：运行确认通过**
+- [x] **Step 4：运行确认通过**
 
 ```bash
 pnpm vitest run packages/web/src/styles.test.ts --reporter verbose
@@ -185,7 +185,7 @@ pnpm vitest run packages/web/src/styles.test.ts --reporter verbose
 
 预期：3 个测试全部 PASS
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add packages/web/src/styles.ts packages/web/src/styles.test.ts
@@ -200,7 +200,7 @@ git commit -m "feat(web): add styles module with 4-theme CSS variables"
 - Create: `packages/web/src/scripts.ts`
 - Create: `packages/web/src/scripts.test.ts`
 
-- [ ] **Step 1：创建失败测试**
+- [x] **Step 1：创建失败测试**
 
 新建 `packages/web/src/scripts.test.ts`：
 
@@ -236,7 +236,7 @@ describe("getThemeScriptHtml", () => {
 });
 ```
 
-- [ ] **Step 2：运行确认失败**
+- [x] **Step 2：运行确认失败**
 
 ```bash
 pnpm vitest run packages/web/src/scripts.test.ts --reporter verbose
@@ -244,7 +244,7 @@ pnpm vitest run packages/web/src/scripts.test.ts --reporter verbose
 
 预期：FAIL — `Cannot find module './scripts.js'`
 
-- [ ] **Step 3：创建 `packages/web/src/scripts.ts`**
+- [x] **Step 3：创建 `packages/web/src/scripts.ts`**
 
 ```ts
 export function getThemeSwitcherHtml(): string {
@@ -269,7 +269,7 @@ export function getThemeScriptHtml(): string {
 }
 ```
 
-- [ ] **Step 4：运行确认通过**
+- [x] **Step 4：运行确认通过**
 
 ```bash
 pnpm vitest run packages/web/src/scripts.test.ts --reporter verbose
@@ -277,7 +277,7 @@ pnpm vitest run packages/web/src/scripts.test.ts --reporter verbose
 
 预期：4 个测试全部 PASS
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add packages/web/src/scripts.ts packages/web/src/scripts.test.ts
@@ -292,7 +292,7 @@ git commit -m "feat(web): add scripts module with theme switcher HTML and localS
 - Create: `packages/web/src/highlight.ts`
 - Create: `packages/web/src/highlight.test.ts`
 
-- [ ] **Step 1：创建失败测试**
+- [x] **Step 1：创建失败测试**
 
 新建 `packages/web/src/highlight.test.ts`：
 
@@ -319,7 +319,7 @@ describe("renderMarkdown", () => {
 });
 ```
 
-- [ ] **Step 2：运行确认失败**
+- [x] **Step 2：运行确认失败**
 
 ```bash
 pnpm vitest run packages/web/src/highlight.test.ts --reporter verbose
@@ -327,7 +327,7 @@ pnpm vitest run packages/web/src/highlight.test.ts --reporter verbose
 
 预期：FAIL — `Cannot find module './highlight.js'`
 
-- [ ] **Step 3：创建 `packages/web/src/highlight.ts`**
+- [x] **Step 3：创建 `packages/web/src/highlight.ts`**
 
 ```ts
 import MarkdownIt from "markdown-it";
@@ -367,7 +367,7 @@ export async function renderMarkdown(content: string): Promise<string> {
 }
 ```
 
-- [ ] **Step 4：运行确认通过**
+- [x] **Step 4：运行确认通过**
 
 ```bash
 pnpm vitest run packages/web/src/highlight.test.ts --reporter verbose
@@ -375,7 +375,7 @@ pnpm vitest run packages/web/src/highlight.test.ts --reporter verbose
 
 预期：3 个测试全部 PASS（shiki 初始化约 200–500 ms，在 5 s 超时内）
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add packages/web/src/highlight.ts packages/web/src/highlight.test.ts
@@ -390,7 +390,7 @@ git commit -m "feat(web): add highlight module with shiki server-side rendering"
 - Rewrite: `packages/web/src/render.ts`
 - Update: `packages/web/src/render.test.ts`
 
-- [ ] **Step 1：用新的测试替换 `packages/web/src/render.test.ts` 全文**
+- [x] **Step 1：用新的测试替换 `packages/web/src/render.test.ts` 全文**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -489,7 +489,7 @@ describe("renderArticle", () => {
 });
 ```
 
-- [ ] **Step 2：运行确认部分测试失败**
+- [x] **Step 2：运行确认部分测试失败**
 
 ```bash
 pnpm vitest run packages/web/src/render.test.ts --reporter verbose
@@ -497,7 +497,7 @@ pnpm vitest run packages/web/src/render.test.ts --reporter verbose
 
 预期：`escapeHtml` 测试 PASS，其余 `readingStats` / `renderList` 新断言 / `renderArticle` async 相关测试 FAIL
 
-- [ ] **Step 3：用以下内容完整替换 `packages/web/src/render.ts`**
+- [x] **Step 3：用以下内容完整替换 `packages/web/src/render.ts`**
 
 ```ts
 import type { Capture, CaptureSummary } from "@amber/domain";
@@ -562,7 +562,7 @@ export async function renderArticle(capture: Capture): Promise<string> {
 }
 ```
 
-- [ ] **Step 4：运行确认全部通过**
+- [x] **Step 4：运行确认全部通过**
 
 ```bash
 pnpm vitest run packages/web/src/render.test.ts --reporter verbose
@@ -570,7 +570,7 @@ pnpm vitest run packages/web/src/render.test.ts --reporter verbose
 
 预期：所有测试 PASS
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add packages/web/src/render.ts packages/web/src/render.test.ts
@@ -584,7 +584,7 @@ git commit -m "feat(web): rewrite render with 4-theme system, shiki highlight, a
 **Files:**
 - Modify: `packages/web/src/index.ts`
 
-- [ ] **Step 1：将 `index.ts` 中的 `renderArticle` 调用改为 await**
+- [x] **Step 1：将 `index.ts` 中的 `renderArticle` 调用改为 await**
 
 找到 `packages/web/src/index.ts` 中的这一行：
 
@@ -598,7 +598,7 @@ return c.html(renderArticle(capture));
 return c.html(await renderArticle(capture));
 ```
 
-- [ ] **Step 2：运行全量类型检查**
+- [x] **Step 2：运行全量类型检查**
 
 ```bash
 pnpm typecheck
@@ -606,7 +606,7 @@ pnpm typecheck
 
 预期：无类型错误
 
-- [ ] **Step 3：运行全部 web 包测试**
+- [x] **Step 3：运行全部 web 包测试**
 
 ```bash
 pnpm vitest run packages/web/src --reporter verbose
@@ -614,7 +614,7 @@ pnpm vitest run packages/web/src --reporter verbose
 
 预期：所有 web 包测试 PASS（styles / scripts / highlight / render 共 ~18 个）
 
-- [ ] **Step 4：提交**
+- [x] **Step 4：提交**
 
 ```bash
 git add packages/web/src/index.ts

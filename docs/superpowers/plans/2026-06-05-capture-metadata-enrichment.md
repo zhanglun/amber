@@ -38,7 +38,7 @@
 **Files:**
 - Modify: `packages/domain/src/index.ts`
 
-- [ ] **Step 1: 将 `packages/domain/src/index.ts` 完整替换为以下内容**
+- [x] **Step 1: 将 `packages/domain/src/index.ts` 完整替换为以下内容**
 
 ```typescript
 /** 一份被收藏的内容，是跨所有版本被存储与阅读的基本单元。 */
@@ -109,7 +109,7 @@ export interface BlobStore {
 }
 ```
 
-- [ ] **Step 2: 确认 typecheck 有预期错误**
+- [x] **Step 2: 确认 typecheck 有预期错误**
 
 运行：`pnpm run typecheck`
 
@@ -124,7 +124,7 @@ Expected: 多个错误（FileStore / ReadService / ImportService 尚未更新）
 - Create: `packages/core/src/content-stats.test.ts`
 - Modify: `packages/core/src/index.ts`
 
-- [ ] **Step 1: 写失败测试 `packages/core/src/content-stats.test.ts`**
+- [x] **Step 1: 写失败测试 `packages/core/src/content-stats.test.ts`**
 
 ```typescript
 import { describe, expect, it } from "vitest";
@@ -194,13 +194,13 @@ describe("computeExcerpt", () => {
 });
 ```
 
-- [ ] **Step 2: 确认测试失败**
+- [x] **Step 2: 确认测试失败**
 
 运行：`pnpm exec vitest run packages/core/src/content-stats.test.ts`
 
 Expected: FAIL（模块不存在）。
 
-- [ ] **Step 3: 创建 `packages/core/src/content-stats.ts`**
+- [x] **Step 3: 创建 `packages/core/src/content-stats.ts`**
 
 ```typescript
 export function computeWordCount(markdown: string): number {
@@ -228,20 +228,20 @@ export function computeExcerpt(markdown: string, maxLen = 150): string {
 }
 ```
 
-- [ ] **Step 4: 确认测试通过**
+- [x] **Step 4: 确认测试通过**
 
 运行：`pnpm exec vitest run packages/core/src/content-stats.test.ts`
 
 Expected: PASS。
 
-- [ ] **Step 5: 在 `packages/core/src/index.ts` 追加导出**
+- [x] **Step 5: 在 `packages/core/src/index.ts` 追加导出**
 
 读取当前文件，在末尾追加：
 ```typescript
 export { computeExcerpt, computeHasCode, computeWordCount } from "./content-stats.js";
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/core/src/content-stats.ts packages/core/src/content-stats.test.ts packages/core/src/index.ts
@@ -256,7 +256,7 @@ git commit -m "feat(core): add content-stats pure functions (excerpt, wordCount,
 - Modify: `packages/adapters/src/dino-source.ts`
 - Modify: `packages/adapters/src/dino-source.test.ts`
 
-- [ ] **Step 1: 更新 `packages/adapters/src/dino-source.test.ts` 的 fixture 和断言**
+- [x] **Step 1: 更新 `packages/adapters/src/dino-source.test.ts` 的 fixture 和断言**
 
 找到 `toRawCapture` 的测试，在现有断言后追加对 `coverImage` 的断言：
 
@@ -302,13 +302,13 @@ describe("toRawCapture", () => {
 });
 ```
 
-- [ ] **Step 2: 确认测试失败**
+- [x] **Step 2: 确认测试失败**
 
 运行：`pnpm exec vitest run packages/adapters/src/dino-source.test.ts`
 
 Expected: FAIL（coverImage 未传递）。
 
-- [ ] **Step 3: 更新 `packages/adapters/src/dino-source.ts`**
+- [x] **Step 3: 更新 `packages/adapters/src/dino-source.ts`**
 
 将 `toRawCapture` 返回值中追加 `coverImage` 字段：
 
@@ -331,13 +331,13 @@ export function toRawCapture(result: CaptureResult): RawCapture {
 }
 ```
 
-- [ ] **Step 4: 确认测试通过**
+- [x] **Step 4: 确认测试通过**
 
 运行：`pnpm exec vitest run packages/adapters/src/dino-source.test.ts`
 
 Expected: PASS。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/adapters/src/dino-source.ts packages/adapters/src/dino-source.test.ts
@@ -352,7 +352,7 @@ git commit -m "feat(adapters): pass coverImage through DinoSource"
 - Modify: `packages/core/src/import-service.ts`
 - Modify: `packages/core/src/import-service.test.ts`
 
-- [ ] **Step 1: 更新 `packages/core/src/import-service.test.ts`**
+- [x] **Step 1: 更新 `packages/core/src/import-service.test.ts`**
 
 将文件完整替换为：
 
@@ -487,13 +487,13 @@ describe("ImportService.run", () => {
 });
 ```
 
-- [ ] **Step 2: 确认测试失败**
+- [x] **Step 2: 确认测试失败**
 
 运行：`pnpm exec vitest run packages/core/src/import-service.test.ts`
 
 Expected: FAIL（`capturedAt` / `publishedAt` / `coverImage` / `wordCount` / `hasCode` / `excerpt` 断言失败）。
 
-- [ ] **Step 3: 更新 `packages/core/src/import-service.ts`**
+- [x] **Step 3: 更新 `packages/core/src/import-service.ts`**
 
 ```typescript
 import type { BlobStore, Capture, Source, Store } from "@amber/domain";
@@ -561,13 +561,13 @@ export class ImportService {
 }
 ```
 
-- [ ] **Step 4: 确认测试通过**
+- [x] **Step 4: 确认测试通过**
 
 运行：`pnpm exec vitest run packages/core/src/import-service.test.ts`
 
 Expected: PASS。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/core/src/import-service.ts packages/core/src/import-service.test.ts
@@ -582,7 +582,7 @@ git commit -m "feat(core): compute excerpt/wordCount/hasCode at import; fix capt
 - Modify: `packages/adapters/src/file-store.ts`
 - Modify: `packages/adapters/src/file-store.test.ts`
 
-- [ ] **Step 1: 更新 `packages/adapters/src/file-store.test.ts`**
+- [x] **Step 1: 更新 `packages/adapters/src/file-store.test.ts`**
 
 将文件完整替换为：
 
@@ -752,13 +752,13 @@ describe("FileStore", () => {
 });
 ```
 
-- [ ] **Step 2: 确认测试失败**
+- [x] **Step 2: 确认测试失败**
 
 运行：`pnpm exec vitest run packages/adapters/src/file-store.test.ts`
 
 Expected: FAIL（`capturedAt` 字段缺失、`updateTags` / `recordVisit` 未实现）。
 
-- [ ] **Step 3: 将 `packages/adapters/src/file-store.ts` 完整替换为以下内容**
+- [x] **Step 3: 将 `packages/adapters/src/file-store.ts` 完整替换为以下内容**
 
 ```typescript
 import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
@@ -865,13 +865,13 @@ export class FileStore implements Store {
 }
 ```
 
-- [ ] **Step 4: 确认测试通过**
+- [x] **Step 4: 确认测试通过**
 
 运行：`pnpm exec vitest run packages/adapters/src/file-store.test.ts`
 
 Expected: PASS。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/adapters/src/file-store.ts packages/adapters/src/file-store.test.ts
@@ -886,7 +886,7 @@ git commit -m "feat(adapters): update FileStore for new schema; add updateTags a
 - Modify: `packages/core/src/read-service.ts`
 - Modify: `packages/core/src/read-service.test.ts`
 
-- [ ] **Step 1: 更新 `packages/core/src/read-service.test.ts`**
+- [x] **Step 1: 更新 `packages/core/src/read-service.test.ts`**
 
 将文件完整替换为：
 
@@ -959,13 +959,13 @@ describe("ReadService", () => {
 });
 ```
 
-- [ ] **Step 2: 确认测试失败**
+- [x] **Step 2: 确认测试失败**
 
 运行：`pnpm exec vitest run packages/core/src/read-service.test.ts`
 
 Expected: FAIL（`updateTags` / `recordVisit` 未定义）。
 
-- [ ] **Step 3: 将 `packages/core/src/read-service.ts` 完整替换**
+- [x] **Step 3: 将 `packages/core/src/read-service.ts` 完整替换**
 
 ```typescript
 import type { Capture, CaptureSummary, Store } from "@amber/domain";
@@ -1002,13 +1002,13 @@ export class ReadService {
 }
 ```
 
-- [ ] **Step 4: 确认测试通过**
+- [x] **Step 4: 确认测试通过**
 
 运行：`pnpm exec vitest run packages/core/src/read-service.test.ts`
 
 Expected: PASS。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/core/src/read-service.ts packages/core/src/read-service.test.ts
@@ -1023,7 +1023,7 @@ git commit -m "feat(core): add updateTags and recordVisit to ReadService"
 - Modify: `packages/web/src/index.ts`
 - Modify: `packages/web/src/index.test.ts`
 
-- [ ] **Step 1: 将 `packages/web/src/index.test.ts` 完整替换为以下内容**
+- [x] **Step 1: 将 `packages/web/src/index.test.ts` 完整替换为以下内容**
 
 ```typescript
 import { describe, expect, it, vi } from "vitest";
@@ -1159,13 +1159,13 @@ describe("contentTypeForPath", () => {
 });
 ```
 
-- [ ] **Step 2: 确认测试失败**
+- [x] **Step 2: 确认测试失败**
 
 运行：`pnpm exec vitest run packages/web/src/index.test.ts`
 
 Expected: FAIL（recordVisit 未调用，/tags 路由不存在）。
 
-- [ ] **Step 3: 将 `packages/web/src/index.ts` 完整替换**
+- [x] **Step 3: 将 `packages/web/src/index.ts` 完整替换**
 
 ```typescript
 import { createReadStream } from "node:fs";
@@ -1256,13 +1256,13 @@ export function startServer(readService: ReadService, options: WebOptions & { po
 }
 ```
 
-- [ ] **Step 4: 确认测试通过**
+- [x] **Step 4: 确认测试通过**
 
 运行：`pnpm exec vitest run packages/web/src/index.test.ts`
 
 Expected: PASS。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/web/src/index.ts packages/web/src/index.test.ts
@@ -1277,7 +1277,7 @@ git commit -m "feat(web): record visits on GET /:id; add PATCH /:id/tags endpoin
 - Modify: `packages/web/src/render.ts`
 - Modify: `packages/web/src/render.test.ts`
 
-- [ ] **Step 1: 更新 `packages/web/src/render.test.ts`**
+- [x] **Step 1: 更新 `packages/web/src/render.test.ts`**
 
 将文件开头的 `CAPTURE` fixture 和 `CaptureSummary` fixture 中的 `createdAt` 全部改为 `capturedAt`（`createdAt` 字段已从 domain 中移除）。
 
@@ -1497,13 +1497,13 @@ describe("renderArticle", () => {
 });
 ```
 
-- [ ] **Step 2: 确认测试失败**
+- [x] **Step 2: 确认测试失败**
 
 运行：`pnpm exec vitest run packages/web/src/render.test.ts`
 
 Expected: FAIL（`createdAt` 字段不存在；publishedAt 测试失败）。
 
-- [ ] **Step 3: 更新 `packages/web/src/render.ts`**
+- [x] **Step 3: 更新 `packages/web/src/render.ts`**
 
 需要修改三处：
 
@@ -1577,13 +1577,13 @@ const minutes = Math.max(1, Math.round(chars / 300));
 
 （注意：保持 `chars` 和 `minutes` 变量名不变，下面的代码可以零改动）
 
-- [ ] **Step 4: 确认测试通过**
+- [x] **Step 4: 确认测试通过**
 
 运行：`pnpm exec vitest run packages/web/src/render.test.ts`
 
 Expected: PASS。
 
-- [ ] **Step 5: 给 excerpt 加一行样式**
+- [x] **Step 5: 给 excerpt 加一行样式**
 
 在 `packages/web/src/styles.ts` 的 `.item-main a` 附近追加（`.code-block` 之前）：
 
@@ -1591,7 +1591,7 @@ Expected: PASS。
 .excerpt { font-size: .8rem; color: var(--text-muted); margin-top: .15rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/web/src/render.ts packages/web/src/render.test.ts packages/web/src/styles.ts
@@ -1604,7 +1604,7 @@ git commit -m "feat(web): use capturedAt for sorting; show excerpt and published
 
 **Files:** 无新增文件。
 
-- [ ] **Step 1: 运行全部测试**
+- [x] **Step 1: 运行全部测试**
 
 ```bash
 pnpm exec vitest run
@@ -1612,7 +1612,7 @@ pnpm exec vitest run
 
 Expected: 全部 PASS，0 failures。
 
-- [ ] **Step 2: 类型检查**
+- [x] **Step 2: 类型检查**
 
 ```bash
 pnpm run typecheck
@@ -1620,7 +1620,7 @@ pnpm run typecheck
 
 Expected: 0 errors。
 
-- [ ] **Step 3: 检查文件行数**
+- [x] **Step 3: 检查文件行数**
 
 ```bash
 wc -l packages/domain/src/index.ts \

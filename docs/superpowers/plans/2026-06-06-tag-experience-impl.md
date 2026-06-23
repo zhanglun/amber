@@ -39,7 +39,7 @@
 - Create: `packages/core/src/tags.test.ts`
 - Modify: `packages/core/src/index.ts`
 
-- [ ] **Step 1: 写失败测试** — Create `packages/core/src/tags.test.ts`
+- [x] **Step 1: 写失败测试** — Create `packages/core/src/tags.test.ts`
 
 ```typescript
 import { describe, expect, it } from "vitest";
@@ -68,12 +68,12 @@ describe("normalizeTags", () => {
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `pnpm test -- tags`
 Expected: FAIL，报 `normalizeTags` 无法从 `./tags.js` 解析 / 模块不存在。
 
-- [ ] **Step 3: 实现** — Create `packages/core/src/tags.ts`
+- [x] **Step 3: 实现** — Create `packages/core/src/tags.ts`
 
 ```typescript
 /** 归一化标签数组：去首尾空格、丢弃空串、去重（保留首次出现、区分大小写）。 */
@@ -90,18 +90,18 @@ export function normalizeTags(tags: string[]): string[] {
 }
 ```
 
-- [ ] **Step 4: 导出** — Modify `packages/core/src/index.ts`，在末尾追加一行：
+- [x] **Step 4: 导出** — Modify `packages/core/src/index.ts`，在末尾追加一行：
 
 ```typescript
 export { normalizeTags } from "./tags.js";
 ```
 
-- [ ] **Step 5: 运行确认通过**
+- [x] **Step 5: 运行确认通过**
 
 Run: `pnpm test -- tags`
 Expected: PASS（5 个用例）。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add packages/core/src/tags.ts packages/core/src/tags.test.ts packages/core/src/index.ts
@@ -116,7 +116,7 @@ git commit -m "feat(core): add normalizeTags helper"
 - Modify: `packages/core/src/read-service.ts`
 - Modify: `packages/core/src/read-service.test.ts:53-58`
 
-- [ ] **Step 1: 改测试** — 将 `packages/core/src/read-service.test.ts` 中现有的 `"delegates updateTags to the store"` 用例（第 53–58 行）整体替换为：
+- [x] **Step 1: 改测试** — 将 `packages/core/src/read-service.test.ts` 中现有的 `"delegates updateTags to the store"` 用例（第 53–58 行）整体替换为：
 
 ```typescript
   it("normalizes tags before delegating updateTags to the store", async () => {
@@ -127,12 +127,12 @@ git commit -m "feat(core): add normalizeTags helper"
   });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `pnpm test -- read-service`
 Expected: FAIL — 当前实现直接透传，store.updateTags 收到 `[" a ", "a", "", "b"]` 而非 `["a", "b"]`。
 
-- [ ] **Step 3: 实现** — Modify `packages/core/src/read-service.ts`
+- [x] **Step 3: 实现** — Modify `packages/core/src/read-service.ts`
 
 将顶部 import 改为同时引入 `normalizeTags`：
 
@@ -149,12 +149,12 @@ import { normalizeTags } from "./tags.js";
   }
 ```
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `pnpm test -- read-service`
 Expected: PASS。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add packages/core/src/read-service.ts packages/core/src/read-service.test.ts
@@ -169,7 +169,7 @@ git commit -m "feat(core): normalize tags in ReadService.updateTags"
 - Modify: `packages/web/src/scripts.ts`
 - Modify: `packages/web/src/scripts.test.ts`
 
-- [ ] **Step 1: 写失败测试** — 在 `packages/web/src/scripts.test.ts` 顶部 import 块加入 `tagFilterMatch`，并在文件末尾追加 describe 块。
+- [x] **Step 1: 写失败测试** — 在 `packages/web/src/scripts.test.ts` 顶部 import 块加入 `tagFilterMatch`，并在文件末尾追加 describe 块。
 
 把第 1–13 行的 import 块替换为（仅新增 `tagFilterMatch` 一项）：
 
@@ -220,12 +220,12 @@ describe("tagFilterMatch", () => {
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `pnpm test -- scripts`
 Expected: FAIL — `tagFilterMatch` 未导出。
 
-- [ ] **Step 3: 实现** — 在 `packages/web/src/scripts.ts` 末尾追加（与 `calcReadProgress` 等纯函数并列）：
+- [x] **Step 3: 实现** — 在 `packages/web/src/scripts.ts` 末尾追加（与 `calcReadProgress` 等纯函数并列）：
 
 ```typescript
 /** 列表筛选判定：标签按精确成员 OR，搜索文本按标题/来源子串，二者 AND。 */
@@ -247,12 +247,12 @@ export function tagFilterMatch(
 }
 ```
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `pnpm test -- scripts`
 Expected: PASS。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add packages/web/src/scripts.ts packages/web/src/scripts.test.ts
@@ -267,7 +267,7 @@ git commit -m "feat(web): add tagFilterMatch pure helper"
 - Modify: `packages/web/src/scripts.ts`
 - Modify: `packages/web/src/scripts.test.ts`
 
-- [ ] **Step 1: 写失败测试** — 在 `packages/web/src/scripts.test.ts` 末尾追加。先把 import 块再加一项 `getTagEditorScriptHtml`（紧跟上一 task 加的 `tagFilterMatch` 之后）：
+- [x] **Step 1: 写失败测试** — 在 `packages/web/src/scripts.test.ts` 末尾追加。先把 import 块再加一项 `getTagEditorScriptHtml`（紧跟上一 task 加的 `tagFilterMatch` 之后）：
 
 ```typescript
   tagFilterMatch,
@@ -300,12 +300,12 @@ describe("getTagEditorScriptHtml", () => {
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `pnpm test -- scripts`
 Expected: FAIL — `getTagEditorScriptHtml` 未导出，且 `getListFilterScriptHtml` 不含 `data-tags`/`tag-filter`。
 
-- [ ] **Step 3: 实现筛选脚本** — 将 `packages/web/src/scripts.ts` 中现有 `getListFilterScriptHtml`（第 26–48 行）整体替换为：
+- [x] **Step 3: 实现筛选脚本** — 将 `packages/web/src/scripts.ts` 中现有 `getListFilterScriptHtml`（第 26–48 行）整体替换为：
 
 ```typescript
 export function getListFilterScriptHtml(): string {
@@ -358,7 +358,7 @@ export function getListFilterScriptHtml(): string {
 }
 ```
 
-- [ ] **Step 4: 实现编辑脚本** — 在 `packages/web/src/scripts.ts` 末尾追加（`tagFilterMatch` 之后）：
+- [x] **Step 4: 实现编辑脚本** — 在 `packages/web/src/scripts.ts` 末尾追加（`tagFilterMatch` 之后）：
 
 ```typescript
 export function getTagEditorScriptHtml(): string {
@@ -415,12 +415,12 @@ export function getTagEditorScriptHtml(): string {
 }
 ```
 
-- [ ] **Step 5: 运行确认通过**
+- [x] **Step 5: 运行确认通过**
 
 Run: `pnpm test -- scripts`
 Expected: PASS。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add packages/web/src/scripts.ts packages/web/src/scripts.test.ts
@@ -435,7 +435,7 @@ git commit -m "feat(web): tag filter + shared tag editor scripts"
 - Modify: `packages/web/src/render.ts`
 - Modify: `packages/web/src/render.test.ts`
 
-- [ ] **Step 1: 写失败测试** — 在 `packages/web/src/render.test.ts` 末尾追加：
+- [x] **Step 1: 写失败测试** — 在 `packages/web/src/render.test.ts` 末尾追加：
 
 ```typescript
 describe("renderList tags", () => {
@@ -489,12 +489,12 @@ describe("renderArticle tags", () => {
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `pnpm test -- render`
 Expected: FAIL — 标签栏/编辑区尚未渲染。
 
-- [ ] **Step 3: 实现 render 辅助函数与导入** — Modify `packages/web/src/render.ts`
+- [x] **Step 3: 实现 render 辅助函数与导入** — Modify `packages/web/src/render.ts`
 
 将第 3–12 行的 scripts import 块改为追加 `getTagEditorScriptHtml`：
 
@@ -548,7 +548,7 @@ function renderTagEditor(captureId: string, tags: string[]): string {
 }
 ```
 
-- [ ] **Step 4: 在 `renderList` 中接入标签栏、卡片标签、data-tags、编辑脚本** — Modify `packages/web/src/render.ts`
+- [x] **Step 4: 在 `renderList` 中接入标签栏、卡片标签、data-tags、编辑脚本** — Modify `packages/web/src/render.ts`
 
 将 `renderList` 中 `rowsHtml` 的 `.map` 回调（现第 78–95 行那段，从 `const hostname` 到 return 结束）替换为：
 
@@ -610,7 +610,7 @@ export function renderList(items: CaptureSummary[]): string {
 
 （空状态分支保持不变——无内容即无标签栏。）
 
-- [ ] **Step 5: 在 `renderArticle` 中接入编辑区与脚本** — Modify `packages/web/src/render.ts`
+- [x] **Step 5: 在 `renderArticle` 中接入编辑区与脚本** — Modify `packages/web/src/render.ts`
 
 将 `renderArticle` 中 `meta` 模板（现第 186–191 行）之后、`const toc =` 之前，不改 meta，仅在组装 body 时插入编辑区。具体把 body 模板（现第 199–216 行）中这一段：
 
@@ -644,12 +644,12 @@ export function renderList(items: CaptureSummary[]): string {
     getTagEditorScriptHtml();
 ```
 
-- [ ] **Step 6: 运行确认通过**
+- [x] **Step 6: 运行确认通过**
 
 Run: `pnpm test -- render`
 Expected: PASS。
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 git add packages/web/src/render.ts packages/web/src/render.test.ts
@@ -663,7 +663,7 @@ git commit -m "feat(web): render tag bar, card tags, and article tag editor"
 **Files:**
 - Modify: `packages/web/src/styles.ts`
 
-- [ ] **Step 1: 加样式** — 在 `packages/web/src/styles.ts` 中现有 `.search-bar input:focus` 规则（第 76 行）之后追加以下规则（同一模板字符串内）：
+- [x] **Step 1: 加样式** — 在 `packages/web/src/styles.ts` 中现有 `.search-bar input:focus` 规则（第 76 行）之后追加以下规则（同一模板字符串内）：
 
 ```css
 .tag-bar { display: flex; flex-wrap: wrap; gap: .4rem; margin: .6rem 0 1rem; }
@@ -677,12 +677,12 @@ git commit -m "feat(web): render tag bar, card tags, and article tag editor"
 .tag-add:hover { color: var(--link); border-color: var(--link); }
 ```
 
-- [ ] **Step 2: 运行确认全套测试通过**
+- [x] **Step 2: 运行确认全套测试通过**
 
 Run: `pnpm test`
 Expected: PASS（含 styles.test 现有断言不受影响）。
 
-- [ ] **Step 3: 提交**
+- [x] **Step 3: 提交**
 
 ```bash
 git add packages/web/src/styles.ts
@@ -698,7 +698,7 @@ git commit -m "style(web): add tag bar, chip, and editor styles"
 - Create: `packages/cli/src/commands/tag.test.ts`
 - Modify: `packages/cli/src/main.ts`
 
-- [ ] **Step 1: 写失败测试** — Create `packages/cli/src/commands/tag.test.ts`
+- [x] **Step 1: 写失败测试** — Create `packages/cli/src/commands/tag.test.ts`
 
 ```typescript
 import { describe, expect, it, vi } from "vitest";
@@ -760,12 +760,12 @@ describe("runTagRm", () => {
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `pnpm test -- commands/tag`
 Expected: FAIL — `./tag.js` 不存在 / helper 未导出。
 
-- [ ] **Step 3: 实现** — Create `packages/cli/src/commands/tag.ts`
+- [x] **Step 3: 实现** — Create `packages/cli/src/commands/tag.ts`
 
 ```typescript
 import { defineCommand } from "citty";
@@ -872,12 +872,12 @@ export const tagCommand = defineCommand({
 
 > 说明：用 `ctx.args._`（citty 收集的位置参数数组）解析 `<id>` 与可变数量标签，避免命名 positional 在变长场景下的绑定差异。`args` 里仍声明 positional 仅用于 `--help` 文案。
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `pnpm test -- commands/tag`
 Expected: PASS（6 个用例）。
 
-- [ ] **Step 5: 注册命令** — Modify `packages/cli/src/main.ts`
+- [x] **Step 5: 注册命令** — Modify `packages/cli/src/main.ts`
 
 在第 9 行 `import { migrateCommand }` 之后追加：
 
@@ -891,7 +891,7 @@ import { tagCommand } from "./commands/tag.js";
     tag: tagCommand,
 ```
 
-- [ ] **Step 6: 验证 CLI 实跑** — 用文件存储跑一遍冒烟（不依赖数据库）：
+- [x] **Step 6: 验证 CLI 实跑** — 用文件存储跑一遍冒烟（不依赖数据库）：
 
 Run:
 ```bash
@@ -905,7 +905,7 @@ fi
 ```
 Expected: `add` 后 `ls` 含 `demo-tag`；`rm` 后 `ls` 不含。若 `amber-data/captures` 为空则跳过（无现成数据），不视为失败。
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 git add packages/cli/src/commands/tag.ts packages/cli/src/commands/tag.test.ts packages/cli/src/main.ts
@@ -918,17 +918,17 @@ git commit -m "feat(cli): add amber tag ls/add/rm command"
 
 **Files:** 无（验证关口）
 
-- [ ] **Step 1: 类型检查**
+- [x] **Step 1: 类型检查**
 
 Run: `pnpm typecheck`
 Expected: 无输出、退出码 0。
 
-- [ ] **Step 2: 全量测试**
+- [x] **Step 2: 全量测试**
 
 Run: `pnpm test`
 Expected: 全部 PASS（Postgres 集成测试仍按现状 skipped）。
 
-- [ ] **Step 3: 如有任一失败** — 用 superpowers:systematic-debugging 定位修复，再重跑直至全绿；不留 `.only`、不注释失败用例。
+- [x] **Step 3: 如有任一失败** — 用 superpowers:systematic-debugging 定位修复，再重跑直至全绿；不留 `.only`、不注释失败用例。
 
 ---
 

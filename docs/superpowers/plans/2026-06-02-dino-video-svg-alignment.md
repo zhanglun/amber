@@ -27,7 +27,7 @@
 - Modify: `/Users/zhanglun/Documents/mine/amber/packages/core/src/asset-key.ts:1-8`
 - Test: `/Users/zhanglun/Documents/mine/amber/packages/core/src/asset-key.test.ts`
 
-- [ ] **Step 1：写失败测试**
+- [x] **Step 1：写失败测试**
 
 在 `/Users/zhanglun/Documents/mine/amber/packages/core/src/asset-key.test.ts` 的 `describe("assetKey", ...)` 末尾追加：
 
@@ -45,7 +45,7 @@ it("maps video/quicktime to mov", () => {
 });
 ```
 
-- [ ] **Step 2：验证失败**
+- [x] **Step 2：验证失败**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm vitest run packages/core/src/asset-key.test.ts 2>&1 | tail -15
@@ -53,7 +53,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm vitest run packages/core/src/ass
 
 Expected: 3 tests FAIL，提示 `"captures/cap/0.bin"` 不等于 `"captures/cap/0.mp4"` 等。
 
-- [ ] **Step 3：修改 asset-key.ts**
+- [x] **Step 3：修改 asset-key.ts**
 
 将 `/Users/zhanglun/Documents/mine/amber/packages/core/src/asset-key.ts` 改为：
 
@@ -85,7 +85,7 @@ export function captureAssetPrefix(captureId: string): string {
 }
 ```
 
-- [ ] **Step 4：验证通过**
+- [x] **Step 4：验证通过**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm vitest run packages/core/src/asset-key.test.ts 2>&1 | tail -10
@@ -93,7 +93,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm vitest run packages/core/src/ass
 
 Expected: 6 tests pass（含原有 3 个）。
 
-- [ ] **Step 5：typecheck**
+- [x] **Step 5：typecheck**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber && pnpm typecheck 2>&1 | grep -c error || true
@@ -101,7 +101,7 @@ cd /Users/zhanglun/Documents/mine/amber && pnpm typecheck 2>&1 | grep -c error |
 
 Expected: 0
 
-- [ ] **Step 6：commit**
+- [x] **Step 6：commit**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/amber
@@ -119,7 +119,7 @@ git commit -m "feat(core): add video MIME type mappings to asset-key"
 - Modify: `/Users/zhanglun/Documents/mine/dino/src/collect-images.ts`
 - Test: `/Users/zhanglun/Documents/mine/dino/tests/collect-images.test.ts`
 
-- [ ] **Step 1：写 SVG 失败测试**
+- [x] **Step 1：写 SVG 失败测试**
 
 在 `/Users/zhanglun/Documents/mine/dino/tests/collect-images.test.ts` 末尾追加：
 
@@ -153,7 +153,7 @@ it("processes SVG and image together, sharing index counter", async () => {
 });
 ```
 
-- [ ] **Step 2：验证失败**
+- [x] **Step 2：验证失败**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/dino && pnpm test -- tests/collect-images.test.ts 2>&1 | tail -20
@@ -161,7 +161,7 @@ cd /Users/zhanglun/Documents/mine/dino && pnpm test -- tests/collect-images.test
 
 Expected: 2 new tests FAIL（`assets` 为空，无 SVG 处理）。
 
-- [ ] **Step 3：在 collect-images.ts 中添加 SVG 辅助函数**
+- [x] **Step 3：在 collect-images.ts 中添加 SVG 辅助函数**
 
 在现有 `imageSource` 函数之后（`collectImages` 函数之前）插入：
 
@@ -179,7 +179,7 @@ function ensureSvgNamespace(svg: Element): string {
 }
 ```
 
-- [ ] **Step 4：修改 collectImages 函数主体**
+- [x] **Step 4：修改 collectImages 函数主体**
 
 将 `collectImages` 函数内部从开头到 `const fetchImage` 这段替换为（修复早返回 + 三数组捕获 + SVG 循环）：
 
@@ -223,7 +223,7 @@ export async function collectImages(
 
 图片循环内部（`for (const img of images)` 到函数末尾的 `return`）**保持原样不动**，只把它们的闭合大括号之后、`return` 语句之前留空（供 Task 3 插入视频循环）。
 
-- [ ] **Step 5：验证测试通过**
+- [x] **Step 5：验证测试通过**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/dino && pnpm test -- tests/collect-images.test.ts 2>&1 | tail -20
@@ -231,7 +231,7 @@ cd /Users/zhanglun/Documents/mine/dino && pnpm test -- tests/collect-images.test
 
 Expected: 全部 6 tests pass（原 4 个 + 新 2 个）。
 
-- [ ] **Step 6：typecheck**
+- [x] **Step 6：typecheck**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/dino && pnpm typecheck 2>&1 | grep -c error || true
@@ -239,7 +239,7 @@ cd /Users/zhanglun/Documents/mine/dino && pnpm typecheck 2>&1 | grep -c error ||
 
 Expected: 0
 
-- [ ] **Step 7：commit**
+- [x] **Step 7：commit**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/dino
@@ -257,7 +257,7 @@ git commit -m "feat(collect-images): add inline SVG extraction and fix early-ret
 - Modify: `/Users/zhanglun/Documents/mine/dino/src/collect-images.ts`
 - Test: `/Users/zhanglun/Documents/mine/dino/tests/collect-images.test.ts`
 
-- [ ] **Step 1：写视频失败测试**
+- [x] **Step 1：写视频失败测试**
 
 在 `/Users/zhanglun/Documents/mine/dino/tests/collect-images.test.ts` 末尾追加：
 
@@ -323,7 +323,7 @@ it("processes video on page with no img elements (no early return)", async () =>
 });
 ```
 
-- [ ] **Step 2：验证失败**
+- [x] **Step 2：验证失败**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/dino && pnpm test -- tests/collect-images.test.ts 2>&1 | tail -20
@@ -331,7 +331,7 @@ cd /Users/zhanglun/Documents/mine/dino && pnpm test -- tests/collect-images.test
 
 Expected: 4 new tests FAIL（无视频处理逻辑）。
 
-- [ ] **Step 3：添加视频辅助函数**
+- [x] **Step 3：添加视频辅助函数**
 
 在 `ensureSvgNamespace` 函数之后、`collectImages` 函数之前插入：
 
@@ -356,7 +356,7 @@ function videoExtension(contentType: string, url: string): string {
 }
 ```
 
-- [ ] **Step 4：在 collectImages 中添加视频循环**
+- [x] **Step 4：在 collectImages 中添加视频循环**
 
 在图片循环（`for (const img of images) { ... }`）之后、`return { html: document.body.innerHTML, assets };` 之前插入：
 
@@ -397,7 +397,7 @@ function videoExtension(contentType: string, url: string): string {
   }
 ```
 
-- [ ] **Step 5：验证全部测试通过**
+- [x] **Step 5：验证全部测试通过**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/dino && pnpm test -- tests/collect-images.test.ts 2>&1 | tail -20
@@ -405,7 +405,7 @@ cd /Users/zhanglun/Documents/mine/dino && pnpm test -- tests/collect-images.test
 
 Expected: 10 tests pass（原 4 个 + Task 2 的 2 个 + 本任务 4 个）。
 
-- [ ] **Step 6：typecheck**
+- [x] **Step 6：typecheck**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/dino && pnpm typecheck 2>&1 | grep -c error || true
@@ -413,7 +413,7 @@ cd /Users/zhanglun/Documents/mine/dino && pnpm typecheck 2>&1 | grep -c error ||
 
 Expected: 0
 
-- [ ] **Step 7：commit**
+- [x] **Step 7：commit**
 
 ```bash
 cd /Users/zhanglun/Documents/mine/dino
