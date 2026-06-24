@@ -21,6 +21,9 @@ export const migrateBlobRefsCommand = defineCommand({
     },
   },
   async run({ args }) {
+    // citty 在 boolean arg 带 default 时，kebab-case 命令行参数（--dry-run）会被
+    // default 值遮蔽（args.dryRun 取到 default 的 false）。同时检查两种形式。
+    const dryRun = Boolean(args.dryRun || args["dry-run"]);
     const dataDir = resolve(
       (args.dataDir as string | undefined) ??
         process.env.AMBER_DATA_DIR ??
@@ -57,7 +60,7 @@ export const migrateBlobRefsCommand = defineCommand({
     const { results, stats } = migrateCaptureList(captures, publicBaseUrls);
 
     console.log(`扫描 ${captures.length} 条，将改动 ${stats.changed} 条（重写 ${stats.refsRewritten} 处引用）。`);
-    if (args.dryRun) {
+    if (dryRun) {
       console.log("（dry-run 模式，不写回文件）");
       for (const r of results) {
         if (r.content !== captures.find((c) => c.id === r.id)!.content) {
