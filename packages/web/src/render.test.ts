@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import type { Capture, CaptureSummary } from "@amber/domain";
+import { describe, expect, it, vi } from "vitest";
+import type { BlobStore, Capture, CaptureSummary } from "@amber/domain";
 import { escapeHtml, groupByWeek, readingStats, renderArticle, renderList } from "./render.js";
 
 const CAPTURE: Capture = {
@@ -83,6 +83,43 @@ describe("renderList", () => {
 
   it("includes search bar", () => {
     expect(renderList([])).toContain('<input id="search"');
+  });
+
+  it("includes sort toggle button", () => {
+    expect(renderList([])).toContain('id="sort-toggle"');
+  });
+
+  it("renders favicon image for the source hostname", () => {
+    const items: CaptureSummary[] = [
+      { id: "c1", title: "T", sourceUrl: "https://example.com/a", capturedAt: "2020-01-15T00:00:00.000Z" },
+    ];
+    const html = renderList(items);
+    expect(html).toContain("s2/favicons?domain=example.com");
+    expect(html).toContain('class="favicon"');
+  });
+
+  it("shows word count in meta when provided", () => {
+    const items: CaptureSummary[] = [
+      { id: "c1", title: "T", sourceUrl: "https://example.com/a", capturedAt: "2020-01-15T00:00:00.000Z", wordCount: 1234 },
+    ];
+    const html = renderList(items);
+    expect(html).toContain("1234 字");
+  });
+
+  it("omits word count when wordCount is undefined (old data)", () => {
+    const items: CaptureSummary[] = [
+      { id: "c1", title: "T", sourceUrl: "https://example.com/a", capturedAt: "2020-01-15T00:00:00.000Z" },
+    ];
+    const html = renderList(items);
+    expect(html).not.toContain("字");
+  });
+
+  it("adds data-captured-at on each item for sorting", () => {
+    const items: CaptureSummary[] = [
+      { id: "c1", title: "T", sourceUrl: "https://example.com/a", capturedAt: "2020-01-15T00:00:00.000Z" },
+    ];
+    const html = renderList(items);
+    expect(html).toContain('data-captured-at="2020-01-15T00:00:00.000Z"');
   });
 
   it("injects data-read-progress and data-read-at on items with read status", () => {
@@ -212,6 +249,26 @@ describe("renderArticle", () => {
   it("publishedAt with invalid format shows the raw string", async () => {
     const html = await renderArticle({ ...CAPTURE, publishedAt: "not-a-date" });
     expect(html).toContain("not-a-date");
+  });
+
+  it("resolves amber-asset:<key> refs to blob URLs before rendering", async () => {
+    const blob: BlobStore = {
+      put: vi.fn(),
+      urlFor: vi.fn(async (key: string) => `/blobs/${key}`),
+    };
+    const html = await renderArticle({
+      ...CAPTURE,
+      content: "![img](amber-asset:captures/c1/0.png)",
+    }, { prev: null, next: null }, blob);
+    expect(blob.urlFor).toHaveBeenCalledWith("captures/c1/0.png");
+    expect(html).toContain("/blobs/captures/c1/0.png");
+    expect(html).not.toContain("amber-asset:");
+  });
+
+  it("leaves content unchanged when no blob is provided", async () => {
+    // Old path / tests: no blob → no resolution, raw content passed through.
+    const html = await renderArticle({ ...CAPTURE, content: "![img](amber-asset:captures/c1/0.png)" });
+    expect(html).toContain("amber-asset:captures/c1/0.png");
   });
 });
 

@@ -3,6 +3,7 @@ import { stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import type { BlobStore } from "@amber/domain";
 import type { ReadService } from "@amber/core";
 import { renderArticle, renderList } from "./render.js";
 import { errorHandler, requestLogger } from "./request-log.js";
@@ -20,6 +21,8 @@ export function contentTypeForPath(path: string): string {
 
 export interface WebOptions {
   blobsDir: string;
+  /** 用于把正文里的 amber-asset:<key> 解析成实际访问 URL。 */
+  blob: BlobStore;
   deleteCapture: (id: string) => Promise<void>;
   onReady?: () => void;
   requestLog?: boolean;
@@ -50,7 +53,7 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
           prev: idx > 0 ? all[idx - 1] : null,
           next: idx < all.length - 1 ? all[idx + 1] : null,
         };
-    return c.html(await renderArticle(capture, neighbors));
+    return c.html(await renderArticle(capture, neighbors, options.blob));
   });
 
   app.post("/captures/:id/delete", async (c) => {
@@ -96,6 +99,7 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
 export function startServer(readService: ReadService, options: WebOptions & { port: number; hostname?: string }): void {
   const app = createApp(readService, {
     blobsDir: options.blobsDir,
+    blob: options.blob,
     deleteCapture: options.deleteCapture,
     requestLog: true,
   });

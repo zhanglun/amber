@@ -1,9 +1,10 @@
-import type { Capture, CaptureSummary } from "@amber/domain";
+import type { BlobStore, Capture, CaptureSummary } from "@amber/domain";
 import { getStyles } from "./styles.js";
 import {
   getThemeSwitcherHtml,
   getThemeScriptHtml,
   getSearchBarHtml,
+  getSortToggleHtml,
   getListFilterScriptHtml,
   getReaderHeaderScriptHtml,
   getDeleteConfirmScriptHtml,
@@ -13,6 +14,33 @@ import {
 } from "./scripts.js";
 import { renderMarkdown } from "./highlight.js";
 import { extractToc, type TocItem } from "./toc.js";
+
+const ASSET_REF_RE = /amber-asset:([^\s)]+)/g;
+
+/**
+ * 把正文里的 `amber-asset:<key>` 引用解析成实际访问 URL（本地为 `/blobs/<key>`，
+ * 云存储为公开/签名直链）。必须在 renderMarkdown 之前做——这样替换后视频嵌入的
+ * `/blobs/` 前缀判定天然命中，highlight.ts 无需改动。
+ * blob 为 undefined（测试/老路径）时原样返回，对完整 URL 形态的老数据也原样兼容。
+ */
+async function resolveAssetRefs(markdown: string, blob?: BlobStore): Promise<string> {
+  if (!blob || !markdown.includes("amber-asset:")) return markdown;
+  const keys = Array.from(markdown.matchAll(ASSET_REF_RE), (m) => m[1]);
+  if (keys.length === 0) return markdown;
+  // 同一 key 只解析一次。
+  const cache = new Map<string, string>();
+  await Promise.all(Array.from(new Set(keys)).map(async (k) => cache.set(k, await blob.urlFor(k))));
+  return markdown.replace(ASSET_REF_RE, (_m, k: string) => cache.get(k) ?? `amber-asset:${k}`);
+}
+
+/**
+ * 来源域名 favicon。用 Google s2 服务，img 加载失败时 onerror 隐藏自己（离线/无图标时
+ * 不影响布局，hostname 文字仍在）。这是 amber 唯一的运行时外部网络依赖。
+ */
+function faviconImg(hostname: string): string {
+  const domain = escapeHtml(hostname);
+  return `<img class="favicon" src="https://www.google.com/s2/favicons?domain=${domain}&sz=32" alt="" width="16" height="16" loading="lazy" onerror="this.classList.add('favicon-failed')">`;
+}
 
 export interface Group {
   label: string;
@@ -97,7 +125,8 @@ ${getThemeScriptHtml()}
 export function renderList(items: CaptureSummary[]): string {
   const searchBar = getSearchBarHtml();
   const switcher = getThemeSwitcherHtml();
-  const header = `<div class="header"><h1>Amber</h1><div class="header-right">${searchBar}${switcher}</div></div>`;
+  const sortToggle = getSortToggleHtml();
+  const header = `<div class="header"><h1>Amber</h1><div class="header-right">${searchBar}${sortToggle}${switcher}</div></div>`;
   const tagBar = renderTagBar(collectTags(items));
 
   if (items.length === 0) {
@@ -119,10 +148,15 @@ export function renderList(items: CaptureSummary[]): string {
           const excerptHtml = i.excerpt
             ? `<div class="excerpt">${escapeHtml(i.excerpt)}</div>`
             : "";
+          const meta = [
+            `${faviconImg(hostname)}${escapeHtml(hostname)}`,
+            date,
+            ...(typeof i.wordCount === "number" ? [`${i.wordCount} 字`] : []),
+          ].join(" · ");
           return (
-            `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}" data-tags="${tagsAttr}" data-read-progress="${rp}" data-read-at="${ra}">` +
+            `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}" data-captured-at="${escapeHtml(i.capturedAt)}" data-tags="${tagsAttr}" data-read-progress="${rp}" data-read-at="${ra}">` +
             `<div class="item-main"><a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
-            `<div class="muted">${escapeHtml(hostname)} · ${date}</div>` +
+            `<div class="muted">${meta}</div>` +
             excerptHtml +
             renderTagEditor(i.id, tags) +
             `</div>` +
@@ -192,7 +226,8 @@ function renderArticleFooter(
 
 export async function renderArticle(
   capture: Capture,
-  neighbors: { prev: CaptureSummary | null; next: CaptureSummary | null } = { prev: null, next: null }
+  neighbors: { prev: CaptureSummary | null; next: CaptureSummary | null } = { prev: null, next: null },
+  blob?: BlobStore,
 ): Promise<string> {
   const switcher = getThemeSwitcherHtml();
   const fontCtrl =
@@ -229,7 +264,8 @@ export async function renderArticle(
 
   const toc = extractToc(capture.content);
   const hasToc = toc.length >= 2;
-  const content = await renderMarkdown(capture.content, { toc });
+  const resolvedContent = await resolveAssetRefs(capture.content, blob);
+  const content = await renderMarkdown(resolvedContent, { toc });
   const readProgress = capture.readProgress ?? 0;
   const footer = renderArticleFooter(neighbors.prev, neighbors.next);
 

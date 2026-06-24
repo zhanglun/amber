@@ -21,4 +21,8 @@ export class FileBlobStore implements BlobStore {
     await writeFile(dest, data);
     return `${this.publicBaseUrl}/blobs/${key}`;
   }
+
+  async urlFor(key: string): Promise<string> {
+    return `${this.publicBaseUrl}/blobs/${key}`;
+  }
 }

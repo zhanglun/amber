@@ -23,12 +23,19 @@ export function getSearchBarHtml(): string {
   return `<div class="search-bar"><input id="search" type="search" placeholder="搜索标题或来源…" autocomplete="off"></div>`;
 }
 
+export function getSortToggleHtml(): string {
+  return `<button class="sort-toggle" id="sort-toggle" type="button" title="切换排序" data-order="desc">最新 ▾</button>`;
+}
+
 export function getListFilterScriptHtml(): string {
   return `<script>
 (function(){
   var inp=document.getElementById('search');
   var chips=document.querySelectorAll('.tag-filter[data-tag]');
   var allChip=document.querySelector('.tag-filter-all');
+  var sortToggle=document.getElementById('sort-toggle');
+  var sortOrder=(function(){try{return localStorage.getItem('amber-list-sort')||'desc';}catch(e){return 'desc';}})();
+  if(sortToggle)sortToggle.setAttribute('data-order',sortOrder);
   var active=new Set();
   function itemTags(item){try{return JSON.parse(item.getAttribute('data-tags')||'[]');}catch(e){return [];}}
   function apply(){
@@ -41,6 +48,7 @@ export function getListFilterScriptHtml(): string {
       var tagOk=active.size===0||tags.some(function(t){return active.has(t);});
       item.style.display=(textOk&&tagOk)?'':'none';
     });
+    sortVisible();
     document.querySelectorAll('[data-group]').forEach(function(group){
       var items=group.querySelectorAll('.item[data-title]');
       var n=0;items.forEach(function(i){if(i.style.display!=='none')n++;});
@@ -49,7 +57,27 @@ export function getListFilterScriptHtml(): string {
       if(el)el.textContent=n;
     });
   }
+  function sortVisible(){
+    document.querySelectorAll('[data-group]').forEach(function(group){
+      var items=Array.prototype.slice.call(group.querySelectorAll('.item[data-title]'));
+      items.sort(function(a,b){
+        var av=a.getAttribute('data-captured-at')||'';
+        var bv=b.getAttribute('data-captured-at')||'';
+        return sortOrder==='desc'?bv.localeCompare(av):av.localeCompare(bv);
+      });
+      items.forEach(function(item){group.appendChild(item);});
+    });
+  }
   if(inp)inp.addEventListener('input',apply);
+  if(sortToggle){
+    sortToggle.addEventListener('click',function(){
+      sortOrder=sortOrder==='desc'?'asc':'desc';
+      sortToggle.setAttribute('data-order',sortOrder);
+      sortToggle.textContent=sortOrder==='desc'?'最新 ▾':'最早 ▴';
+      try{localStorage.setItem('amber-list-sort',sortOrder);}catch(e){}
+      apply();
+    });
+  }
   chips.forEach(function(chip){
     chip.addEventListener('click',function(){
       var t=chip.getAttribute('data-tag');
@@ -68,6 +96,7 @@ export function getListFilterScriptHtml(): string {
       apply();
     });
   }
+  apply();
 })();
 </script>`;
 }

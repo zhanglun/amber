@@ -182,7 +182,7 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
       const dataDir = runtime.getDataDir();
       const logHandle: LogHandle = runtime.installLogging(dataDir);
       try {
-        const { readService, blobsDir, deleteCapture, dispose } = runtime.buildServices();
+        const { readService, blobsDir, blob, deleteCapture, dispose } = runtime.buildServices();
         const addresses = getNetworkAddresses(port);
 
         await runtime.writePid(dataDir, {
@@ -202,6 +202,7 @@ export function createWebActions(runtime: WebRuntime = defaultRuntime): WebActio
 
         runtime.startServer(readService, {
           blobsDir,
+          blob,
           deleteCapture,
           port,
           hostname: opts.hostname,

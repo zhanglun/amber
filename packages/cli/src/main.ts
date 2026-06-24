@@ -7,6 +7,7 @@ import { webCommand } from "./commands/web.js";
 import { deleteCommand } from "./commands/delete.js";
 import { reimportCommand } from "./commands/reimport.js";
 import { migrateCommand } from "./commands/migrate.js";
+import { migrateBlobRefsCommand } from "./commands/migrate-blob-refs.js";
 import { tagCommand } from "./commands/tag.js";
 import { doctorCommand } from "./commands/doctor.js";
 
@@ -19,6 +20,7 @@ const main = defineCommand({
     delete: deleteCommand,
     reimport: reimportCommand,
     migrate: migrateCommand,
+    "migrate-blob-refs": migrateBlobRefsCommand,
     tag: tagCommand,
     doctor: doctorCommand,
   },

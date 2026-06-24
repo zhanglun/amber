@@ -22,4 +22,14 @@ describe("FileBlobStore", () => {
     const url = await store.put("captures/c1/0.png", new Uint8Array([1]));
     expect(url).toBe("http://localhost:7788/blobs/captures/c1/0.png");
   });
+
+  it("urlFor resolves a key to a /blobs URL without touching the disk", async () => {
+    const store = new FileBlobStore(dir);
+    expect(await store.urlFor("captures/c1/0.png")).toBe("/blobs/captures/c1/0.png");
+  });
+
+  it("urlFor respects publicBaseUrl", async () => {
+    const store = new FileBlobStore(dir, "http://localhost:7788");
+    expect(await store.urlFor("captures/c1/0.png")).toBe("http://localhost:7788/blobs/captures/c1/0.png");
+  });
 });

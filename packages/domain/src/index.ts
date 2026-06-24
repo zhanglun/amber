@@ -62,7 +62,10 @@ export interface Store {
   disconnect?(): Promise<void>;
 }
 
-/** 二进制/对象存储。`put` 返回公开 URL。 */
+/** 二进制/对象存储。`put` 返回公开 URL（向后兼容；新代码不应把该 URL 写进正文，
+ *  应在正文里存 `amber-asset:<key>`，渲染时用 `urlFor` 解析）。 */
 export interface BlobStore {
   put(key: string, data: Uint8Array, contentType?: string): Promise<string>;
+  /** 把稳定 key 解析成访问 URL（本地为 `/blobs/<key>`，云存储为公开/签名直链）。 */
+  urlFor(key: string): Promise<string>;
 }

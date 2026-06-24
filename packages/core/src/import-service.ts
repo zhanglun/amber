@@ -38,8 +38,10 @@ export class ImportService {
     for (let i = 0; i < raw.assets.length; i++) {
       const asset = raw.assets[i];
       const key = assetKey(id, i, asset.contentType);
-      const publicUrl = await this.blob.put(key, asset.data, asset.contentType);
-      content = content.replaceAll(asset.placeholder, publicUrl);
+      await this.blob.put(key, asset.data, asset.contentType);
+      // 正文只存后端无关的稳定引用 amber-asset:<key>，渲染时由 urlFor 解析成实际 URL。
+      // 这样换后端/迁移 blob 后正文链接不会失效。
+      content = content.replaceAll(asset.placeholder, `amber-asset:${key}`);
     }
 
     const capturedAt = this.now().toISOString();

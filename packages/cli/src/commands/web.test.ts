@@ -30,6 +30,7 @@ function fakeRuntime(info: PidInfo | null): WebRuntime & { calls: string[] } {
     calls,
     buildServices: () => ({
       blobsDir: "/tmp/blobs",
+      blob: { put: async () => "", urlFor: async () => "" } as never,
       dataDir: "/tmp/amber-data",
       deleteCapture: async () => {},
       dispose: async () => {},

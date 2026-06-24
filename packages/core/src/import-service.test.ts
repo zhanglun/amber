@@ -31,7 +31,10 @@ function fakeStore(rows: Capture[] = []): Store {
 }
 
 function fakeBlob(): BlobStore {
-  return { put: vi.fn(async (key) => `https://cdn.example.com/${key}`) };
+  return {
+    put: vi.fn(async (key) => `https://cdn.example.com/${key}`),
+    urlFor: vi.fn(async (key) => `https://cdn.example.com/${key}`),
+  };
 }
 
 describe("ImportService.run", () => {
@@ -115,7 +118,7 @@ describe("ImportService.run", () => {
     const svc = new ImportService(source, store, blob, { newId: () => "u1" });
     await svc.run("https://x/a");
     const saved = await store.get("u1");
-    expect(saved?.content).toContain("https://cdn.example.com/");
+    expect(saved?.content).toContain("amber-asset:captures/u1/0.png");
     expect(blob.put).toHaveBeenCalled();
   });
 

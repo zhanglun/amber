@@ -41,6 +41,13 @@ describe("R2BlobStore", () => {
     const cmd: PutObjectCommand = (client.send as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(cmd.input.ContentType).toBeUndefined();
   });
+
+  it("urlFor resolves a key to the public URL without calling S3", async () => {
+    const client = makeMockClient();
+    const store = new R2BlobStore(client, "bucket", "https://cdn.example.com/");
+    expect(await store.urlFor("captures/c1/0.png")).toBe("https://cdn.example.com/captures/c1/0.png");
+    expect(client.send).not.toHaveBeenCalled();
+  });
 });
 
 describe("createR2BlobStore", () => {

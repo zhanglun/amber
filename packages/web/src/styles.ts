@@ -52,6 +52,8 @@ pre { padding: 1rem; border-radius: 6px; overflow-x: auto; }
 code { padding: .2em .4em; border-radius: 3px; }
 pre code { padding: 0; background: none; }
 .muted { color: var(--text-muted); font-size: .85rem; }
+.muted .favicon { vertical-align: -0.15em; margin-right: .25rem; border-radius: 3px; }
+.muted .favicon-failed { display: none; }
 .header { display: flex; justify-content: space-between; align-items: center; padding: .8rem 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
 .item { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: .6rem 0; border-bottom: 1px solid var(--border); }
 .item-main { min-width: 0; flex: 1; }
@@ -74,6 +76,8 @@ pre code { padding: 0; background: none; }
 .header-right { display: flex; align-items: center; gap: 1rem; }
 .search-bar input { border: 1px solid var(--border); border-radius: 6px; padding: .3rem .6rem; font-size: .85rem; background: var(--bg); color: var(--text); width: 180px; }
 .search-bar input:focus { outline: none; border-color: var(--link); }
+.sort-toggle { background: none; border: 1px solid var(--border); border-radius: 6px; padding: .3rem .6rem; font-size: .85rem; color: var(--text-muted); cursor: pointer; }
+.sort-toggle:hover { color: var(--text); border-color: var(--link); }
 .tag-bar { display: flex; flex-wrap: wrap; gap: .4rem; margin: .6rem 0 1rem; }
 .tag-filter, .tag-filter-all { border: 1px solid var(--border); border-radius: 999px; padding: .15rem .6rem; font-size: .78rem; background: var(--bg); color: var(--text-muted); cursor: pointer; }
 .tag-filter.active, .tag-filter-all.active { background: var(--link); border-color: var(--link); color: #fff; }

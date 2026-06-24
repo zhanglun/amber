@@ -51,6 +51,7 @@ export function buildServices() {
   return {
     dataDir,
     blobsDir,
+    blob,
     importService: new ImportService(source, store, blob),
     readService: new ReadService(store),
     deleteCapture,

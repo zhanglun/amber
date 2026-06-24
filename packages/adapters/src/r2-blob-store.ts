@@ -23,6 +23,10 @@ export class R2BlobStore implements BlobStore {
     );
     return `${this.base}/${key}`;
   }
+
+  async urlFor(key: string): Promise<string> {
+    return `${this.base}/${key}`;
+  }
 }
 
 export function createR2BlobStore(opts: {

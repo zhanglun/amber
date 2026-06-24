@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReadService } from "@amber/core";
-import type { Capture } from "@amber/domain";
+import type { BlobStore, Capture } from "@amber/domain";
 import { contentTypeForPath, createApp } from "./index.js";
 
 const captures: Capture[] = [
@@ -35,9 +35,14 @@ function fakeReadService(): ReadService {
   } as unknown as ReadService;
 }
 
+const fakeBlob: BlobStore = {
+  put: vi.fn(async (key: string) => `/blobs/${key}`),
+  urlFor: vi.fn(async (key: string) => `/blobs/${key}`),
+};
+
 describe("createApp", () => {
   it("renders the list page on / without the article shell", async () => {
-    const app = createApp(fakeReadService(), { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const app = createApp(fakeReadService(), { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
     const res = await app.request("/");
     const html = await res.text();
     expect(html).toContain('<input id="search"');
@@ -48,7 +53,7 @@ describe("createApp", () => {
   });
 
   it("renders the selected capture on /captures/:id as a focused article", async () => {
-    const app = createApp(fakeReadService(), { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const app = createApp(fakeReadService(), { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
     const res = await app.request("/captures/c2");
     const html = await res.text();
     expect(html).toContain('class="article-shell"');
@@ -61,7 +66,7 @@ describe("createApp", () => {
   });
 
   it("article page includes link to adjacent capture via data-nav", async () => {
-    const app = createApp(fakeReadService(), { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const app = createApp(fakeReadService(), { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
     const res = await app.request("/captures/c2");
     const html = await res.text();
     expect(html).toContain('data-nav="prev"');
@@ -69,7 +74,7 @@ describe("createApp", () => {
   });
 
   it("first article has no prev neighbor but has next", async () => {
-    const app = createApp(fakeReadService(), { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const app = createApp(fakeReadService(), { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
     const res = await app.request("/captures/c1");
     const html = await res.text();
     expect(html).not.toContain('data-nav="prev"');
@@ -79,14 +84,14 @@ describe("createApp", () => {
 
   it("GET /captures/:id calls recordVisit", async () => {
     const svc = fakeReadService();
-    const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const app = createApp(svc, { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
     await app.request("/captures/c1");
     expect(svc.recordVisit).toHaveBeenCalledWith("c1", expect.any(String));
   });
 
   it("PATCH /captures/:id/read calls updateReadStatus and returns 204", async () => {
     const svc = fakeReadService();
-    const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const app = createApp(svc, { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
     const res = await app.request("/captures/c1/read", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -98,7 +103,7 @@ describe("createApp", () => {
 
   it("PATCH /captures/:id/tags calls updateTags and returns 204", async () => {
     const svc = fakeReadService();
-    const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const app = createApp(svc, { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
     const res = await app.request("/captures/c1/tags", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -110,7 +115,7 @@ describe("createApp", () => {
 
   it("PATCH /captures/:id/tags returns 404 for unknown id", async () => {
     const svc = fakeReadService();
-    const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const app = createApp(svc, { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
     const res = await app.request("/captures/unknown/tags", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -122,7 +127,7 @@ describe("createApp", () => {
 
   it("PATCH /captures/:id/read returns 404 for unknown id", async () => {
     const svc = fakeReadService();
-    const app = createApp(svc, { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const app = createApp(svc, { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
     const res = await app.request("/captures/unknown/read", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -136,6 +141,7 @@ describe("createApp", () => {
     const deleted: string[] = [];
     const app = createApp(fakeReadService(), {
       blobsDir: "/tmp",
+      blob: fakeBlob,
       deleteCapture: async (id) => { deleted.push(id); },
     });
     const res = await app.request("/captures/c2/delete", { method: "POST" });
@@ -161,6 +167,7 @@ describe("createApp requestLog option", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const app = createApp(fakeReadService(), {
       blobsDir: "/tmp",
+      blob: fakeBlob,
       deleteCapture: async () => {},
       requestLog: true,
     });
@@ -171,7 +178,7 @@ describe("createApp requestLog option", () => {
 
   it("does not log when requestLog is omitted", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    const app = createApp(fakeReadService(), { blobsDir: "/tmp", deleteCapture: async () => {} });
+    const app = createApp(fakeReadService(), { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
     await app.request("/");
     expect(log.mock.calls.length).toBe(0);
   });
