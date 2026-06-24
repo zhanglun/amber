@@ -91,6 +91,35 @@ pnpm amber migrate
 
 迁移完成后图片/视频 blob 仍在本地 `amber-data/blobs/`，web 服务会继续通过 `/blobs/` 路径提供服务。
 
+### blob 文件迁移到 R2（可选）
+
+`amber migrate` 只迁移 capture 元数据，不动 blob 文件。若要把存量 blob 也搬到 R2：
+
+**1. 上传文件**：把本地 `amber-data/blobs/` 目录上传到 R2 bucket，保持 key 结构（`captures/<id>/<i>.<ext>`）不变：
+
+```bash
+# 用 rclone（推荐，支持 S3 兼容）
+rclone copy ./amber-data/blobs r2:amber-blobs \
+  --s3-provider Cloudflare \
+  --s3-endpoint https://<account_id>.r2.cloudflarestorage.com \
+  --s3-access-key-id <access_key> \
+  --s3-secret-access-key <secret_key>
+
+# 或直接在 Cloudflare Dashboard 用「上传」功能
+```
+
+**2. 修正正文引用**：历史的 capture 正文里若存的是 `/blobs/<key>` 直链，迁到 R2 后会失效。用 `migrate-blob-refs` 把它们转成后端无关的 `amber-asset:<key>` 稳定引用（渲染时由 `urlFor` 动态解析）：
+
+```bash
+# 先预览将改动的条目（不写回）
+pnpm amber migrate-blob-refs --dry-run
+
+# 实际改写
+pnpm amber migrate-blob-refs
+```
+
+> 新版 `amber import` 已经直接存 `amber-asset:<key>` 格式，无需此命令。它只用于修正更早版本导入的存量数据。如果你的 `AMBER_PUBLIC_BASE_URL` 曾设过自定义前缀，命令会一并处理该前缀形态的链接。
+
 ---
 
 ## Cloudflare R2（图片/视频存储）
@@ -120,7 +149,8 @@ R2_BUCKET=amber-blobs
 R2_PUBLIC_BASE_URL=https://assets.yourdomain.com
 ```
 
-四个 `R2_*` 变量同时设置时启用 R2BlobStore，缺少任何一个则回退到本地文件。
+- **前 4 个变量同时设置**时启用 R2BlobStore，缺少任何一个则回退到本地文件。
+- `R2_PUBLIC_BASE_URL` 不参与启用判断，但**强烈建议设置**——它是生成图片/视频公开 URL 的前缀。若留空，正文里的 blob 引用会解析成无域名的相对路径（`/captures/...`），Web 端无法正确加载。
 
 ---
 
@@ -140,7 +170,7 @@ PostgreSQL + R2 是推荐的生产配置，两者独立，可以单独启用：
 ## 已知限制
 
 - **删除时 R2 对象不清理**：`amber delete` 删除 Postgres 记录和本地 blob，但不删除 R2 中的对象（`BlobStore` 接口目前没有 `delete` 方法）。
-- **blob 迁移需手动完成**：`amber migrate` 只迁移 capture 元数据，blob 文件需手动上传到 R2（可用 `rclone` 或 Cloudflare Dashboard）。
+- **blob 文件迁移需手动上传**：`amber migrate` 只迁移 capture 元数据，blob 文件需手动上传到 R2（见上文「blob 文件迁移到 R2」）。正文里的链接引用可用 `amber migrate-blob-refs` 自动修正。
 
 ---
 

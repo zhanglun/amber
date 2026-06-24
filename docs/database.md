@@ -69,18 +69,21 @@ pnpm --filter @amber/adapters exec prisma generate --schema=prisma/schema.prisma
 
 ## Supabase 连接注意事项
 
-Supabase 提供两种连接方式：
+Supabase 提供多种连接方式，对 Amber（常驻单进程）的推荐是 **Session Pooler（5432）**——一个连接串同时满足 `db:push` 建表和运行时读写：
 
-| 类型 | 端口 | 用途 |
-|---|---|---|
-| **Direct connection** | 5432 | ✅ `db:push` 必须用这个 |
-| Pooled (Transaction mode) | 6543 | 应用运行时可用，但 Prisma migration/db push 会报 shadow schema 错误 |
+| 类型 | 主机/端口 | 是否推荐 | 说明 |
+|---|---|---|---|
+| **Session Pooler** | `aws-<region>.pooler.supabase.com:5432` | ✅ 推荐 | 支持 DDL 和 prepared statements，建表、运行时都能用 |
+| Transaction Pooler | `aws-<region>.pooler.supabase.com:6543` | ✗ | 不支持 DDL，Prisma `db push` 会报 shadow schema 错误，且需加 `?pgbouncer=true` |
 
-**`.env` 中始终使用 Direct connection（5432）：**
+**`.env` 中使用 Session Pooler（5432）：**
 
 ```
-DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres.[PROJECT-REF]:[URL编码后的密码]@aws-<region>.pooler.supabase.com:5432/postgres
 ```
+
+> 密码含特殊字符（`@ : / ? # &` 等）必须 URL 编码：`node -e "console.log(encodeURIComponent('你的密码'))"`。
+> `<PROJECT-REF>`、`<region>` 从 Supabase Dashboard 的 Connect 面板复制。
 
 ---
 
@@ -91,4 +94,6 @@ DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/
 | `pnpm db:push` | 推送 schema 到数据库（建表 / 更新表结构） |
 | `pnpm amber migrate` | 将文件存储的数据迁移到 PostgreSQL |
 | `pnpm amber migrate --dry-run` | 预览迁移，不实际写入 |
+| `pnpm amber migrate-blob-refs` | 把正文里的 blob URL 转成 `amber-asset:` 稳定引用（换 blob 后端用） |
+| `pnpm amber migrate-blob-refs --dry-run` | 预览将改动的条目，不写回 |
 | `DATABASE_URL="" pnpm amber web` | 强制使用文件存储（跳过 PostgreSQL） |

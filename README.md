@@ -39,14 +39,22 @@ pnpm amber doctor   # 检查并按需安装 Chromium（约 150MB）
 
 ## 存储模式
 
-Amber 支持两种存储后端，通过环境变量自动切换：
+Amber 默认使用本地文件存储，零配置。两种存储后端可按需启用，通过环境变量自动切换，彼此独立：
 
 | 变量 | 未设置 | 已设置 |
 |------|--------|--------|
-| `DATABASE_URL` | 文件存储（JSON 文件） | PostgreSQL |
-| `R2_*`（4 个） | 本地文件 blobs | Cloudflare R2 |
+| `DATABASE_URL` | 文件存储（JSON 文件） | PostgreSQL（如 Supabase） |
+| `R2_*`（4 个必需 + 1 个推荐） | 本地文件 blobs | Cloudflare R2 |
 
-详细配置方法见 [docs/configuration.md](./docs/configuration.md)。
+两者可以任意组合——只设 `DATABASE_URL`、只设 `R2_*`、或两个都设（PostgreSQL + R2，生产推荐）。
+
+### 从本地切到云端（Supabase + R2）
+
+1. **建表**：在 Supabase 创建项目，复制连接串（Session Pooler，端口 5432；密码含特殊字符需 URL 编码）填入 `.env` 的 `DATABASE_URL`，然后 `pnpm db:push` 建表
+2. **配 R2**：在 Cloudflare 创建 R2 bucket 并获取凭证，把 5 个 `R2_*` 变量填入 `.env`
+3. **迁移存量数据**（如有）：`pnpm amber migrate`（capture → Postgres）、blob 文件上传到 R2、`pnpm amber migrate-blob-refs`（修正正文链接）
+
+完整步骤、Supabase 连接串模板、R2 变量说明见 [docs/configuration.md](./docs/configuration.md)。
 
 ## 开发
 
