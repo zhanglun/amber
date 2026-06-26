@@ -154,6 +154,96 @@ R2_PUBLIC_BASE_URL=https://assets.yourdomain.com
 
 ---
 
+## 从本地迁移到云端（Supabase + R2）
+
+把已有的本地文件存储（capture + blob）整体搬到 Supabase + R2，并让此后所有新数据默认写入云端。整个过程**按顺序执行 6 步**，每一步都可单独预览（`--dry-run`）再实际执行。
+
+> 前置：已有 Supabase 项目和 R2 bucket。各变量的获取方式见上方「PostgreSQL → 使用 Supabase」和「Cloudflare R2」两节。
+
+### 第 1 步：配置环境变量
+
+在项目根目录创建 `.env`，把 Supabase 和 R2 的凭证都填进去：
+
+```bash
+# Supabase（Session Pooler，端口 5432；密码含特殊字符需 URL 编码）
+DATABASE_URL=postgresql://postgres.<project-ref>:<编码后的密码>@aws-1-<region>.pooler.supabase.com:5432/postgres
+
+# Cloudflare R2
+R2_ACCOUNT_ID=<你的_account_id>
+R2_ACCESS_KEY_ID=<你的_access_key_id>
+R2_SECRET_ACCESS_KEY=<你的_secret_key>
+R2_BUCKET=<你的_bucket_名>
+R2_PUBLIC_BASE_URL=https://<你的_R2_公开域名>
+```
+
+`DATABASE_URL` 与 `R2_*` 是**两个独立开关**，同时设置即「Supabase 存数据 + R2 存静态资源」。
+
+### 第 2 步：建表（把 schema 推到 Supabase）
+
+```bash
+pnpm db:push
+```
+
+成功输出：`Your database is now in sync with your Prisma schema.`
+
+### 第 3 步：迁移 capture 数据到 Supabase
+
+把本地 `amber-data/captures/*.json` 的 23 条记录写入 Supabase：
+
+```bash
+pnpm amber migrate --dry-run    # 预览（不写库），确认条数无误
+pnpm amber migrate              # 实际迁移
+```
+
+迁移按 ID 去重，**可重复执行**，已存在的记录不会被覆盖。成功输出示例：`完成：迁移 23 条，跳过 0 条（已存在）`。
+
+### 第 4 步：上传 blob 文件到 R2
+
+`amber migrate` 不动 blob 文件。把本地 `amber-data/blobs/` 上传到 R2 bucket，保持 key 结构（`captures/<id>/<i>.<ext>`）不变：
+
+```bash
+# 用 rclone（推荐）
+rclone copy ./amber-data/blobs r2:<你的_bucket_名> \
+  --s3-provider Cloudflare \
+  --s3-endpoint https://<account_id>.r2.cloudflarestorage.com \
+  --s3-access-key-id <access_key> \
+  --s3-secret-access-key <secret_key>
+
+# 或在 Cloudflare Dashboard 用「上传」功能手动上传
+```
+
+### 第 5 步：修正正文链接
+
+确保正文里的 blob 引用是后端无关的 `amber-asset:<key>` 格式（渲染时由 `urlFor` 动态解析成 R2 URL）。早期版本导入的数据可能存的是 `/blobs/<key>` 直链，需转换：
+
+```bash
+pnpm amber migrate-blob-refs --dry-run    # 预览将改动的条目
+pnpm amber migrate-blob-refs              # 实际改写
+```
+
+> 若输出「将改动 0 条」，说明数据已是新格式，正常跳过即可。新版 `amber import` 已直接存 `amber-asset:<key>`，本命令只用于修正历史数据。
+
+### 第 6 步：以后默认走云端
+
+`.env` 留着即可——**不需要任何额外参数**。之后每次 `pnpm amber import <url>`、`pnpm amber web` 都会自动读取 `.env`，capture 写入 Supabase、图片/视频写入 R2。
+
+### 验证
+
+```bash
+pnpm amber list      # 列出数据（现在从 Supabase 读取），应看到迁移过去的记录
+pnpm amber web       # 启动 Web，打开有图片的文章，确认图片正常加载（从 R2）
+```
+
+### 回退（可选）
+
+想临时用回本地数据时，不必删 `.env`，启动时用空 `DATABASE_URL` 覆盖即可：
+
+```bash
+DATABASE_URL="" pnpm amber web    # 强制使用本地文件存储
+```
+
+---
+
 ## 组合使用
 
 PostgreSQL + R2 是推荐的生产配置，两者独立，可以单独启用：
