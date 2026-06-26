@@ -21,6 +21,9 @@ export const migrateCommand = defineCommand({
     },
   },
   async run({ args }) {
+    // citty 在 boolean arg 带 default 值时，kebab-case 命令行参数（--dry-run）会被
+    // default 值遮蔽（args.dryRun 取到 default 的 false）。同时检查两种形式。
+    const dryRun = Boolean(args.dryRun || args["dry-run"]);
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) {
       console.error("错误：需要设置 DATABASE_URL 环境变量");
@@ -51,7 +54,7 @@ export const migrateCommand = defineCommand({
     console.log(
       `找到 ${jsonFiles.length} 条记录，目标数据库：${dbUrl.replace(/\/\/.*@/, "//***@")}`
     );
-    if (args.dryRun) {
+    if (dryRun) {
       console.log("（dry-run 模式，不写入数据库）");
     }
 
@@ -63,7 +66,7 @@ export const migrateCommand = defineCommand({
       const text = await readFile(join(capturesDir, file), "utf8");
       const capture: Capture = JSON.parse(text);
 
-      if (!args.dryRun) {
+      if (!dryRun) {
         const existing = await store.get(capture.id);
         if (existing) {
           console.log(`  跳过（已存在）：${capture.title}`);
@@ -79,7 +82,7 @@ export const migrateCommand = defineCommand({
 
     await store.disconnect();
 
-    if (args.dryRun) {
+    if (dryRun) {
       console.log(`\n共 ${migrated} 条将被迁移。`);
     } else {
       console.log(`\n完成：迁移 ${migrated} 条，跳过 ${skipped} 条（已存在）。`);
