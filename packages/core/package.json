@@ -5,6 +5,7 @@
   "type": "module",
   "exports": { ".": "./src/index.ts" },
   "dependencies": {
-    "@amber/domain": "workspace:*"
+    "@amber/domain": "workspace:*",
+    "sharp": "^0.34.0"
   }
 }

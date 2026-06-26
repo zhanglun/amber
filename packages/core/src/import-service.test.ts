@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
+import sharp from "sharp";
 import type { BlobStore, Capture, Store } from "@amber/domain";
 import { ImportService } from "./import-service.js";
+
+/** 生成一张真实小 png（2x2 红点），用于测试图片转码。 */
+async function makePng(): Promise<Uint8Array> {
+  const buf = await sharp({
+    create: { width: 2, height: 2, channels: 3, background: { r: 255, g: 0, b: 0 } },
+  })
+    .png()
+    .toBuffer();
+  return new Uint8Array(buf);
+}
 
 const cap: Capture = {
   id: "c1",
@@ -105,12 +116,13 @@ describe("ImportService.run", () => {
     expect(source.capture).not.toHaveBeenCalled();
   });
 
-  it("uploads assets and rewrites placeholders in content", async () => {
+  it("optimizes a png asset to webp and rewrites the content reference", async () => {
+    const png = await makePng();
     const source = {
       capture: vi.fn(async () => ({
         title: "T",
         markdown: "![img](amber-asset:0)",
-        assets: [{ placeholder: "amber-asset:0", data: new Uint8Array([1]), contentType: "image/png" }],
+        assets: [{ placeholder: "amber-asset:0", data: png, contentType: "image/png" }],
       })),
     };
     const blob = fakeBlob();
@@ -118,8 +130,49 @@ describe("ImportService.run", () => {
     const svc = new ImportService(source, store, blob, { newId: () => "u1" });
     await svc.run("https://x/a");
     const saved = await store.get("u1");
+    // png 被转成 webp：正文引用、key 扩展名都应是 .webp。
+    expect(saved?.content).toContain("amber-asset:captures/u1/0.webp");
+    expect(saved?.content).not.toContain("amber-asset:captures/u1/0.png");
+    // blob.put 收到的是 webp contentType。
+    expect(blob.put).toHaveBeenCalledWith(
+      "captures/u1/0.webp",
+      expect.any(Uint8Array),
+      "image/webp",
+    );
+  });
+
+  it("does not optimize svg assets (keeps .svg key)", async () => {
+    const svg = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>');
+    const source = {
+      capture: vi.fn(async () => ({
+        title: "T",
+        markdown: "![img](amber-asset:0)",
+        assets: [{ placeholder: "amber-asset:0", data: svg, contentType: "image/svg+xml" }],
+      })),
+    };
+    const blob = fakeBlob();
+    const store = fakeStore();
+    const svc = new ImportService(source, store, blob, { newId: () => "u1" });
+    await svc.run("https://x/a");
+    const saved = await store.get("u1");
+    expect(saved?.content).toContain("amber-asset:captures/u1/0.svg");
+  });
+
+  it("falls back to original data when optimization fails (corrupt image)", async () => {
+    const source = {
+      capture: vi.fn(async () => ({
+        title: "T",
+        markdown: "![img](amber-asset:0)",
+        assets: [{ placeholder: "amber-asset:0", data: new Uint8Array([1, 2, 3]), contentType: "image/png" }],
+      })),
+    };
+    const blob = fakeBlob();
+    const store = fakeStore();
+    const svc = new ImportService(source, store, blob, { newId: () => "u1" });
+    await svc.run("https://x/a");
+    const saved = await store.get("u1");
+    // 损坏 png 无法转码 → 降级用原始数据，key 仍是 .png。
     expect(saved?.content).toContain("amber-asset:captures/u1/0.png");
-    expect(blob.put).toHaveBeenCalled();
   });
 
   it("forceId skips dedup and overwrites", async () => {
