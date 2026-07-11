@@ -2,6 +2,14 @@ import { capture as dinoCapture, type CaptureResult } from "dino";
 import type { Asset, RawCapture, Source } from "@amber/domain";
 import { convertResidualTables } from "./markdown-table-fallback.js";
 
+// dino 的 CaptureOptions 类型未暴露 realChromeDefaults，但内部 FetchHtmlOptions
+// 支持该字段（capture() 通过 { ...options } 透传）。补全类型声明，避免类型断言。
+declare module "dino" {
+  interface CaptureOptions {
+    realChromeDefaults?: boolean;
+  }
+}
+
 /**
  * 把 dino 的 CaptureResult 转成 amber 的 RawCapture。
  * dino 的图片引用是本地路径（assets/image-001.png）；amber 用占位符（amber-asset:N）。
@@ -54,7 +62,7 @@ export function explainCaptureError(message: string): string {
 export class DinoSource implements Source {
   async capture(input: string): Promise<RawCapture> {
     try {
-      const result = await dinoCapture(input);
+      const result = await dinoCapture(input, { realChromeDefaults: true });
       return toRawCapture(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
