@@ -45,6 +45,7 @@ function fakeBlob(): BlobStore {
   return {
     put: vi.fn(async (key) => `https://cdn.example.com/${key}`),
     urlFor: vi.fn(async (key) => `https://cdn.example.com/${key}`),
+    deleteByPrefix: vi.fn(async () => {}),
   };
 }
 

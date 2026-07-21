@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import type { BlobStore } from "@amber/domain";
 
 export class R2BlobStore implements BlobStore {
@@ -26,6 +26,22 @@ export class R2BlobStore implements BlobStore {
 
   async urlFor(key: string): Promise<string> {
     return `${this.base}/${key}`;
+  }
+
+  async deleteByPrefix(prefix: string): Promise<void> {
+    const listed = await this.client.send(
+      new ListObjectsV2Command({ Bucket: this.bucket, Prefix: prefix })
+    );
+    const keys = (listed.Contents ?? [])
+      .map((o) => o.Key)
+      .filter((k): k is string => typeof k === "string");
+    if (keys.length === 0) return;
+    await this.client.send(
+      new DeleteObjectsCommand({
+        Bucket: this.bucket,
+        Delete: { Objects: keys.map((Key) => ({ Key })) },
+      })
+    );
   }
 }
 

@@ -1,4 +1,3 @@
-import { rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import {
   DinoSource,
@@ -36,10 +35,7 @@ export function buildServices() {
 
   async function deleteCapture(id: string): Promise<void> {
     await store.delete(id);
-    await rm(join(blobsDir, captureAssetPrefix(id)), {
-      recursive: true,
-      force: true,
-    });
+    await blob.deleteByPrefix(captureAssetPrefix(id));
   }
 
   // 释放 store 持有的资源（PostgresStore 的连接池会保持事件循环存活，

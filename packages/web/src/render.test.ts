@@ -255,6 +255,7 @@ describe("renderArticle", () => {
     const blob: BlobStore = {
       put: vi.fn(),
       urlFor: vi.fn(async (key: string) => `/blobs/${key}`),
+      deleteByPrefix: vi.fn(async () => {}),
     };
     const html = await renderArticle({
       ...CAPTURE,

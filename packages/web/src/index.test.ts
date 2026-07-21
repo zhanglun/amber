@@ -38,6 +38,7 @@ function fakeReadService(): ReadService {
 const fakeBlob: BlobStore = {
   put: vi.fn(async (key: string) => `/blobs/${key}`),
   urlFor: vi.fn(async (key: string) => `/blobs/${key}`),
+  deleteByPrefix: vi.fn(async () => {}),
 };
 
 describe("createApp", () => {

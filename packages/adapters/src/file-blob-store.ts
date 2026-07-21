@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { BlobStore } from "@amber/domain";
 
@@ -24,5 +24,9 @@ export class FileBlobStore implements BlobStore {
 
   async urlFor(key: string): Promise<string> {
     return `${this.publicBaseUrl}/blobs/${key}`;
+  }
+
+  async deleteByPrefix(prefix: string): Promise<void> {
+    await rm(join(this.blobsDir, prefix), { recursive: true, force: true });
   }
 }

@@ -68,4 +68,6 @@ export interface BlobStore {
   put(key: string, data: Uint8Array, contentType?: string): Promise<string>;
   /** 把稳定 key 解析成访问 URL（本地为 `/blobs/<key>`，云存储为公开/签名直链）。 */
   urlFor(key: string): Promise<string>;
+  /** 删除指定前缀下的所有对象（如 `captures/<id>/` 下的全部 blob）。 */
+  deleteByPrefix(prefix: string): Promise<void>;
 }
