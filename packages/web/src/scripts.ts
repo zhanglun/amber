@@ -231,7 +231,7 @@ export function getReaderEnhancementsScriptHtml(opts: { hasPrev?: boolean; hasNe
         var mins=Math.max(0,Math.round(totalChars*(1-p/100)/300));
         remainingEl.textContent=p<5?('约'+Math.round(totalChars/300)+'分钟'):mins===0?'快读完了':('还剩约'+mins+'分钟');
       }
-      if(scrollTopBtn){var show=window.scrollY>300;scrollTopBtn.style.opacity=show?'1':'0';scrollTopBtn.style.pointerEvents=show?'':'none';}
+      if(scrollTopBtn){var show=window.scrollY>300;scrollTopBtn.style.opacity=show?'1':'0';scrollTopBtn.style.pointerEvents=show?'auto':'none';}
       updateTocActive();
       if(captureId){
         clearTimeout(saveTimer);
