@@ -62,7 +62,7 @@ describe("getStyles", () => {
     expect(css).toContain("transform: translateY(4px)");
     expect(css).toContain(".article-topbar.title-visible .article-topbar-title");
     expect(css).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(css).toContain("transition: none");
+    expect(css).toContain("transition-duration: 0.01ms");
   });
 });
 

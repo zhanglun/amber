@@ -46,7 +46,15 @@ export function getListFilterScriptHtml(): string {
       var tags=itemTags(item);
       var textOk=!q||title.indexOf(q)>=0||host.indexOf(q)>=0;
       var tagOk=active.size===0||tags.some(function(t){return active.has(t);});
-      item.style.display=(textOk&&tagOk)?'':'none';
+      var shouldShow=textOk&&tagOk;
+      var currentlyHidden=item.style.display==='none';
+      if(shouldShow&&currentlyHidden){
+        item.style.display='';
+        item.classList.add('item-entering');
+        requestAnimationFrame(function(){requestAnimationFrame(function(){item.classList.remove('item-entering');});});
+      }else if(!shouldShow&&!currentlyHidden){
+        item.style.display='none';
+      }
     });
     sortVisible();
     document.querySelectorAll('[data-group]').forEach(function(group){
