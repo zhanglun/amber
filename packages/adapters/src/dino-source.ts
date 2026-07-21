@@ -10,6 +10,30 @@ declare module "dino" {
   }
 }
 
+// 微信内置浏览器 UA——mpvideo.qpic.cn / mmbiz.qpic.cn 等微信 CDN 防盗链
+// 校验 User-Agent，Node.js 默认 UA 会被拒（403）。
+const WECHAT_UA =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.40(0x18002831) NetType/WIFI Language/zh_CN";
+
+function isWechatUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host.endsWith("weixin.qq.com") || host.endsWith("qpic.cn");
+  } catch {
+    return false;
+  }
+}
+
+// dino 默认 fetchImage 只设 Referer 不设 UA，微信 CDN 会返回 403。
+function createWechatFetchImage(referer: string): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(init?.headers);
+    headers.set("Referer", referer);
+    headers.set("User-Agent", WECHAT_UA);
+    return fetch(input, { ...init, headers });
+  };
+}
+
 /**
  * 把 dino 的 CaptureResult 转成 amber 的 RawCapture。
  * dino 的图片引用是本地路径（assets/image-001.png）；amber 用占位符（amber-asset:N）。
@@ -62,7 +86,10 @@ export function explainCaptureError(message: string): string {
 export class DinoSource implements Source {
   async capture(input: string): Promise<RawCapture> {
     try {
-      const result = await dinoCapture(input, { realChromeDefaults: true });
+      const result = await dinoCapture(input, {
+        realChromeDefaults: true,
+        ...(isWechatUrl(input) && { fetchImage: createWechatFetchImage(input) }),
+      });
       return toRawCapture(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
