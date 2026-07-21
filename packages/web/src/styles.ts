@@ -1,5 +1,10 @@
 export function getStyles(): string {
   return `<style>
+*, *::before, *::after { box-sizing: border-box; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 :root {
   --bg: #FDFBF7;
   --bg-code: #F5F2EB;
@@ -39,7 +44,7 @@ export function getStyles(): string {
   --link: #60a5fa;
   --font-body: system-ui, sans-serif;
 }
-html { background: var(--bg); color: var(--text); font-family: var(--font-body); }
+html { background: var(--bg); color: var(--text); font-family: var(--font-body); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 body { max-width: var(--max-width); margin: 2rem auto; padding: 0 1rem; font-size: 16px; line-height: var(--line-height); }
 body.article-body { max-width: none; margin: 0; padding: 0; }
 a { color: var(--link); text-decoration: none; }
