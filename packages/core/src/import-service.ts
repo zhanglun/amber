@@ -48,7 +48,10 @@ export class ImportService {
       await this.blob.put(key, data, contentType);
       // 正文只存后端无关的稳定引用 amber-asset:<key>，渲染时由 urlFor 解析成实际 URL。
       // 这样换后端/迁移 blob 后正文链接不会失效。
-      content = content.replaceAll(asset.placeholder, `amber-asset:${key}`);
+      // 用正则确保占位符索引后不跟数字：amber-asset:1 不能子串匹配到 amber-asset:12，
+      // 否则 asset 数量超过 10 时 replaceAll 会产生错误链接。
+      const placeholderRe = new RegExp(`amber-asset:${i}(?!\\d)`, "g");
+      content = content.replace(placeholderRe, `amber-asset:${key}`);
     }
 
     const capturedAt = this.now().toISOString();
