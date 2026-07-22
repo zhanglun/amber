@@ -5,5 +5,5 @@ allowBuilds:
   '@prisma/engines': true
   esbuild: true
   prisma: true
-  dino: true
+  dino@https://codeload.github.com/zhanglun/dino/tar.gz/ecd1a8adfb49d447973cb3b1a520e5413a9a70e7: true
   sharp: true
