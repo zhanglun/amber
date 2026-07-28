@@ -6,3 +6,5 @@ dist/
 *.log
 packages/adapters/src/generated/
 amber-data/
+.playwright-mcp/
+.sisyphus/
