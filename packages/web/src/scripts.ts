@@ -1,10 +1,10 @@
 export function getThemeSwitcherHtml(): string {
   return (
-    `<div class="theme-switcher">` +
-    `<button class="theme-btn" data-theme="minimal" title="极简" onclick="setTheme('minimal')"></button>` +
-    `<button class="theme-btn" data-theme="warm" title="温暖" onclick="setTheme('warm')"></button>` +
-    `<button class="theme-btn" data-theme="modern" title="现代" onclick="setTheme('modern')"></button>` +
-    `<button class="theme-btn" data-theme="dark" title="暗色" onclick="setTheme('dark')"></button>` +
+    `<div class="theme-switcher" role="group" aria-label="主题切换">` +
+    `<button class="theme-btn" data-theme="minimal" title="明亮" aria-label="明亮主题" aria-pressed="true" onclick="setTheme('minimal')"></button>` +
+    `<button class="theme-btn" data-theme="warm" title="纸张" aria-label="纸张主题" aria-pressed="false" onclick="setTheme('warm')"></button>` +
+    `<button class="theme-btn" data-theme="modern" title="现代" aria-label="现代主题" aria-pressed="false" onclick="setTheme('modern')"></button>` +
+    `<button class="theme-btn" data-theme="dark" title="暗色" aria-label="暗色主题" aria-pressed="false" onclick="setTheme('dark')"></button>` +
     `</div>`
   );
 }
@@ -12,15 +12,28 @@ export function getThemeSwitcherHtml(): string {
 export function getThemeScriptHtml(): string {
   return `<script>
 (function(){
-  window.setTheme=function(t){localStorage.setItem('amber-theme',t);document.documentElement.setAttribute('data-theme',t);};
+  window.setTheme=function(t){
+    localStorage.setItem('amber-theme',t);
+    document.documentElement.setAttribute('data-theme',t);
+    document.querySelectorAll('.theme-btn[data-theme]').forEach(function(btn){
+      var active=btn.getAttribute('data-theme')===t;
+      btn.classList.toggle('active',active);
+      btn.setAttribute('aria-pressed',active?'true':'false');
+    });
+  };
   var t=localStorage.getItem('amber-theme')||'minimal';
   document.documentElement.setAttribute('data-theme',t);
+  document.querySelectorAll('.theme-btn[data-theme]').forEach(function(btn){
+    var active=btn.getAttribute('data-theme')===t;
+    btn.classList.toggle('active',active);
+    btn.setAttribute('aria-pressed',active?'true':'false');
+  });
 })();
 </script>`;
 }
 
 export function getSearchBarHtml(): string {
-  return `<div class="search-bar"><input id="search" type="search" placeholder="搜索标题或来源…" autocomplete="off"></div>`;
+  return `<div class="search-bar"><input id="search" type="search" class="search-input" placeholder="搜索标题、来源或标签…" aria-label="搜索收藏" autocomplete="off"></div>`;
 }
 
 export function getSortToggleHtml(): string {
@@ -168,7 +181,8 @@ export function getReaderEnhancementsScriptHtml(opts: { hasPrev?: boolean; hasNe
   }
 
   var FONT_KEY='amber-font-size';
-  var initSize=parseInt(localStorage.getItem(FONT_KEY)||'16',10);
+  // 默认 18px，对齐设计稿 --text-md (1.125rem)
+  var initSize=parseInt(localStorage.getItem(FONT_KEY)||'18',10);
   function applyFontSize(size){
     document.documentElement.style.setProperty('--font-size-article',size+'px');
     localStorage.setItem(FONT_KEY,String(size));
@@ -176,7 +190,7 @@ export function getReaderEnhancementsScriptHtml(opts: { hasPrev?: boolean; hasNe
   if([14,16,18,20].indexOf(initSize)!==-1)applyFontSize(initSize);
   document.querySelectorAll('.font-btn').forEach(function(btn){
     btn.addEventListener('click',function(){
-      var cur=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--font-size-article')||'16',10);
+      var cur=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--font-size-article')||'18',10);
       applyFontSize(Math.min(20,Math.max(14,cur+(btn.dataset.dir==='up'?2:-2))));
     });
   });
@@ -220,6 +234,21 @@ export function getReaderEnhancementsScriptHtml(opts: { hasPrev?: boolean; hasNe
       if(item){item.classList.add('active');item.scrollIntoView({behavior:'smooth',block:'nearest'});}
     }
   }
+
+  // 对齐 TOC 与正文左侧（修复 ch 单位在不同字体上下文下计算偏差导致 TOC 与正文重叠）
+  function alignToc(){
+    var main=document.querySelector('.article-main');
+    var toc=document.querySelector('.toc');
+    if(!main||!toc)return;
+    var gap=48;
+    var tocWidth=220;
+    var mainLeft=main.getBoundingClientRect().left;
+    var desired=Math.max(16,Math.round(mainLeft-tocWidth-gap));
+    document.documentElement.style.setProperty('--toc-left',desired+'px');
+  }
+  alignToc();
+  window.addEventListener('resize',alignToc);
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(alignToc);}
 
   var progressFill=document.querySelector('.read-progress-fill');
   var remainingEl=document.querySelector('.meta-remaining');

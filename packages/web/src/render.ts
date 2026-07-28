@@ -113,26 +113,45 @@ export function readingStats(markdown: string): { chars: number; minutes: number
 
 function page(title: string, body: string, bodyClass = ""): string {
   const classAttr = bodyClass ? ` class="${escapeHtml(bodyClass)}"` : "";
-  return `<!doctype html><html lang="zh" data-theme="minimal"><head>
+  return `<!doctype html><html lang="zh-CN" data-theme="minimal"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..600&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
 <title>${escapeHtml(title)}</title>
 ${getStyles()}
 ${getThemeScriptHtml()}
-</head><body${classAttr}>${body}</body></html>`;
+</head><body${classAttr}>${body}<footer class="site-footer"><p>amber · 个人知识库阅读器</p></footer></body></html>`;
 }
 
 export function renderList(items: CaptureSummary[]): string {
   const searchBar = getSearchBarHtml();
   const switcher = getThemeSwitcherHtml();
   const sortToggle = getSortToggleHtml();
-  const header = `<div class="header"><h1>Amber</h1><div class="header-right">${searchBar}${sortToggle}${switcher}</div></div>`;
-  const tagBar = renderTagBar(collectTags(items));
+  const header =
+    `<header class="header">` +
+    `<a href="/" class="brand"><span class="brand-mark" aria-hidden="true"></span>amber</a>` +
+    `<div class="header-right">${switcher}</div>` +
+    `</header>`;
 
   if (items.length === 0) {
-    const body = header + "<p class='muted'>No captures yet. Run: amber import &lt;url&gt;</p>";
+    const body =
+      `<div class="page">` +
+      header +
+      `<div class="toolbar">${searchBar}<div class="filter-row">${sortToggle}</div></div>` +
+      `<p class="muted">No captures yet. Run: amber import &lt;url&gt;</p>` +
+      `</div>`;
     return page("Amber", body);
   }
+
+  const tagBar = renderTagBar(collectTags(items));
+  const toolbar =
+    `<div class="toolbar">${searchBar}` +
+    `<div class="filter-row">${sortToggle}${tagBar}</div>` +
+    `</div>`;
+  const intro =
+    `<div class="page-intro"><p>${items.length} 篇收藏 · 按时间倒序排列。</p></div>`;
 
   const groups = groupByWeek(items);
   const sectionsHtml = groups
@@ -148,11 +167,14 @@ export function renderList(items: CaptureSummary[]): string {
           const excerptHtml = i.excerpt
             ? `<div class="excerpt">${escapeHtml(i.excerpt)}</div>`
             : "";
-          const meta = [
+          const metaParts = [
             `${faviconImg(hostname)}${escapeHtml(hostname)}`,
             date,
             ...(typeof i.wordCount === "number" ? [`${i.wordCount} 字`] : []),
-          ].join(" · ");
+          ];
+          const meta = metaParts
+            .map((p, idx) => (idx < metaParts.length - 1 ? `${p}<span class="sep" aria-hidden="true">·</span>` : p))
+            .join("");
           return (
             `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}" data-captured-at="${escapeHtml(i.capturedAt)}" data-tags="${tagsAttr}" data-read-progress="${rp}" data-read-at="${ra}">` +
             `<div class="item-main"><a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
@@ -175,7 +197,14 @@ export function renderList(items: CaptureSummary[]): string {
     })
     .join("");
 
-  const body = header + tagBar + sectionsHtml + getListFilterScriptHtml() + getDeleteConfirmScriptHtml() + getReadIndicatorScriptHtml() + getTagEditorScriptHtml();
+  const body =
+    `<div class="page">` +
+    header +
+    intro +
+    toolbar +
+    `<main class="collection">` + sectionsHtml + `</main>` +
+    getListFilterScriptHtml() + getDeleteConfirmScriptHtml() + getReadIndicatorScriptHtml() + getTagEditorScriptHtml() +
+    `</div>`;
   return page("Amber", body);
 }
 
@@ -238,7 +267,7 @@ export async function renderArticle(
   const title = escapeHtml(capture.title);
   const header =
     `<header class="article-topbar">` +
-    `<a class="muted" href="/">← 返回列表</a>` +
+    `<a class="back-link" href="/">← 返回列表</a>` +
     `<span class="article-topbar-title" aria-hidden="true">${title}</span>` +
     `<div class="topbar-right">${fontCtrl}${switcher}</div>` +
     `</header>`;
@@ -265,9 +294,19 @@ export async function renderArticle(
   const toc = extractToc(capture.content);
   const hasToc = toc.length >= 2;
   const resolvedContent = await resolveAssetRefs(capture.content, blob);
-  const content = await renderMarkdown(resolvedContent, { toc });
+  const rendered = await renderMarkdown(resolvedContent, { toc });
+  // 首段加 .lede（drop cap 首字下沉），仅替换首个 <p>
+  const content = rendered.replace(/<p>/, '<p class="lede">');
   const readProgress = capture.readProgress ?? 0;
-  const footer = renderArticleFooter(neighbors.prev, neighbors.next);
+   const footer = renderArticleFooter(neighbors.prev, neighbors.next);
+
+  // 封面图：仅当 coverImage 存在时渲染，紧跟文章标题/元信息之后
+  const cover = capture.coverImage
+    ? `<figure class="article-cover">` +
+      `<img class="cover-image" src="${escapeHtml(capture.coverImage)}" alt="" />` +
+      `<figcaption class="cover-caption">${title}</figcaption>` +
+      `</figure>`
+    : "";
 
   const body =
     `<div class="article-shell" data-capture-id="${escapeHtml(capture.id)}" data-read-progress="${readProgress}" data-total-chars="${chars}">` +
@@ -277,6 +316,7 @@ export async function renderArticle(
     `<main class="article-main"><article class="article-content">` +
     `<h1 class="article-title-anchor">${title}</h1>` +
     meta +
+    cover +
     renderTagEditor(capture.id, capture.tags ?? []) +
     (hasToc ? renderMobileToc(toc) : "") +
     content +

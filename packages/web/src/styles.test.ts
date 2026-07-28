@@ -4,7 +4,7 @@ import { getStyles } from "./styles.js";
 describe("getStyles", () => {
   it("includes CSS custom properties for all four themes", () => {
     const css = getStyles();
-    expect(css).toContain("--bg");
+    expect(css).toContain("--color-paper");
     expect(css).toContain('[data-theme="warm"]');
     expect(css).toContain('[data-theme="modern"]');
     expect(css).toContain('[data-theme="dark"]');
@@ -17,7 +17,7 @@ describe("getStyles", () => {
   });
 
   it("sets max-width for reading layout", () => {
-    expect(getStyles()).toContain("--max-width: 680px");
+    expect(getStyles()).toContain("--max-width: 65ch");
   });
 
   it("includes search bar and group label styles", () => {
@@ -48,10 +48,10 @@ describe("getStyles", () => {
 
   it("keeps article content centered while floating the toc on the left", () => {
     const css = getStyles();
-    expect(css).toContain(".article-layout { width: 100%; padding: 2rem 1rem 4rem;");
+    expect(css).toContain(".article-layout { width: 100%; padding: var(--space-xl) var(--gutter) var(--space-4xl);");
     expect(css).toContain(".article-main { max-width: var(--max-width); margin: 0 auto;");
-    expect(css).toContain(".toc { position: fixed;");
-    expect(css).toContain("left: max(1rem, calc((100vw - var(--max-width)) / 2 - 260px))");
+    expect(css).toMatch(/\.toc\s*\{[\s\S]*?position:\s*fixed/);
+    expect(css).toContain("left: var(--toc-left, max(1rem, calc((100vw - var(--max-width)) / 2 - 260px)))");
     expect(css).not.toContain("grid-column: 3");
   });
 
