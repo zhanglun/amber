@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<!-- Hallmark · pre-emit critique: P5 H5 E5 S4 R5 V4
+     macrostructure: Long Document · genre: editorial · theme: amber 4-theme system
+     fonts: Newsreader (serif body+display) + Geist (sans UI) + Geist Mono (outlier)
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 浪潮下的职业焦虑、产品实践与人生选择 · amber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..600&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+<style>
+/* ── Token: spacing ── */
+:root {
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs:  0.5rem;
+  --space-sm:  0.75rem;
+  --space-md:  1rem;
+  --space-lg:  1.5rem;
+  --space-xl:  2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --space-4xl: 6rem;
+
+  /* ── Token: type ── */
+  --text-xs:      0.75rem;
+  --text-sm:      0.875rem;
+  --text-base:    1rem;
+  --text-md:      1.125rem;
+  --text-lg:      1.25rem;
+  --text-xl:      1.5rem;
+  --text-2xl:     1.875rem;
+  --text-3xl:     2.25rem;
+  --text-display: 2.75rem;
+
+  /* ── Token: fonts ── */
+  --font-body: "Newsreader", Georgia, "Songti SC", "STSong", serif;
+  --font-ui:   "Geist", "PingFang SC", "Helvetica Neue", sans-serif;
+  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  /* ── Token: motion ── */
+  --dur-fast:  100ms;
+  --dur-base:  150ms;
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── Token: radius ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* ── Token: layout ── */
+  --measure: 65ch;
+  --gutter:  var(--space-xl);
+}
+
+/* ── Theme: light（默认 — 琥珀暖白） ── */
+[data-theme="light"] {
+  --color-paper:    oklch(97.5% 0.008 85);
+  --color-paper-2:  oklch(94.5% 0.010 85);
+  --color-ink:      oklch(21% 0.012 55);
+  --color-ink-2:    oklch(47% 0.010 55);
+  --color-rule:     oklch(89% 0.006 85);
+  --color-accent:   oklch(55% 0.13 50);
+  --color-focus:    oklch(52% 0.17 50);
+}
+
+/* ── Theme: warm（纸张感 sepia） ── */
+[data-theme="warm"] {
+  --color-paper:    oklch(95% 0.014 80);
+  --color-paper-2:  oklch(92% 0.016 80);
+  --color-ink:      oklch(24% 0.014 50);
+  --color-ink-2:    oklch(50% 0.012 50);
+  --color-rule:     oklch(85% 0.010 80);
+  --color-accent:   oklch(50% 0.14 35);
+  --color-focus:    oklch(48% 0.17 35);
+}
+
+/* ── Theme: modern（冷调极简） ── */
+[data-theme="modern"] {
+  --color-paper:    oklch(98% 0.003 245);
+  --color-paper-2:  oklch(95.5% 0.004 245);
+  --color-ink:      oklch(22% 0.006 245);
+  --color-ink-2:    oklch(49% 0.005 245);
+  --color-rule:     oklch(89% 0.003 245);
+  --color-accent:   oklch(50% 0.14 235);
+  --color-focus:    oklch(48% 0.17 235);
+}
+
+/* ── Theme: dark（暖暗夜读） ── */
+[data-theme="dark"] {
+  --color-paper:    oklch(16% 0.008 60);
+  --color-paper-2:  oklch(20% 0.010 60);
+  --color-ink:      oklch(92% 0.006 80);
+  --color-ink-2:    oklch(67% 0.008 80);
+  --color-rule:     oklch(29% 0.008 60);
+  --color-accent:   oklch(72% 0.13 55);
+  --color-focus:    oklch(74% 0.17 55);
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { overflow-x: clip; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font-ui);
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  overflow-x: clip;
+  transition: background-color var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: inherit; text-decoration: none; }
+
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* ── Header bar ── */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--gutter) var(--space-lg);
+}
+
+.back-link {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.back-link:hover { color: var(--color-ink); }
+.back-link .arrow { font-family: var(--font-ui); }
+
+.theme-switch {
+  display: flex;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-rule);
+}
+
+.theme-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: opacity var(--dur-fast) var(--ease-out);
+  opacity: 0.5;
+}
+
+.theme-dot:hover { opacity: 0.8; }
+.theme-dot[aria-pressed="true"] { opacity: 1; }
+.theme-dot[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 50%;
+}
+
+.theme-dot::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+
+.dot-light  { background: oklch(97.5% 0.008 85); border: 1px solid oklch(89% 0.006 85); }
+.dot-warm   { background: oklch(95% 0.014 80); border: 1px solid oklch(85% 0.010 80); }
+.dot-modern { background: oklch(98% 0.003 245); border: 1px solid oklch(89% 0.003 245); }
+.dot-dark   { background: oklch(16% 0.008 60); border: 1px solid oklch(29% 0.008 60); }
+
+/* ── 文章容器 ── */
+.article {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0 var(--gutter) var(--space-4xl);
+}
+
+/* ── 文章头部 ── */
+.article-head {
+  padding-bottom: var(--space-xl);
+}
+
+.article-title {
+  font-family: var(--font-body);
+  font-size: var(--text-display);
+  font-variation-settings: "opsz" 60;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  min-width: 0;
+  padding-bottom: var(--space-md);
+  text-wrap: balance;
+}
+
+.article-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+
+.article-meta .sep { opacity: 0.35; }
+.article-meta .author { color: var(--color-ink); font-weight: 500; }
+.article-meta .source { color: var(--color-accent); }
+.article-meta .reading-time { font-family: var(--font-mono); font-size: var(--text-xs); }
+
+/* ── Cover 图 ── */
+.article-cover {
+  margin: 0 0 var(--space-2xl);
+  max-width: 100%;
+}
+
+.cover-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  opacity: 0.5;
+  overflow: hidden;
+}
+
+.cover-placeholder svg { width: 100%; height: 100%; display: block; }
+
+.cover-caption {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  margin-top: var(--space-xs);
+  text-align: center;
+}
+
+/* ── 正文 prose ── */
+.prose {
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  font-variation-settings: "opsz" 14;
+  line-height: 1.75;
+  color: var(--color-ink);
+}
+
+.prose p {
+  margin-bottom: var(--space-lg);
+}
+
+.prose .lede {
+  font-size: var(--text-lg);
+  line-height: 1.6;
+  color: var(--color-ink);
+  font-weight: 400;
+}
+
+.prose .lede::first-letter {
+  font-variation-settings: "opsz" 72;
+  font-size: 3.2em;
+  font-weight: 600;
+  float: left;
+  line-height: 0.85;
+  margin-right: var(--space-2xs);
+  margin-top: var(--space-2xs);
+  color: var(--color-accent);
+}
+
+/* ── inline 标题 ── */
+.prose h2 {
+  font-family: var(--font-body);
+  font-size: var(--text-xl);
+  font-variation-settings: "opsz" 36;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-ink);
+  margin-top: var(--space-2xl);
+  margin-bottom: var(--space-md);
+  text-wrap: balance;
+}
+
+.prose h3 {
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  font-variation-settings: "opsz" 24;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-ink);
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-sm);
+}
+
+/* ── 链接 ── */
+.prose a {
+  color: var(--color-accent);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.prose a:hover {
+  border-bottom-color: var(--color-accent);
+}
+
+/* ── 引用 ── */
+.prose blockquote {
+  margin: var(--space-xl) 0;
+  padding-left: var(--space-lg);
+  border-left: 2px solid var(--color-accent);
+  font-style: italic;
+  font-size: var(--text-md);
+  line-height: 1.7;
+  color: var(--color-ink-2);
+}
+
+.prose blockquote p { margin-bottom: var(--space-sm); }
+.prose blockquote p:last-child { margin-bottom: 0; }
+
+.prose blockquote cite {
+  display: block;
+  margin-top: var(--space-sm);
+  font-size: var(--text-sm);
+  font-style: normal;
+  color: var(--color-ink-2);
+  opacity: 0.7;
+}
+
+/* ── 代码块 ── */
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-paper-2);
+  padding: var(--space-3xs) var(--space-2xs);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink);
+}
+
+.prose pre {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  overflow-x: auto;
+  margin: var(--space-lg) 0;
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* ── 列表 ── */
+.prose ul,
+.prose ol {
+  margin: var(--space-lg) 0;
+  padding-left: var(--space-xl);
+}
+
+.prose li {
+  margin-bottom: var(--space-xs);
+  line-height: 1.7;
+}
+
+.prose ul li::marker {
+  color: var(--color-accent);
+  font-size: 0.9em;
+}
+
+.prose ol li::marker {
+  color: var(--color-ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+/* ── 行内图 ── */
+.prose figure {
+  margin: var(--space-xl) 0;
+}
+
+.prose figure .inline-img {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  opacity: 0.5;
+}
+
+.prose figcaption {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  margin-top: var(--space-xs);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── 分隔 ── */
+.prose .divider {
+  text-align: center;
+  margin: var(--space-2xl) 0;
+  color: var(--color-rule);
+  font-family: var(--font-body);
+  letter-spacing: var(--space-md);
+}
+
+/* ── 文章底部 ── */
+.article-foot {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0 var(--gutter) var(--space-4xl);
+  border-top: 1px solid var(--color-rule);
+  padding-top: var(--space-xl);
+}
+
+.tags-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+
+.tag-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-2);
+  margin-right: var(--space-2xs);
+}
+
+.tag-pill {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  padding: var(--space-3xs) var(--space-sm);
+  transition: border-color var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+a.tag-pill:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.source-link {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.source-link .link-text {
+  color: var(--color-accent);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.source-link:hover .link-text {
+  border-bottom-color: var(--color-accent);
+}
+
+/* ── 响应式 ── */
+@media (max-width: 640px) {
+  :root { --gutter: var(--space-lg); }
+  .article-title { font-size: var(--text-2xl); }
+  .prose .lede { font-size: var(--text-md); }
+}
+
+@media (max-width: 400px) {
+  .site-header { flex-direction: column; align-items: flex-start; gap: var(--space-md); }
+}
+
+/* ── reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── selection ── */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-paper);
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="list.html" class="back-link">
+    <span class="arrow" aria-hidden="true">&larr;</span>
+    返回列表
+  </a>
+  <div class="theme-switch" role="group" aria-label="主题切换">
+    <button class="theme-dot dot-light"  data-theme-val="light"  aria-pressed="true"  aria-label="明亮主题"></button>
+    <button class="theme-dot dot-warm"   data-theme-val="warm"   aria-pressed="false" aria-label="纸张主题"></button>
+    <button class="theme-dot dot-modern" data-theme-val="modern" aria-pressed="false" aria-label="现代主题"></button>
+    <button class="theme-dot dot-dark"   data-theme-val="dark"   aria-pressed="false" aria-label="暗色主题"></button>
+  </div>
+</header>
+
+<article class="article">
+
+  <header class="article-head">
+    <h1 class="article-title">AI 浪潮下的职业焦虑、产品实践与人生选择</h1>
+    <div class="article-meta">
+      <span class="author">Innei</span>
+      <span class="sep">·</span>
+      <time datetime="2026-07-22">2026 年 7 月 22 日</time>
+      <span class="sep">·</span>
+      <span>来源 <a href="https://innei.in" class="source">innei.in</a></span>
+      <span class="sep">·</span>
+      <span class="reading-time">12 min read</span>
+    </div>
+  </header>
+
+  <figure class="article-cover">
+    <div class="cover-placeholder" role="img" aria-label="封面图占位：清晨书桌与屏幕">
+      cover image · 16:7
+    </div>
+    <figcaption class="cover-caption">封面图：清晨的书桌，屏幕上是未完成的代码。</figcaption>
+  </figure>
+
+  <div class="prose">
+
+    <p class="lede">2026 年的夏天，我坐在出租屋里，面前是三块屏幕。左边是正在跑的 CI，中间是一篇写到一半的文章，右边是 Twitter 上又一篇关于"AI 取代程序员"的讨论。我关掉了右边的屏幕，开始想一个问题：在这个时代，一个独立开发者到底应该做什么。</p>
+
+    <p>这个问题不是突然冒出来的。它从 2024 年底开始，像一颗种子一样埋在日常的焦虑里。每次打开技术社区，都能看到新的 AI 工具发布—— vibe coding、agentic workflow、AI-native IDE。每一波浪潮都在提醒你：你落伍了，你正在被淘汰。</p>
+
+    <p>但我后来想明白了一件事。焦虑不是来自变化本身，而是来自你不知道自己应该站在变化里的哪个位置。</p>
+
+    <h2>焦虑的本质：工具在变，但问题没有</h2>
+
+    <p>让我们拆解一下这种焦虑。它的表层是"我不学这个工具就会失业"，但底层其实是一个更深的问题：我的核心竞争力是什么？如果 AI 能写代码，那我这个程序员的价值在哪里？</p>
+
+    <p>这个问题本身不新。2015 年的时候，大家焦虑的是"框架太多学不完"。2019 年焦虑的是"低代码会不会取代前端"。焦虑一直在，只是换了名字。</p>
+
+    <blockquote>
+      <p>工具从来不会消失工作岗位。工具只会消灭一种做事的方式，然后创造另一种。消失的不是岗位，是你用旧方式做事的能力。</p>
+      <cite>—— 我在 2025 年某次技术分享上的发言</cite>
+    </blockquote>
+
+    <p>真正值得警惕的不是 AI 能写代码了，而是你把自己的身份绑定在了"写代码"这个动作上。代码是手段，不是目的。目的是解决问题——理解需求、设计系统、做出取舍。这些事情，AI 目前做得并不好。</p>
+
+    <h2>产品实践：用 AI 做 AI 做不好的事</h2>
+
+    <p>去年我开始做 amber。一个很简单的工具：CLI 收藏网页，web 端阅读。没有什么 AI 的魔法，就是把你看到的好的文章存下来，然后提供一个干净的阅读环境。</p>
+
+    <p>做这个产品的过程中，我做了一个决定：不把 AI 作为核心卖点。原因很简单——</p>
+
+    <ul>
+      <li>AI 摘要功能，Readwise Reader 做了，Matter 做了，所有稍后读应用都在做。我卷不过。</li>
+      <li>AI 推荐功能，需要大量用户数据做推荐系统，这不是一个独立开发者能做的事。</li>
+      <li>AI 写作辅助，偏离了"阅读"这个核心场景。</li>
+    </ul>
+
+    <p>所以我选择了一个不同的方向：把产品的核心体验做到极致。阅读体验、收藏速度、数据归属（你的数据存在你自己的服务器上）。这些是 AI 目前无法取代的。</p>
+
+    <h3>技术选型的取舍</h3>
+
+    <p>amber 的后端用的是 Hono，一个轻量的 Web 框架。前端是原生 HTML + 少量增强，没有用 React。这是一个刻意的决定。</p>
+
+    <p>很多人问我为什么不用 Next.js 或者 Remix。我的回答是：这个产品不需要。它没有复杂的状态管理，没有需要客户端渲染的交互逻辑，大部分页面都是服务端渲染的 HTML。引入一个重型框架，只会增加维护成本。</p>
+
+    <pre><code>// amber 的收藏 API，就这么简单
+app.post('/api/bookmark', async (c) => {
+  const url = await c.req.json().then(d => d.url)
+  const meta = await fetchMetadata(url)
+  await db.insert(bookmarks).values({
+    url, title: meta.title, ...meta
+  })
+  return c.json({ ok: true })
+})</code></pre>
+
+    <p>这段代码做了一件事：接收一个 URL，抓取元数据，存入数据库。没有什么花哨的架构。但它解决了 80% 的需求，而且任何接手的人都能在 5 分钟内看懂。</p>
+
+    <p>这就是我说的"做 AI 做不好的事"。AI 可以帮你写出这段代码，但它无法帮你决定——这个产品应该用什么技术栈，哪些功能该做哪些不该做，什么时候该克制什么时候该激进。</p>
+
+    <h2>人生选择：不是选对，是选了就走下去</h2>
+
+    <p class="divider">* * *</p>
+
+    <p>说回焦虑。很多人在 AI 时代的选择焦虑，本质上是一种"最优化陷阱"。你觉得一定存在一个最优解——一个最好的技术栈、一个最赚钱的方向、一个不会被 AI 淘汰的岗位。然后你花大量时间寻找这个最优解，而不是去做出选择并执行。</p>
+
+    <p>但现实是，最优解不存在。或者说，最优解是那个你愿意持续投入的选择。</p>
+
+    <figure>
+      <div class="inline-img" role="img" aria-label="内联图占位：一张关于选择路径的示意图">
+        inline image · 3:2
+      </div>
+      <figcaption>两条路都可以到山顶，区别只在于你愿意走哪一条。</figcaption>
+    </figure>
+
+    <p>我选择做独立开发，不是因为它是最优的。它有很多缺点——收入不稳定、社交孤立、什么都要自己来。但它有一个无可替代的优点：我做的每一个决定，都是我自己的决定。</p>
+
+    <p>在 AI 时代，这种"自主性"反而变得更值钱了。因为当工具能替代大部分执行工作时，剩下唯一有价值的，就是判断力和品味。而这两样东西，只有在你自己做决定的过程中才能长出来。</p>
+
+    <h3>给焦虑中的同行几个建议</h3>
+
+    <ol>
+      <li><strong>停止追工具。</strong>每周花一天时间学新框架，不如花一周时间把一个东西做深。工具会变，但深度不会过期。</li>
+      <li><strong>建一个个人系统。</strong>不管是知识库（比如 amber）、笔记系统、还是代码片段库。拥有一个属于自己的信息基础设施。</li>
+      <li><strong>写东西。</strong>不是给别人看，是给自己看。写下来你才知道自己在想什么。AI 能帮你润色，但不能帮你思考。</li>
+      <li><strong>接受不完美。</strong>第一版 amber 糟透了，但它跑起来了。比起一个完美但从未发布的计划，一个粗糙但存在的东西永远更好。</li>
+    </ol>
+
+    <p>说到底，AI 不会取代认真做事的人。它只会取代那些把"写代码"当成核心竞争力、却从未想过自己在解决什么问题的人。</p>
+
+    <p>回到开头那个画面。我关掉了 Twitter 的屏幕，开始写 amber 的下一行代码。窗外天亮了。</p>
+
+  </div>
+
+</article>
+
+<footer class="article-foot">
+  <div class="tags-row">
+    <span class="tag-label">标签</span>
+    <a href="#" class="tag-pill">随笔</a>
+    <a href="#" class="tag-pill">独立开发</a>
+    <a href="#" class="tag-pill">AI</a>
+    <a href="#" class="tag-pill">思考</a>
+  </div>
+  <a href="https://innei.in" class="source-link" rel="noopener">
+    原文发布于
+    <span class="link-text">innei.in</span>
+    <span aria-hidden="true">&rarr;</span>
+  </a>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var dots = document.querySelectorAll('.theme-dot');
+
+  var saved = localStorage.getItem('amber-theme');
+  if (saved && ['light', 'warm', 'modern', 'dark'].indexOf(saved) !== -1) {
+    root.setAttribute('data-theme', saved);
+  }
+
+  function updateDots(theme) {
+    dots.forEach(function (dot) {
+      var val = dot.getAttribute('data-theme-val');
+      dot.setAttribute('aria-pressed', val === theme ? 'true' : 'false');
+    });
+  }
+
+  updateDots(root.getAttribute('data-theme'));
+
+  dots.forEach(function (dot) {
+    dot.addEventListener('click', function () {
+      var val = dot.getAttribute('data-theme-val');
+      root.setAttribute('data-theme', val);
+      localStorage.setItem('amber-theme', val);
+      updateDots(val);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
