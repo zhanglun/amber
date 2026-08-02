@@ -1,0 +1,10 @@
+[
+  {
+    "date": "2026-08-02",
+    "macrostructure": "Index-First (list) / Long Document (article)",
+    "theme": "light / warm / modern / dark (OKLCH 4-theme)",
+    "enrichment": "none",
+    "brief": "amber web · 列表/详情页实现对齐 design.md（主题命名 minimal→light、meta 行、文章底部 tags+原文链接、三按钮排序组、未读筛选）",
+    "scope": "app"
+  }
+]

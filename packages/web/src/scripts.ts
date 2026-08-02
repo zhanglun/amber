@@ -1,7 +1,7 @@
 export function getThemeSwitcherHtml(): string {
   return (
     `<div class="theme-switcher" role="group" aria-label="主题切换">` +
-    `<button class="theme-btn" data-theme="minimal" title="明亮" aria-label="明亮主题" aria-pressed="true" onclick="setTheme('minimal')"></button>` +
+    `<button class="theme-btn" data-theme="light" title="明亮" aria-label="明亮主题" aria-pressed="true" onclick="setTheme('light')"></button>` +
     `<button class="theme-btn" data-theme="warm" title="纸张" aria-label="纸张主题" aria-pressed="false" onclick="setTheme('warm')"></button>` +
     `<button class="theme-btn" data-theme="modern" title="现代" aria-label="现代主题" aria-pressed="false" onclick="setTheme('modern')"></button>` +
     `<button class="theme-btn" data-theme="dark" title="暗色" aria-label="暗色主题" aria-pressed="false" onclick="setTheme('dark')"></button>` +
@@ -21,7 +21,9 @@ export function getThemeScriptHtml(): string {
       btn.setAttribute('aria-pressed',active?'true':'false');
     });
   };
-  var t=localStorage.getItem('amber-theme')||'minimal';
+  var t=localStorage.getItem('amber-theme');
+  if(t==='minimal')t='light'; // 迁移旧键名
+  if(!t||['light','warm','modern','dark'].indexOf(t)===-1)t='light';
   document.documentElement.setAttribute('data-theme',t);
   document.querySelectorAll('.theme-btn[data-theme]').forEach(function(btn){
     var active=btn.getAttribute('data-theme')===t;
@@ -37,7 +39,13 @@ export function getSearchBarHtml(): string {
 }
 
 export function getSortToggleHtml(): string {
-  return `<button class="sort-toggle" id="sort-toggle" type="button" title="切换排序" data-order="desc">最新 ▾</button>`;
+  return (
+    `<div class="sort-group" role="group" aria-label="排序方式">` +
+    `<button class="sort-toggle active" data-sort="desc" type="button">最新</button>` +
+    `<button class="sort-toggle" data-sort="asc" type="button">最旧</button>` +
+    `<button class="sort-toggle" data-sort="unread" type="button">未读</button>` +
+    `</div>`
+  );
 }
 
 export function getListFilterScriptHtml(): string {
@@ -46,9 +54,15 @@ export function getListFilterScriptHtml(): string {
   var inp=document.getElementById('search');
   var chips=document.querySelectorAll('.tag-filter[data-tag]');
   var allChip=document.querySelector('.tag-filter-all');
-  var sortToggle=document.getElementById('sort-toggle');
+  var sortBtns=document.querySelectorAll('.sort-toggle[data-sort]');
   var sortOrder=(function(){try{return localStorage.getItem('amber-list-sort')||'desc';}catch(e){return 'desc';}})();
-  if(sortToggle)sortToggle.setAttribute('data-order',sortOrder);
+  var unreadOnly=false;
+  function setSortActive(){
+    sortBtns.forEach(function(b){
+      var v=b.getAttribute('data-sort');
+      b.classList.toggle('active', v==='unread'?unreadOnly:(v===sortOrder&&!unreadOnly));
+    });
+  }
   var active=new Set();
   function itemTags(item){try{return JSON.parse(item.getAttribute('data-tags')||'[]');}catch(e){return [];}}
   function apply(){
@@ -59,7 +73,10 @@ export function getListFilterScriptHtml(): string {
       var tags=itemTags(item);
       var textOk=!q||title.indexOf(q)>=0||host.indexOf(q)>=0;
       var tagOk=active.size===0||tags.some(function(t){return active.has(t);});
-      var shouldShow=textOk&&tagOk;
+      var rp=parseInt(item.getAttribute('data-read-progress')||'0',10);
+      var ra=item.getAttribute('data-read-at')||'';
+      var unreadOk=!unreadOnly||(ra===''&&rp===0);
+      var shouldShow=textOk&&tagOk&&unreadOk;
       var currentlyHidden=item.style.display==='none';
       if(shouldShow&&currentlyHidden){
         item.style.display='';
@@ -90,13 +107,20 @@ export function getListFilterScriptHtml(): string {
     });
   }
   if(inp)inp.addEventListener('input',apply);
-  if(sortToggle){
-    sortToggle.addEventListener('click',function(){
-      sortOrder=sortOrder==='desc'?'asc':'desc';
-      sortToggle.setAttribute('data-order',sortOrder);
-      sortToggle.textContent=sortOrder==='desc'?'最新 ▾':'最早 ▴';
-      try{localStorage.setItem('amber-list-sort',sortOrder);}catch(e){}
-      apply();
+  if(sortBtns.length){
+    sortBtns.forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var v=btn.getAttribute('data-sort');
+        if(v==='unread'){
+          unreadOnly=!unreadOnly;
+        }else{
+          unreadOnly=false;
+          sortOrder=v;
+          try{localStorage.setItem('amber-list-sort',sortOrder);}catch(e){}
+        }
+        setSortActive();
+        apply();
+      });
     });
   }
   chips.forEach(function(chip){
@@ -117,6 +141,7 @@ export function getListFilterScriptHtml(): string {
       apply();
     });
   }
+  setSortActive();
   apply();
 })();
 </script>`;
@@ -311,7 +336,7 @@ export function getReadIndicatorScriptHtml(): string {
     else if(progress>0){dot.classList.add('in-progress');dot.textContent=progress+'%';}
     else{dot.classList.add('unread');}
     var main=item.querySelector('.item-main');
-    if(main)item.insertBefore(dot,main);
+    if(main)item.insertBefore(dot,item.firstChild);
     if(readAt){var link=main&&main.querySelector('a');if(link)link.classList.add('title-read');}
   });
 })();

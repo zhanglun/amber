@@ -238,26 +238,30 @@ default → hover → focus-visible → active → disabled → loading → erro
 
 - header：amber wordmark（Geist，无装饰） + 主题切换按钮组（4 个小圆点 / 小方块）。
 - 搜索栏：全宽 input，Geist，placeholder「搜索收藏…」。
-- 排序切换：文字按钮组（最新 / 最旧 / 未读），active 态用 accent。
+- 排序切换：文字按钮组（最新 / 最旧 / 未读），active 态用 accent。未读 = 从未打开（无 readAt 且 progress = 0）。
 - tag chips：横向排列，可选中，active 态 accent 边框。
 - 列表主体：按周分组（本周 / 上周 / 更早），每组一个 group label（Geist 小号大写）+ 纵向链接列表。
-- 每行：favicon（16px）+ 标题（Newsreader）+ 元信息行（Geist mono，host · 时间 · 阅读时间 · tag）。
+- 每行：favicon（16px，行首独立列，对齐设计稿）+ 标题（Newsreader）+ 元信息行（Geist mono，host · **相对时间** · **阅读分钟** · 首 tag（accent））。
+- 行首 read-indicator 为实现附加（未读 accent 圆点 / 进行中 mono 百分比 / 已读灰点），位于 favicon 之前。
 - 行间 hairline rule（`border-bottom: 1px solid var(--color-rule)`）。
+- 实现附加（允许）：删除按钮（confirm 后 POST）、行下 tag 编辑器（增删即 PATCH）。
+- site-footer 位于 `.page`（68ch 栏）内部，与内容同宽对齐；文章页无 site-footer。
 - 无卡片，无网格，无 icon 装饰。
 
 ### article.html — Long Document
 
-- 返回链接（Geist，← 返回列表）。
+- 顶部：返回链接（Geist，← 返回列表）+ sticky 顶栏（毛玻璃，滚动后浮出文章标题）+ 字体控制（A−/A+，14–20px 步进 2）+ 主题切换。
 - 文章标题：Newsreader display opsz，`--text-display`，左对齐。
-- 元信息行：Geist，作者 · 时间 · 来源 · 阅读时间。
-- cover 图占位：全宽 figure，带 caption（图片为纯色占位 + alt 文字）。
-- 正文：`max-width: 65ch`，居中。line-height 1.7。
+- 元信息行：Geist，作者（如有）· 字数 · 阅读时间（mono）· 来源链接 · 发布于日期。
+- 封面：无 coverImage 时渲染 16:7 纯色占位块 + caption（对齐设计稿）；有 coverImage 时渲染真实图 + caption。
+- 正文：`max-width: 65ch`，居中。line-height 1.7。首段 `.lede` 首字下沉（accent）。
 - inline 标题：h2 / h3 从段落流中浮出，Newsreader，`font-weight: 600`。
 - blockquote：左边 2px accent 色竖线（不是粗边框），缩进，italic 正文（blockquote 内可用 italic）。
-- 代码块：Geist Mono，`--color-paper-2` 背景，圆角 4px。
+- 代码块：Geist Mono，`--color-paper-2` 背景，圆角 4px，带语言标签 + 复制按钮。
 - 列表：自定义 marker（accent 色小圆点）。
-- 底部：tags（chip 样式）+ 原文链接（accent 色）。
-- 无 sidebar，无 TOC（Long Document 不隐藏 CTA 但也不堆 chrome）。
+- 底部：tags（chip 样式，可编辑）+ 原文链接（accent 色）→ 上/下一篇导航卡片（键盘 [ / ] 切换）。
+- TOC：**允许**（实现附加，替代原稿「无 TOC」约束）——≥ 2 个 h2/h3 时桌面端左侧固定侧栏 + 移动端折叠 `<details>`；滚动高亮当前节。
+- 其他实现附加（允许）：顶部阅读进度条（accent 3px）、回到顶部按钮、J/K 半屏滚动、Escape 返回列表。
 
 ---
 
@@ -280,6 +284,11 @@ default → hover → focus-visible → active → disabled → loading → erro
 | 造假数据/指标 | 真实域名 + 真实感标题 |
 
 ---
+
+## 10. 实现备注（2026-08-02 对齐 pass）
+
+- 主题名：**light / warm / modern / dark**（与本文档一致）。实现默认 `light`；旧 localStorage 键 `minimal` 在页面脚本中自动迁移为 `light`。
+- 实现（`packages/web/src`）为本系统的生产形态，本文档是单一真相源。新增视觉/交互元素时先在此记录，不要在页面里局部覆盖。
 
 ## Hallmark · pre-emit critique（设计系统层）
 

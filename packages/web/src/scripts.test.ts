@@ -17,7 +17,7 @@ import {
 describe("getThemeSwitcherHtml", () => {
   it("includes buttons for all four themes", () => {
     const html = getThemeSwitcherHtml();
-    expect(html).toContain('data-theme="minimal"');
+    expect(html).toContain('data-theme="light"');
     expect(html).toContain('data-theme="warm"');
     expect(html).toContain('data-theme="modern"');
     expect(html).toContain('data-theme="dark"');

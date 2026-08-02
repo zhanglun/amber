@@ -92,6 +92,11 @@ describe("reading enhancement styles", () => {
     expect(getStyles()).toContain(".nav-card");
   });
 
+  it("keeps nav-card bottom border solid — prose link rule must exclude it", () => {
+    // .article-content a 的 border-bottom: transparent 曾覆盖 .nav-card 底边（特异性 0,1,1 > 0,1,0）
+    expect(getStyles()).toContain(".article-content a:not(.nav-card)");
+  });
+
   it("includes read indicator styles for list page", () => {
     expect(getStyles()).toContain(".read-indicator");
   });

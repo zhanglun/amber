@@ -65,6 +65,29 @@ export function groupByWeek(items: CaptureSummary[], now = new Date()): Group[] 
   return groups.filter((g) => g.items.length > 0);
 }
 
+/**
+ * 相对时间（对齐设计稿 meta 行：host · 时间 · 阅读时间 · tag）。
+ * 未来时间戳（时钟偏移）按「刚刚」处理。
+ */
+export function relativeTime(iso: string, now = new Date()): string {
+  const ts = new Date(iso).getTime();
+  if (isNaN(ts)) return "";
+  const diff = Math.max(0, now.getTime() - ts);
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return "刚刚";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} 分钟前`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} 小时前`;
+  const d = Math.floor(h / 24);
+  if (d < 14) return `${d} 天前`;
+  const w = Math.floor(d / 7);
+  if (d < 60) return `${w} 周前`;
+  const mo = Math.floor(d / 30);
+  if (d < 365) return `${mo} 个月前`;
+  return `${Math.floor(d / 365)} 年前`;
+}
+
 export function escapeHtml(s: string): string {
   return s
     .replaceAll("&", "&amp;")
@@ -113,7 +136,7 @@ export function readingStats(markdown: string): { chars: number; minutes: number
 
 function page(title: string, body: string, bodyClass = ""): string {
   const classAttr = bodyClass ? ` class="${escapeHtml(bodyClass)}"` : "";
-  return `<!doctype html><html lang="zh-CN" data-theme="minimal"><head>
+  return `<!doctype html><html lang="zh-CN" data-theme="light"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -122,13 +145,13 @@ function page(title: string, body: string, bodyClass = ""): string {
 <title>${escapeHtml(title)}</title>
 ${getStyles()}
 ${getThemeScriptHtml()}
-</head><body${classAttr}>${body}<footer class="site-footer"><p>amber · 个人知识库阅读器</p></footer></body></html>`;
+</head><body${classAttr}>${body}</body></html>`;
 }
 
 export function renderList(items: CaptureSummary[]): string {
   const searchBar = getSearchBarHtml();
   const switcher = getThemeSwitcherHtml();
-  const sortToggle = getSortToggleHtml();
+  const sortGroup = getSortToggleHtml();
   const header =
     `<header class="header">` +
     `<a href="/" class="brand"><span class="brand-mark" aria-hidden="true"></span>amber</a>` +
@@ -139,8 +162,9 @@ export function renderList(items: CaptureSummary[]): string {
     const body =
       `<div class="page">` +
       header +
-      `<div class="toolbar">${searchBar}<div class="filter-row">${sortToggle}</div></div>` +
+      `<div class="toolbar">${searchBar}<div class="filter-row">${sortGroup}</div></div>` +
       `<p class="muted">No captures yet. Run: amber import &lt;url&gt;</p>` +
+      `<footer class="site-footer"><p>amber · 个人知识库阅读器</p></footer>` +
       `</div>`;
     return page("Amber", body);
   }
@@ -148,7 +172,7 @@ export function renderList(items: CaptureSummary[]): string {
   const tagBar = renderTagBar(collectTags(items));
   const toolbar =
     `<div class="toolbar">${searchBar}` +
-    `<div class="filter-row">${sortToggle}${tagBar}</div>` +
+    `<div class="filter-row">${sortGroup}${tagBar}</div>` +
     `</div>`;
   const intro =
     `<div class="page-intro"><p>${items.length} 篇收藏 · 按时间倒序排列。</p></div>`;
@@ -159,7 +183,10 @@ export function renderList(items: CaptureSummary[]): string {
       const rowsHtml = g.items
         .map((i) => {
           const hostname = new URL(i.sourceUrl).hostname;
-          const date = i.capturedAt.slice(0, 10);
+          const minutes =
+            typeof i.wordCount === "number"
+              ? Math.max(1, Math.round(i.wordCount / 300))
+              : null;
           const rp = escapeHtml(String(i.readProgress ?? ""));
           const ra = escapeHtml(i.readAt ?? "");
           const tags = i.tags ?? [];
@@ -168,16 +195,19 @@ export function renderList(items: CaptureSummary[]): string {
             ? `<div class="excerpt">${escapeHtml(i.excerpt)}</div>`
             : "";
           const metaParts = [
-            `${faviconImg(hostname)}${escapeHtml(hostname)}`,
-            date,
-            ...(typeof i.wordCount === "number" ? [`${i.wordCount} 字`] : []),
+            `<span class="entry-host">${escapeHtml(hostname)}</span>`,
+            relativeTime(i.capturedAt),
+            ...(minutes !== null ? [`约 ${minutes} 分钟`] : []),
           ];
+          if (tags.length > 0) metaParts.push(`<span class="tag">${escapeHtml(tags[0])}</span>`);
           const meta = metaParts
             .map((p, idx) => (idx < metaParts.length - 1 ? `${p}<span class="sep" aria-hidden="true">·</span>` : p))
             .join("");
           return (
             `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}" data-captured-at="${escapeHtml(i.capturedAt)}" data-tags="${tagsAttr}" data-read-progress="${rp}" data-read-at="${ra}">` +
-            `<div class="item-main"><a href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
+            faviconImg(hostname) +
+            `<div class="item-main">` +
+            `<a class="entry-title" href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
             `<div class="muted">${meta}</div>` +
             excerptHtml +
             renderTagEditor(i.id, tags) +
@@ -203,6 +233,7 @@ export function renderList(items: CaptureSummary[]): string {
     intro +
     toolbar +
     `<main class="collection">` + sectionsHtml + `</main>` +
+    `<footer class="site-footer"><p>amber · 个人知识库阅读器</p></footer>` +
     getListFilterScriptHtml() + getDeleteConfirmScriptHtml() + getReadIndicatorScriptHtml() + getTagEditorScriptHtml() +
     `</div>`;
   return page("Amber", body);
@@ -232,6 +263,21 @@ function renderMobileToc(toc: TocItem[]): string {
     `<summary>目录</summary>` +
     `<ol class="toc-list">${renderTocList(toc)}</ol>` +
     `</details>`
+  );
+}
+
+/**
+ * 文章底部（对齐设计稿：tags chip 行 + 原文链接）。上一/下一篇导航紧随其后。
+ */
+function renderArticleFoot(capture: Capture): string {
+  const hostname = new URL(capture.sourceUrl).hostname;
+  return (
+    `<footer class="article-foot">` +
+    `<div class="tags-row"><span class="tag-label">标签</span>` +
+    renderTagEditor(capture.id, capture.tags ?? []) +
+    `</div>` +
+    `<a class="source-link" href="${escapeHtml(capture.sourceUrl)}" rel="noopener">原文发布于 <span class="link-text">${escapeHtml(hostname)}</span> →</a>` +
+    `</footer>`
   );
 }
 
@@ -282,13 +328,18 @@ export async function renderArticle(
     const dateStr = /^\d{4}-\d{2}-\d{2}/.test(capture.publishedAt)
       ? capture.publishedAt.slice(0, 10)
       : (() => { const d = new Date(capture.publishedAt!); return isNaN(d.getTime()) ? capture.publishedAt! : d.toISOString().slice(0, 10); })();
-    return ` · 发布于 ${escapeHtml(dateStr)}`;
+    return `发布于 ${escapeHtml(dateStr)}`;
   })();
+  const metaParts = [
+    ...(capture.author ? [`<span class="author">${escapeHtml(capture.author)}</span>`] : []),
+    `${chars} 字`,
+    `<span class="meta-remaining">约 ${minutes} 分钟</span>`,
+    `<a href="${escapeHtml(capture.sourceUrl)}">${escapeHtml(hostname)} ↗</a>`,
+    ...(publishedLine ? [publishedLine] : []),
+  ];
   const meta =
-    `<p class="meta">${chars} 字 · ` +
-    `<span class="meta-remaining">约 ${minutes} 分钟</span> · ` +
-    `<a href="${escapeHtml(capture.sourceUrl)}">${escapeHtml(hostname)} ↗</a>` +
-    publishedLine +
+    `<p class="meta">` +
+    metaParts.map((p, idx) => (idx < metaParts.length - 1 ? `${p}<span class="sep" aria-hidden="true">·</span>` : p)).join("") +
     `</p>`;
 
   const toc = extractToc(capture.content);
@@ -306,7 +357,10 @@ export async function renderArticle(
       `<img class="cover-image" src="${escapeHtml(capture.coverImage)}" alt="" />` +
       `<figcaption class="cover-caption">${title}</figcaption>` +
       `</figure>`
-    : "";
+    : `<figure class="article-cover">` +
+      `<div class="cover-placeholder" role="img" aria-label="封面图占位">cover image · 16:7</div>` +
+      `<figcaption class="cover-caption">${title}</figcaption>` +
+      `</figure>`;
 
   const body =
     `<div class="article-shell" data-capture-id="${escapeHtml(capture.id)}" data-read-progress="${readProgress}" data-total-chars="${chars}">` +
@@ -317,9 +371,9 @@ export async function renderArticle(
     `<h1 class="article-title-anchor">${title}</h1>` +
     meta +
     cover +
-    renderTagEditor(capture.id, capture.tags ?? []) +
     (hasToc ? renderMobileToc(toc) : "") +
     content +
+    renderArticleFoot(capture) +
     footer +
     `</article></main>` +
     (hasToc ? renderDesktopToc(toc) : "") +

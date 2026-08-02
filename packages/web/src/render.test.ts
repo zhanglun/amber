@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { BlobStore, Capture, CaptureSummary } from "@amber/domain";
-import { escapeHtml, groupByWeek, readingStats, renderArticle, renderList } from "./render.js";
+import { escapeHtml, groupByWeek, readingStats, relativeTime, renderArticle, renderList } from "./render.js";
 
 const CAPTURE: Capture = {
   id: "c1",
@@ -57,6 +57,23 @@ describe("groupByWeek", () => {
   });
 });
 
+describe("relativeTime", () => {
+  it("formats 刚刚/分钟/小时/天/周/月/年", () => {
+    const now = new Date("2026-08-02T12:00:00Z");
+    expect(relativeTime("2026-08-02T11:59:30Z", now)).toBe("刚刚");
+    expect(relativeTime("2026-08-02T11:30:00Z", now)).toBe("30 分钟前");
+    expect(relativeTime("2026-08-02T10:00:00Z", now)).toBe("2 小时前");
+    expect(relativeTime("2026-07-30T12:00:00Z", now)).toBe("3 天前");
+    expect(relativeTime("2026-07-01T12:00:00Z", now)).toBe("4 周前");
+    expect(relativeTime("2026-03-01T12:00:00Z", now)).toBe("5 个月前");
+    expect(relativeTime("2020-01-15T00:00:00Z", now)).toBe("6 年前");
+  });
+
+  it("returns empty string for invalid dates", () => {
+    expect(relativeTime("not-a-date", new Date("2026-08-02T12:00:00Z"))).toBe("");
+  });
+});
+
 describe("renderList", () => {
   it("renders list items with links and delete buttons", () => {
     const items: CaptureSummary[] = [
@@ -85,8 +102,12 @@ describe("renderList", () => {
     expect(renderList([])).toContain('<input id="search"');
   });
 
-  it("includes sort toggle button", () => {
-    expect(renderList([])).toContain('id="sort-toggle"');
+  it("includes sort group with desc/asc/unread buttons", () => {
+    const html = renderList([]);
+    expect(html).toContain('class="sort-group"');
+    expect(html).toContain('data-sort="desc"');
+    expect(html).toContain('data-sort="asc"');
+    expect(html).toContain('data-sort="unread"');
   });
 
   it("renders favicon image for the source hostname", () => {
@@ -98,20 +119,42 @@ describe("renderList", () => {
     expect(html).toContain('class="favicon"');
   });
 
-  it("shows word count in meta when provided", () => {
+  it("places the site footer inside the content column", () => {
+    const html = renderList([]);
+    expect(html.indexOf('<footer class="site-footer">')).toBeGreaterThan(html.indexOf('<div class="page">'));
+  });
+
+  it("shows reading time in meta when wordCount is provided", () => {
     const items: CaptureSummary[] = [
       { id: "c1", title: "T", sourceUrl: "https://example.com/a", capturedAt: "2020-01-15T00:00:00.000Z", wordCount: 1234 },
     ];
     const html = renderList(items);
-    expect(html).toContain("1234 字");
+    expect(html).toContain("约 4 分钟");
   });
 
-  it("omits word count when wordCount is undefined (old data)", () => {
+  it("omits reading time when wordCount is undefined (old data)", () => {
     const items: CaptureSummary[] = [
       { id: "c1", title: "T", sourceUrl: "https://example.com/a", capturedAt: "2020-01-15T00:00:00.000Z" },
     ];
     const html = renderList(items);
-    expect(html).not.toContain("字");
+    expect(html).not.toContain("分钟");
+  });
+
+  it("shows relative time in meta", () => {
+    const items: CaptureSummary[] = [
+      { id: "c1", title: "T", sourceUrl: "https://example.com/a", capturedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 - 60 * 1000).toISOString() },
+    ];
+    const html = renderList(items);
+    expect(html).toContain("3 天前");
+  });
+
+  it("shows first tag as accent chip in meta line", () => {
+    const items: CaptureSummary[] = [
+      { id: "c1", title: "T", sourceUrl: "https://example.com/a", capturedAt: "2026-06-08T00:00:00.000Z", tags: ["react", "ui"] },
+    ];
+    const html = renderList(items);
+    expect(html).toContain('<span class="tag">react</span>');
+    expect(html).not.toContain('<span class="tag">ui</span>');
   });
 
   it("adds data-captured-at on each item for sorting", () => {
@@ -159,11 +202,30 @@ describe("renderArticle", () => {
     expect(html).not.toContain('class="toc"');
   });
 
+  it("renders author in meta when provided", async () => {
+    const html = await renderArticle({ ...CAPTURE, author: "Innei" });
+    expect(html).toContain('<span class="author">Innei</span>');
+  });
+
+  it("omits author when absent", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).not.toContain('class="author"');
+  });
+
+  it("renders tags row and source link in article foot", async () => {
+    const html = await renderArticle({ ...CAPTURE, tags: ["随笔"] });
+    expect(html).toContain('class="article-foot"');
+    expect(html).toContain('class="tag-label"');
+    expect(html).toContain('class="source-link"');
+    expect(html).toContain("原文发布于");
+  });
+
   it("renders source link in meta", async () => {
     const html = await renderArticle(CAPTURE);
     expect(html).toContain('href="https://example.com/article"');
     expect(html).toContain("example.com");
   });
+
 
   const NEIGHBORS = {
     prev: { id: "p1", title: "Prev Article", sourceUrl: "https://prev.com/a", capturedAt: "2026-06-02T00:00:00.000Z" },
@@ -219,6 +281,22 @@ describe("renderArticle", () => {
   it("renders meta-remaining span in meta line", async () => {
     const html = await renderArticle(CAPTURE);
     expect(html).toContain('class="meta-remaining"');
+  });
+
+  it("omits the site footer on the article page (design has none)", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).not.toContain('class="site-footer"');
+  });
+
+  it("renders a cover placeholder when coverImage is absent", async () => {
+    const html = await renderArticle(CAPTURE);
+    expect(html).toContain('class="cover-placeholder"');
+  });
+
+  it("renders real cover image when coverImage is provided", async () => {
+    const html = await renderArticle({ ...CAPTURE, coverImage: "https://example.com/cover.jpg" });
+    expect(html).toContain('class="cover-image"');
+    expect(html).not.toContain('class="cover-placeholder"');
   });
 
   it("renders font control buttons in topbar", async () => {
