@@ -11,6 +11,7 @@ export const importCommand = defineCommand({
   async run({ args }) {
     const { importService, readService, deleteCapture, dataDir, dispose } = buildServices();
     const spin = p.spinner();
+    const onProgress = (msg: string) => spin.message(msg);
     spin.start(`Importing ${args.url}`);
     try {
       let id: string;
@@ -18,12 +19,12 @@ export const importCommand = defineCommand({
         const existing = await readService.findBySourceUrl(args.url);
         if (existing) {
           await deleteCapture(existing.id);
-          id = await importService.run(args.url, { forceId: existing.id });
+          id = await importService.run(args.url, { forceId: existing.id, onProgress });
         } else {
-          id = await importService.run(args.url);
+          id = await importService.run(args.url, { onProgress });
         }
       } else {
-        id = await importService.run(args.url);
+        id = await importService.run(args.url, { onProgress });
       }
 
       spin.stop(`Imported as ${id}`);

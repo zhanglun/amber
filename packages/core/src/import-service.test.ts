@@ -185,4 +185,48 @@ describe("ImportService.run", () => {
     const saved = await store.get("c1");
     expect(saved?.title).toBe("New");
   });
+
+  it("reports progress through onProgress across stages (with images)", async () => {
+    const png = await makePng();
+    const source = {
+      capture: vi.fn(async () => ({
+        title: "T",
+        markdown: "![a](amber-asset:0) ![b](amber-asset:1)",
+        assets: [
+          { placeholder: "amber-asset:0", data: png, contentType: "image/png" },
+          { placeholder: "amber-asset:1", data: png, contentType: "image/png" },
+        ],
+      })),
+    };
+    const calls: string[] = [];
+    const svc = new ImportService(source, fakeStore(), fakeBlob(), { newId: () => "p1" });
+    await svc.run("https://x/a", { onProgress: (m) => calls.push(m) });
+    expect(calls[0]).toBe("Fetching page…");
+    expect(calls.filter((m) => /^Optimizing image \d+\/2…$/.test(m))).toHaveLength(2);
+    expect(calls.at(-1)).toBe("Saving…");
+  });
+
+  it("concurrently optimizes multiple assets without clobbering references", async () => {
+    const png = await makePng();
+    const source = {
+      capture: vi.fn(async () => ({
+        title: "T",
+        markdown: "![a](amber-asset:0) ![b](amber-asset:1) ![c](amber-asset:2)",
+        assets: [
+          { placeholder: "amber-asset:0", data: png, contentType: "image/png" },
+          { placeholder: "amber-asset:1", data: png, contentType: "image/png" },
+          { placeholder: "amber-asset:2", data: png, contentType: "image/png" },
+        ],
+      })),
+    };
+    const blob = fakeBlob();
+    const store = fakeStore();
+    const svc = new ImportService(source, store, blob, { newId: () => "m1" });
+    await svc.run("https://x/a");
+    const saved = await store.get("m1");
+    expect(saved?.content).toContain("amber-asset:captures/m1/0.webp");
+    expect(saved?.content).toContain("amber-asset:captures/m1/1.webp");
+    expect(saved?.content).toContain("amber-asset:captures/m1/2.webp");
+    expect(blob.put).toHaveBeenCalledTimes(3);
+  });
 });

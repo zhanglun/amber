@@ -10,6 +10,8 @@ export interface ImportDeps {
 
 export interface ImportOptions {
   forceId?: string;
+  /** 进度回调：在抓取/压缩/保存各阶段被调用，用于 CLI 更新 spinner 文案。 */
+  onProgress?: (message: string) => void;
 }
 
 export class ImportService {
@@ -32,20 +34,32 @@ export class ImportService {
       if (existing) return existing.id;
     }
 
+    options?.onProgress?.("Fetching page…");
     const raw = await this.source.capture(url);
 
     const id = options?.forceId ?? this.newId();
+    const total = raw.assets.length;
+
+    // 并发压缩+存储图片：sharp 走 libuv 线程池，可同时处理多张图；串行 await 是大图页
+    // import 的主要耗时来源（一张 2–4MB 的 PNG 过 sharp 要数百 ms 到数秒）。
+    // 这里只并发算出每张图最终要替换成的 key（optimize → put），正文替换放到下方的同步
+    // 循环里——虽然单线程下 content 赋值原子，但顺序替换意图更清晰、也便于阅读。
+    // optimizeImage 不可转换/失败时返回 null，调用方用原始 data，不影响并发。
+    let done = 0;
+    const replacements = await Promise.all(
+      raw.assets.map(async (asset, i) => {
+        const optimized = await optimizeImage(asset.data, asset.contentType);
+        const data = optimized?.data ?? asset.data;
+        const contentType = optimized?.contentType ?? asset.contentType;
+        const key = assetKey(id, i, contentType);
+        await this.blob.put(key, data, contentType);
+        options?.onProgress?.(`Optimizing image ${++done}/${total}…`);
+        return { i, key };
+      }),
+    );
+
     let content = raw.markdown;
-    for (let i = 0; i < raw.assets.length; i++) {
-      const asset = raw.assets[i];
-      // 压缩图片转 webp（png/jpeg/gif → webp quality 85），省存储、加快加载。
-      // 不可转换（svg/webp/video）或失败时返回 null，用原始数据。必须在 assetKey 之前
-      // 转换，这样 key 扩展名（.webp）、blob 存储、正文引用三者在同一循环内自动对齐。
-      const optimized = await optimizeImage(asset.data, asset.contentType);
-      const data = optimized?.data ?? asset.data;
-      const contentType = optimized?.contentType ?? asset.contentType;
-      const key = assetKey(id, i, contentType);
-      await this.blob.put(key, data, contentType);
+    for (const { i, key } of replacements) {
       // 正文只存后端无关的稳定引用 amber-asset:<key>，渲染时由 urlFor 解析成实际 URL。
       // 这样换后端/迁移 blob 后正文链接不会失效。
       // 用正则确保占位符索引后不跟数字：amber-asset:1 不能子串匹配到 amber-asset:12，
@@ -53,6 +67,8 @@ export class ImportService {
       const placeholderRe = new RegExp(`amber-asset:${i}(?!\\d)`, "g");
       content = content.replace(placeholderRe, `amber-asset:${key}`);
     }
+
+    options?.onProgress?.("Saving…");
 
     const capturedAt = this.now().toISOString();
     const capture: Capture = {

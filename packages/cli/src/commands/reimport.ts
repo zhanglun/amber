@@ -18,10 +18,11 @@ export const reimportCommand = defineCommand({
       }
 
       const spin = p.spinner();
+      const onProgress = (msg: string) => spin.message(msg);
       spin.start(`Re-importing "${capture.title}" from ${capture.sourceUrl}`);
       try {
         await deleteCapture(args.id);
-        await importService.run(capture.sourceUrl, { forceId: args.id });
+        await importService.run(capture.sourceUrl, { forceId: args.id, onProgress });
         spin.stop(`Re-imported as ${args.id}`);
         p.log.info(`Saved to ${dataDir}/captures/${args.id}.json`);
       } catch (err) {
