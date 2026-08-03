@@ -1,9 +1,6 @@
 packages:
   - "packages/*"
-allowBuilds:
-  '@prisma/client': true
-  '@prisma/engines': true
-  esbuild: true
-  prisma: true
-  dino@https://codeload.github.com/zhanglun/dino/tar.gz/ecd1a8adfb49d447973cb3b1a520e5413a9a70e7: true
-  sharp: true
+# dino 是 git 依赖，pnpm 各版本对 git 依赖的 allowBuilds 匹配规则不一致
+# （10.x/11.19 按完整地址匹配，11.0-11.3 按包名+版本匹配，且 URL 写法在某些版本直接解析崩溃），
+# 导致同一份配置在不同设备/版本间来回翻车。改用 dangerouslyAllowAllBuilds 一劳永逸。
+dangerouslyAllowAllBuilds: true
