@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>amber · 三套重新设计</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Inter:wght@300..600&family=Caveat:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: oklch(20% 0.01 60);
+        color: oklch(92% 0.01 80);
+        font-family: Inter, "PingFang SC", system-ui, sans-serif;
+        padding: 64px 28px 120px;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+      .kicker {
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: oklch(62% 0.02 70);
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-family: Fraunces, serif;
+        font-weight: 500;
+        font-size: clamp(34px, 5vw, 52px);
+        letter-spacing: -0.02em;
+        margin: 0 0 10px;
+        line-height: 1.08;
+      }
+      .sub {
+        color: oklch(70% 0.015 70);
+        font-size: 16px;
+        max-width: 62ch;
+        line-height: 1.6;
+        margin: 0 0 56px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 22px;
+      }
+      .card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid oklch(32% 0.01 60);
+        border-radius: 8px;
+        overflow: hidden;
+        transition:
+          transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+          border-color 0.25s,
+          border-radius 0.25s;
+        background: oklch(16% 0.01 60);
+      }
+      .card:hover {
+        transform: translateY(-4px);
+        border-color: oklch(52% 0.01 60);
+      }
+      .swatch {
+        height: 150px;
+        position: relative;
+        overflow: hidden;
+      }
+      .meta {
+        padding: 22px 22px 26px;
+      }
+      .tag {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: oklch(58% 0.02 70);
+        margin-bottom: 8px;
+      }
+      .name {
+        font-family: Fraunces, serif;
+        font-weight: 500;
+        font-size: 24px;
+        letter-spacing: -0.01em;
+        margin: 0 0 4px;
+      }
+      .name .hand {
+        font-family: Caveat, cursive;
+        font-weight: 600;
+      }
+      .pov {
+        color: oklch(74% 0.015 70);
+        font-size: 14px;
+        line-height: 1.55;
+        margin: 10px 0 18px;
+        min-height: 54px;
+      }
+      .specs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .specs span {
+        font-size: 11px;
+        color: oklch(66% 0.015 70);
+        padding: 3px 9px;
+        border: 1px solid oklch(30% 0.01 60);
+        border-radius: 999px;
+      }
+      .go {
+        margin-top: 18px;
+        font-size: 13px;
+        color: oklch(80% 0.13 75);
+        font-weight: 500;
+      }
+
+      /* swatches per world */
+      .s-ink {
+        background: linear-gradient(
+          135deg,
+          oklch(17% 0.012 60),
+          oklch(24% 0.015 60)
+        );
+      }
+      .s-ink .glyph {
+        font-family: Fraunces, serif;
+        color: oklch(80% 0.13 75);
+        font-size: 84px;
+        font-weight: 500;
+        position: absolute;
+        right: 18px;
+        bottom: -12px;
+        font-variation-settings: "opsz" 144;
+      }
+      .s-archive {
+        background: oklch(97% 0.002 250);
+      }
+      .s-archive .glyph {
+        font-family: Inter, sans-serif;
+        color: oklch(22% 0.005 250);
+        font-size: 64px;
+        font-weight: 600;
+        letter-spacing: -0.04em;
+        position: absolute;
+        left: 22px;
+        bottom: 6px;
+      }
+      .s-archive .glyph b {
+        color: oklch(52% 0.19 25);
+      }
+      .s-paper {
+        background:
+          radial-gradient(
+            120% 80% at 15% -10%,
+            oklch(96% 0.03 80),
+            transparent 55%
+          ),
+          oklch(93.5% 0.024 82);
+      }
+      .s-paper .glyph {
+        font-family: Caveat, cursive;
+        color: oklch(42% 0.135 32);
+        font-size: 78px;
+        font-weight: 600;
+        position: absolute;
+        right: 20px;
+        bottom: -6px;
+        transform: rotate(-4deg);
+      }
+      .foot {
+        margin-top: 54px;
+        color: oklch(54% 0.01 60);
+        font-size: 13px;
+        line-height: 1.7;
+      }
+      .foot a {
+        color: oklch(74% 0.015 70);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="kicker">amber · redesign exploration · 3 worlds</div>
+      <h1>三套重新设计，挑一个</h1>
+      <p class="sub">
+        同一份内容、纯换 CSS 的公平对比。每个世界点进去可在「列表 /
+        文章」间切换。选定后我会把它落进
+        <code>packages/web</code> 的真实实现，并写 DESIGN.md。
+      </p>
+
+      <div class="grid">
+        <a class="card" href="ink-library.html">
+          <div class="swatch s-ink"><span class="glyph">A</span></div>
+          <div class="meta">
+            <div class="tag">A1 · 深色优先</div>
+            <h2 class="name">墨水图书馆</h2>
+            <p class="pov">
+              阅读是郑重的、有仪式感的夜读。象牙白文字、单一琥珀金，Fraunces
+              表现型衬线。
+            </p>
+            <div class="specs">
+              <span>Fraunces</span><span>夜读暖黑</span><span>琥珀金</span
+              ><span>drop cap</span>
+            </div>
+            <div class="go">查看 →</div>
+          </div>
+        </a>
+
+        <a class="card" href="swiss-archive.html">
+          <div class="swatch s-archive">
+            <span class="glyph">a<b>/</b></span>
+          </div>
+          <div class="meta">
+            <div class="tag">A2 · 冷调极简</div>
+            <h2 class="name">瑞士档案</h2>
+            <p class="pov">
+              amber 是一台精密归档机。全 grotesque +
+              等宽数据列、严格网格、hairline，瑞士红极度克制。
+            </p>
+            <div class="specs">
+              <span>Inter</span><span>等宽数据列</span><span>信号红</span
+              ><span>表格索引</span>
+            </div>
+            <div class="go">查看 →</div>
+          </div>
+        </a>
+
+        <a class="card" href="paper-ink.html">
+          <div class="swatch s-paper"><span class="glyph">手抄</span></div>
+          <div class="meta">
+            <div class="tag">A3 · 纸感手作</div>
+            <h2 class="name"><span class="hand">手抄剪贴本</span></h2>
+            <p class="pov">
+              像翻一本亲手整理的剪贴本。暖米纸 + 浓墨 +
+              牛血红，手写批注、夸张首字下沉、折角纸条标签。
+            </p>
+            <div class="specs">
+              <span>Fraunces + EB Garamond</span><span>Caveat 手写</span
+              ><span>牛血红</span><span>不对称</span>
+            </div>
+            <div class="go">查看 →</div>
+          </div>
+        </a>
+      </div>
+
+      <p class="foot">
+        当前生产版是第四套（editorial 暖白，Newsreader + Geist）。<br />
+        打开任一世界 → 右下角「列表 /
+        文章」切换视图；点列表里的标题进入文章视图。<br />
+        选定方向后告诉我「用 A1/A2/A3」，我会：重写
+        <code>packages/web/src/styles.ts</code> → 调整 <code>render.ts</code> →
+        写 <code>DESIGN.md</code> → 浏览器迭代到满意。
+      </p>
+    </div>
+  </body>
+</html>

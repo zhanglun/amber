@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="ink">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>amber · 墨水图书馆</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..600,0..100,0..1;1,9..144,300..500,0..100,0..1&family=Inter+Tight:wght@300..600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ============================================================
+   A1 · 墨水图书馆 (Ink Library)
+   POV：阅读是郑重的、有仪式感的夜读。深色优先，象牙白文字，
+   单一琥珀金 accent。Fraunces 表现型 serif。
+   ============================================================ */
+      :root {
+        --paper: oklch(17% 0.012 60);
+        --paper-2: oklch(21% 0.014 60);
+        --paper-3: oklch(24% 0.015 60);
+        --ink: oklch(90% 0.015 80);
+        --ink-2: oklch(66% 0.02 75);
+        --ink-3: oklch(50% 0.016 70);
+        --rule: oklch(29% 0.013 60);
+        --accent: oklch(80% 0.13 75);
+        --accent-2: oklch(70% 0.1 70);
+        --focus: oklch(82% 0.16 75);
+
+        --font-display: "Fraunces", Georgia, "Songti SC", serif;
+        --font-body: "Fraunces", Georgia, "Songti SC", serif;
+        --font-ui: "Inter Tight", "PingFang SC", system-ui, sans-serif;
+        --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+        --measure: 66ch;
+        --ease: cubic-bezier(0.16, 1, 0.3, 1);
+        --dur: 160ms;
+      }
+      @media (prefers-color-scheme: light) {
+        :root[data-theme="ink"] {
+          /* Ink Library 是深色优先设计；亮色环境下仍保持深色（夜读本分） */
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--font-body);
+        font-size: 18px;
+        line-height: 1.7;
+        font-variation-settings:
+          "opsz" 14,
+          "SOFT" 30;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+      ::selection {
+        background: var(--accent);
+        color: var(--paper);
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: 0;
+        cursor: pointer;
+      }
+      :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 3px;
+        border-radius: 2px;
+      }
+      .sep {
+        opacity: 0.5;
+        padding: 0 0.35em;
+      }
+
+      /* ---- demo chrome（非 amber UI，仅用于切换视图） ---- */
+      .demo {
+        position: fixed;
+        left: 50%;
+        bottom: 22px;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 2px;
+        padding: 4px;
+        z-index: 200;
+        background: var(--paper-3);
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        font-family: var(--font-ui);
+        font-size: 12px;
+        letter-spacing: 0.02em;
+        box-shadow: 0 8px 30px oklch(8% 0.02 60 / 0.6);
+      }
+      .demo button {
+        padding: 6px 14px;
+        border-radius: 999px;
+        color: var(--ink-2);
+        transition:
+          color var(--dur) var(--ease),
+          background var(--dur) var(--ease);
+      }
+      .demo button[aria-pressed="true"] {
+        background: var(--accent);
+        color: var(--paper);
+        font-weight: 500;
+      }
+      .demo .ws {
+        padding: 6px 10px;
+        color: var(--ink-3);
+      }
+
+      /* ============ LIST ============ */
+      .view[hidden] {
+        display: none;
+      }
+      .page {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 28px 120px;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 34px 0 22px;
+      }
+      .brand {
+        font-family: var(--font-display);
+        font-size: 26px;
+        font-weight: 500;
+        font-variation-settings:
+          "opsz" 60,
+          "WONK" 1;
+        letter-spacing: -0.01em;
+      }
+      .brand .dot {
+        color: var(--accent);
+      }
+      .theme-dots {
+        display: flex;
+        gap: 7px;
+      }
+      .theme-dots i {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        border: 1px solid var(--rule);
+        display: inline-block;
+        opacity: 0.6;
+        transition:
+          opacity var(--dur) var(--ease),
+          transform var(--dur) var(--ease);
+      }
+      .theme-dots i.on {
+        opacity: 1;
+        border-color: var(--accent);
+        background: var(--accent);
+        transform: scale(1.12);
+      }
+      .theme-dots i:hover {
+        opacity: 1;
+      }
+
+      .toolbar {
+        padding: 6px 0 4px;
+        border-top: 1px solid var(--rule);
+      }
+      .search {
+        width: 100%;
+        margin: 18px 0 14px;
+        background: transparent;
+        border: 0;
+        border-bottom: 1px solid var(--rule);
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: 15px;
+        padding: 8px 0;
+        transition: border-color var(--dur) var(--ease);
+      }
+      .search::placeholder {
+        color: var(--ink-3);
+      }
+      .search:focus {
+        outline: none;
+        border-bottom-color: var(--accent);
+      }
+      .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+        padding-bottom: 12px;
+      }
+      .sort {
+        display: flex;
+        gap: 2px;
+        font-family: var(--font-ui);
+        font-size: 13px;
+      }
+      .sort button {
+        padding: 5px 0;
+        margin-right: 16px;
+        color: var(--ink-3);
+        position: relative;
+        transition: color var(--dur) var(--ease);
+      }
+      .sort button.on {
+        color: var(--ink);
+      }
+      .sort button.on::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -2px;
+        height: 1px;
+        background: var(--accent);
+      }
+      .tag-bar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .tag-filter {
+        font-family: var(--font-ui);
+        font-size: 12px;
+        color: var(--ink-2);
+        padding: 3px 10px;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        transition:
+          border-color var(--dur) var(--ease),
+          color var(--dur) var(--ease);
+      }
+      .tag-filter:hover,
+      .tag-filter.on {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .page-intro {
+        font-family: var(--font-ui);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        color: var(--ink-3);
+        text-transform: uppercase;
+        margin: 22px 0 4px;
+      }
+
+      .group {
+        padding: 6px 0;
+      }
+      .group-label {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        font-weight: 500;
+        margin: 26px 0 6px;
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .group-label .count {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--accent);
+      }
+
+      .item {
+        display: grid;
+        grid-template-columns: 28px 1fr auto;
+        gap: 16px;
+        align-items: start;
+        padding: 18px 4px 18px 0;
+        border-top: 1px solid var(--rule);
+        transition: background var(--dur) var(--ease);
+      }
+      .item:hover {
+        background: linear-gradient(90deg, var(--paper-2), transparent 80%);
+      }
+      .favicon {
+        width: 18px;
+        height: 18px;
+        margin-top: 5px;
+        border-radius: 4px;
+        display: grid;
+        place-items: center;
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--paper);
+        background: var(--accent-2);
+      }
+      .item-main {
+        min-width: 0;
+      }
+      .entry-title {
+        font-family: var(--font-display);
+        font-size: 19px;
+        font-weight: 400;
+        line-height: 1.35;
+        font-variation-settings: "opsz" 24;
+        letter-spacing: -0.005em;
+        transition: color var(--dur) var(--ease);
+      }
+      .item:hover .entry-title {
+        color: var(--accent);
+      }
+      .entry-title {
+        display: block;
+      }
+      .muted {
+        font-family: var(--font-ui);
+        font-size: 12.5px;
+        color: var(--ink-2);
+        margin-top: 5px;
+      }
+      .excerpt {
+        font-family: var(--font-body);
+        font-size: 14.5px;
+        color: var(--ink-2);
+        margin-top: 8px;
+        line-height: 1.6;
+        font-variation-settings: "opsz" 14;
+      }
+      .delete-btn {
+        font-family: var(--font-ui);
+        font-size: 12px;
+        color: var(--ink-3);
+        opacity: 0;
+        transition:
+          opacity var(--dur) var(--ease),
+          color var(--dur) var(--ease);
+        padding: 4px 6px;
+      }
+      .item:hover .delete-btn {
+        opacity: 1;
+      }
+      .delete-btn:hover {
+        color: var(--accent);
+      }
+
+      .site-footer {
+        margin-top: 60px;
+        padding-top: 18px;
+        border-top: 1px solid var(--rule);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        color: var(--ink-3);
+        letter-spacing: 0.03em;
+      }
+
+      /* ============ ARTICLE ============ */
+      .article-shell {
+        position: relative;
+        min-height: 100vh;
+      }
+      .read-progress-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: transparent;
+        z-index: 90;
+      }
+      .read-progress-fill {
+        height: 100%;
+        width: 38%;
+        background: var(--accent);
+        box-shadow: 0 0 14px oklch(80% 0.13 75 / 0.5);
+      }
+      .article-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 80;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 14px 28px;
+        backdrop-filter: blur(14px) saturate(1.2);
+        -webkit-backdrop-filter: blur(14px) saturate(1.2);
+        background: oklch(17% 0.012 60 / 0.72);
+        border-bottom: 1px solid var(--rule);
+      }
+      .back-link {
+        font-family: var(--font-ui);
+        font-size: 13px;
+        color: var(--ink-2);
+        white-space: nowrap;
+        transition: color var(--dur) var(--ease);
+      }
+      .back-link:hover {
+        color: var(--accent);
+      }
+      .article-topbar-title {
+        flex: 1;
+        font-family: var(--font-ui);
+        font-size: 13px;
+        color: var(--ink-3);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: center;
+      }
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .font-ctrl {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+      }
+      .font-btn {
+        font-family: var(--font-ui);
+        color: var(--ink-2);
+        padding: 4px 7px;
+        font-size: 13px;
+        transition: color var(--dur) var(--ease);
+      }
+      .font-btn:hover {
+        color: var(--accent);
+      }
+
+      .article-layout {
+        display: grid;
+        grid-template-columns: minmax(0, var(--measure)) 200px;
+        gap: 64px;
+        justify-content: center;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 28px;
+      }
+      .toc {
+        position: sticky;
+        top: 72px;
+        align-self: start;
+        font-family: var(--font-ui);
+        font-size: 12.5px;
+        padding-top: 90px;
+      }
+      .toc-title {
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 10.5px;
+        color: var(--ink-3);
+        margin-bottom: 14px;
+      }
+      .toc-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .toc-list li {
+        padding: 4px 0;
+      }
+      .toc-list a {
+        color: var(--ink-2);
+        line-height: 1.4;
+        display: block;
+        transition: color var(--dur) var(--ease);
+        border-left: 1px solid transparent;
+        padding-left: 10px;
+        margin-left: -10px;
+      }
+      .toc-list a:hover,
+      .toc-list a.active {
+        color: var(--accent);
+        border-left-color: var(--accent);
+      }
+      .toc-mobile {
+        display: none;
+        margin: 8px 0 28px;
+        font-family: var(--font-ui);
+        font-size: 13px;
+      }
+      .toc-mobile summary {
+        cursor: pointer;
+        color: var(--ink-2);
+      }
+
+      .article-main {
+        min-width: 0;
+      }
+      .article-title {
+        font-family: var(--font-display);
+        font-size: clamp(34px, 5vw, 52px);
+        line-height: 1.08;
+        font-weight: 500;
+        font-variation-settings:
+          "opsz" 144,
+          "WONK" 1;
+        letter-spacing: -0.02em;
+        margin: 90px 0 0;
+      }
+      .meta {
+        font-family: var(--font-ui);
+        font-size: 13px;
+        color: var(--ink-2);
+        margin: 18px 0 0;
+      }
+      .meta a {
+        color: var(--ink);
+      }
+      .meta a:hover {
+        color: var(--accent);
+      }
+
+      .article-cover {
+        margin: 34px 0 0;
+      }
+      .cover-placeholder {
+        aspect-ratio: 16/7;
+        border: 1px solid var(--rule);
+        border-radius: 3px;
+        display: grid;
+        place-items: end-start;
+        background:
+          radial-gradient(
+            120% 100% at 80% 0%,
+            oklch(24% 0.02 60),
+            transparent 60%
+          ),
+          repeating-linear-gradient(
+            135deg,
+            oklch(20% 0.014 60) 0 2px,
+            transparent 2px 14px
+          );
+        position: relative;
+      }
+      .cover-placeholder::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0 0;
+        height: 1px;
+        background: var(--accent);
+        opacity: 0.5;
+      }
+      .cover-caption {
+        font-family: var(--font-ui);
+        font-size: 11.5px;
+        color: var(--ink-3);
+        margin-top: 9px;
+        letter-spacing: 0.02em;
+      }
+
+      .article-content p {
+        margin: 1.1em 0;
+      }
+      .article-content h2 {
+        font-family: var(--font-display);
+        font-size: 27px;
+        font-weight: 500;
+        font-variation-settings: "opsz" 60;
+        letter-spacing: -0.01em;
+        margin: 2.2em 0 0.5em;
+        line-height: 1.2;
+      }
+      .lede::first-letter {
+        font-family: var(--font-display);
+        font-size: 4.4em;
+        line-height: 0.82;
+        float: left;
+        font-weight: 500;
+        color: var(--accent);
+        font-variation-settings:
+          "opsz" 144,
+          "WONK" 1;
+        padding: 6px 12px 0 0;
+      }
+      .article-content blockquote {
+        margin: 1.8em 0;
+        padding: 2px 0 2px 20px;
+        border-left: 2px solid var(--accent);
+        font-style: italic;
+        font-size: 20px;
+        line-height: 1.55;
+        color: var(--ink);
+        font-variation-settings: "opsz" 24;
+      }
+      .article-content ul {
+        margin: 1.2em 0;
+        padding-left: 0;
+        list-style: none;
+      }
+      .article-content ul li {
+        position: relative;
+        padding-left: 22px;
+        margin: 0.5em 0;
+      }
+      .article-content ul li::before {
+        content: "";
+        position: absolute;
+        left: 2px;
+        top: 0.72em;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+      .article-content pre {
+        background: var(--paper-2);
+        border: 1px solid var(--rule);
+        border-radius: 5px;
+        padding: 16px 18px;
+        overflow: auto;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--ink);
+        margin: 1.4em 0;
+      }
+      .article-content code {
+        font-family: var(--font-mono);
+        font-size: 0.86em;
+      }
+      .article-content a {
+        color: var(--accent);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        text-decoration-color: oklch(80% 0.13 75 / 0.4);
+      }
+
+      .article-foot {
+        margin: 48px 0 0;
+        padding-top: 22px;
+        border-top: 1px solid var(--rule);
+      }
+      .tags-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-family: var(--font-ui);
+        font-size: 12px;
+      }
+      .tag-label {
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--ink-3);
+        font-size: 10.5px;
+      }
+      .tag-chip {
+        padding: 3px 10px;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        color: var(--ink-2);
+      }
+      .source-link {
+        display: inline-block;
+        margin-top: 16px;
+        font-family: var(--font-ui);
+        font-size: 13.5px;
+        color: var(--accent);
+      }
+      .article-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        margin: 40px 0 120px;
+      }
+      .nav-card {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 18px 0 0;
+        border-top: 1px solid var(--rule);
+        max-width: 48%;
+        transition: border-color var(--dur) var(--ease);
+      }
+      .nav-card:hover {
+        border-top-color: var(--accent);
+      }
+      .nav-card-next {
+        text-align: right;
+        margin-left: auto;
+      }
+      .nav-dir {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+      .nav-title {
+        font-family: var(--font-display);
+        font-size: 16px;
+        color: var(--ink);
+        line-height: 1.35;
+      }
+      .scroll-top-btn {
+        position: fixed;
+        right: 28px;
+        bottom: 28px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 1px solid var(--rule);
+        background: var(--paper-2);
+        color: var(--ink-2);
+        font-size: 16px;
+        z-index: 70;
+        opacity: 0;
+        transition:
+          opacity var(--dur) var(--ease),
+          color var(--dur) var(--ease),
+          border-color var(--dur) var(--ease);
+      }
+      .scroll-top-btn.show {
+        opacity: 1;
+      }
+      .scroll-top-btn:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      @media (max-width: 900px) {
+        .article-layout {
+          grid-template-columns: 1px;
+          gap: 0;
+        }
+        .toc {
+          display: none;
+        }
+        .toc-mobile {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============ LIST VIEW ============ -->
+    <div class="view" id="view-list">
+      <div class="page">
+        <header class="header">
+          <a class="brand" href="/">amber<span class="dot">.</span></a>
+          <div class="theme-dots" aria-label="主题">
+            <i class="on" style="background: #caa45a"></i
+            ><i style="background: #8a8d93"></i
+            ><i style="background: #5a6b8a"></i
+            ><i style="background: #c7c7c7"></i>
+          </div>
+        </header>
+
+        <div class="toolbar">
+          <input class="search" placeholder="搜索收藏…" />
+          <div class="filter-row">
+            <div class="sort">
+              <button class="on">最新</button><button>最旧</button
+              ><button>未读</button>
+            </div>
+            <div class="tag-bar">
+              <button class="tag-filter on">全部</button>
+              <button class="tag-filter">思考</button>
+              <button class="tag-filter">产品</button>
+              <button class="tag-filter">设计</button>
+              <button class="tag-filter">阅读</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="page-intro">8 篇收藏 · 按时间倒序</p>
+
+        <main class="collection">
+          <section class="group">
+            <h2 class="group-label">本周 <span class="count">04</span></h2>
+
+            <div class="item">
+              <span class="favicon">R</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >阅读的形状：从信息到知识</a
+                >
+                <div class="muted">
+                  readingshape.com <span class="sep">·</span>3 小时前<span
+                    class="sep"
+                    >·</span
+                  >约 14 分钟<span class="sep">·</span
+                  ><span style="color: var(--accent)">思考</span>
+                </div>
+                <div class="excerpt">
+                  我们这一代人收藏的东西，比真正读过的多得多。问题或许不在意志力，而在于我们混淆了收藏与阅读。
+                </div>
+              </div>
+              <button class="delete-btn">删除</button>
+            </div>
+
+            <div class="item">
+              <span class="favicon">R</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >Readwise Reader 三周年：从稍后读到永久库</a
+                >
+                <div class="muted">
+                  blog.readwise.io <span class="sep">·</span>6 小时前<span
+                    class="sep"
+                    >·</span
+                  >约 11 分钟<span class="sep">·</span
+                  ><span style="color: var(--accent)">产品</span>
+                </div>
+              </div>
+              <button class="delete-btn">删除</button>
+            </div>
+
+            <div class="item">
+              <span class="favicon">C</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >craigmod — The Arts of the Floating World</a
+                >
+                <div class="muted">
+                  craigmod.com <span class="sep">·</span>昨天<span class="sep"
+                    >·</span
+                  >约 18 分钟
+                </div>
+              </div>
+              <button class="delete-btn">删除</button>
+            </div>
+
+            <div class="item">
+              <span class="favicon">W</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >为什么所有笔记软件最后都变成 Notion</a
+                >
+                <div class="muted">
+                  mp.weixin.qq.com <span class="sep">·</span>2 天前<span
+                    class="sep"
+                    >·</span
+                  >约 9 分钟<span class="sep">·</span
+                  ><span style="color: var(--accent)">思考</span>
+                </div>
+              </div>
+              <button class="delete-btn">删除</button>
+            </div>
+          </section>
+
+          <section class="group">
+            <h2 class="group-label">上周 <span class="count">02</span></h2>
+            <div class="item">
+              <span class="favicon">A</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >Are.na 年度报告：把互联网当成花园</a
+                >
+                <div class="muted">
+                  are.na <span class="sep">·</span>6 天前<span class="sep"
+                    >·</span
+                  >约 7 分钟<span class="sep">·</span
+                  ><span style="color: var(--accent)">设计</span>
+                </div>
+              </div>
+              <button class="delete-btn">删除</button>
+            </div>
+            <div class="item">
+              <span class="favicon">I</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >IndieWeb：把网络还给自己</a
+                >
+                <div class="muted">
+                  indieweb.org <span class="sep">·</span>9 天前<span class="sep"
+                    >·</span
+                  >约 12 分钟
+                </div>
+              </div>
+              <button class="delete-btn">删除</button>
+            </div>
+          </section>
+
+          <section class="group">
+            <h2 class="group-label">更早 <span class="count">02</span></h2>
+            <div class="item">
+              <span class="favicon">D</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >印刷术如何塑造了现代阅读</a
+                >
+                <div class="muted">
+                  douban.com <span class="sep">·</span>3 周前<span class="sep"
+                    >·</span
+                  >约 22 分钟<span class="sep">·</span
+                  ><span style="color: var(--accent)">历史</span>
+                </div>
+              </div>
+              <button class="delete-btn">删除</button>
+            </div>
+            <div class="item">
+              <span class="favicon">G</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >一份能跑十年的个人知识库</a
+                >
+                <div class="muted">
+                  github.com <span class="sep">·</span>1 个月前<span class="sep"
+                    >·</span
+                  >约 6 分钟<span class="sep">·</span
+                  ><span style="color: var(--accent)">工具</span>
+                </div>
+              </div>
+              <button class="delete-btn">删除</button>
+            </div>
+          </section>
+        </main>
+
+        <footer class="site-footer"><p>amber · 个人知识库阅读器</p></footer>
+      </div>
+    </div>
+
+    <!-- ============ ARTICLE VIEW ============ -->
+    <div class="view" id="view-article" hidden>
+      <div class="article-shell">
+        <div class="read-progress-bar">
+          <div class="read-progress-fill"></div>
+        </div>
+        <header class="article-topbar">
+          <a class="back-link" href="#list" data-go="list">← 返回列表</a>
+          <span class="article-topbar-title">阅读的形状：从信息到知识</span>
+          <div class="topbar-right">
+            <div class="font-ctrl">
+              <button class="font-btn">A−</button
+              ><button class="font-btn">A+</button>
+            </div>
+            <div class="theme-dots">
+              <i class="on" style="background: #caa45a"></i
+              ><i style="background: #8a8d93"></i
+              ><i style="background: #5a6b8a"></i
+              ><i style="background: #c7c7c7"></i>
+            </div>
+          </div>
+        </header>
+
+        <div class="article-layout">
+          <main class="article-main">
+            <article class="article-content">
+              <h1 class="article-title">阅读的形状：从信息到知识</h1>
+              <p class="meta">
+                <span>张伦</span><span class="sep">·</span>1,840 字<span
+                  class="sep"
+                  >·</span
+                >约 6 分钟<span class="sep">·</span
+                ><a href="#">readingshape.com ↗</a
+                ><span class="sep">·</span>发布于 2026-07-30
+              </p>
+
+              <figure class="article-cover">
+                <div class="cover-placeholder"></div>
+                <figcaption class="cover-caption">
+                  阅读的形状：从信息到知识
+                </figcaption>
+              </figure>
+
+              <details class="toc-mobile">
+                <summary>目录</summary>
+                <ol class="toc-list">
+                  <li><a href="#">收藏是平的，阅读是深的</a></li>
+                  <li><a href="#">从收件箱到书房</a></li>
+                </ol>
+              </details>
+
+              <p class="lede">
+                我们这一代人收藏的东西，比真正读过的多得多。稍后读的列表越堆越长，随之生长的是一种说不清的焦虑——仿佛每一篇没读的文章都在小声控诉。但问题或许不在意志力，而在于我们混淆了两件事：收藏，和阅读。
+              </p>
+
+              <h2>收藏是平的，阅读是深的</h2>
+              <p>
+                收藏是一瞬间的动作：看到一个标题，觉得「以后会用得上」，点一下星标，它就躺进了列表。这个过程是平的、快速的、几乎没有摩擦。阅读恰恰相反——它要求你停下来，把一段不被打扰的时间交给一个陌生的作者，让他的句子一句句地经过你。
+              </p>
+              <blockquote>
+                阅读不是把信息搬进大脑，而是让信息在大脑里扎根。前者只需一次点击，后者需要一段安静。
+              </blockquote>
+              <p>
+                所以，当收藏和阅读共用同一个列表，焦虑几乎是必然的：你在用一种平的动作，去偿还一种深的债。
+              </p>
+
+              <h2>从收件箱到书房</h2>
+              <p>
+                解决的办法，不是更自律地清空收件箱，而是承认它们是两个不同的空间。收件箱负责「捕获」，它应当快速、宽容、来者不拒；书房负责「消化」，它应当安静、专注、只为阅读而存在。amber
+                想做的，正是后者。
+              </p>
+              <ul>
+                <li>「捕获」和「消化」分离：收藏时不必决定何时读</li>
+                <li>阅读时只看见正文，看不见未读计数</li>
+                <li>把读过的东西留下痕迹，而不是清空</li>
+              </ul>
+              <pre><code># amber 的两种状态
+captured: 2026-07-30     # 进了收件箱
+readAt:   ~              # 还没进书房</code></pre>
+              <p>
+                当一个工具不再逼你「清空」，而是允许你「保留」，阅读就从一项任务，变回了一件可以慢慢来的事。
+              </p>
+
+              <footer class="article-foot">
+                <div class="tags-row">
+                  <span class="tag-label">标签</span
+                  ><span class="tag-chip">思考</span
+                  ><span class="tag-chip">阅读</span>
+                </div>
+                <a class="source-link" href="#"
+                  >原文发布于 <span>readingshape.com</span> →</a
+                >
+              </footer>
+
+              <footer class="article-footer">
+                <a class="nav-card" href="#"
+                  ><span class="nav-dir">← 上一篇</span
+                  ><span class="nav-title"
+                    >为什么所有笔记软件最后都变成 Notion</span
+                  ></a
+                >
+                <a class="nav-card nav-card-next" href="#"
+                  ><span class="nav-dir">下一篇 →</span
+                  ><span class="nav-title"
+                    >craigmod — The Arts of the Floating World</span
+                  ></a
+                >
+              </footer>
+            </article>
+          </main>
+
+          <nav class="toc" aria-label="目录">
+            <div class="toc-title">目录</div>
+            <ol class="toc-list">
+              <li><a href="#" class="active">收藏是平的，阅读是深的</a></li>
+              <li><a href="#">从收件箱到书房</a></li>
+            </ol>
+          </nav>
+        </div>
+
+        <button class="scroll-top-btn" aria-label="回到顶部">↑</button>
+      </div>
+    </div>
+
+    <div class="demo" role="group" aria-label="切换视图">
+      <button data-view="list" aria-pressed="true">列表</button>
+      <button data-view="article" aria-pressed="false">文章</button>
+      <span class="ws">A1 · 墨水图书馆</span>
+    </div>
+
+    <script>
+      const views = {
+        list: document.getElementById("view-list"),
+        article: document.getElementById("view-article"),
+      };
+      document.querySelectorAll("[data-go]").forEach((a) =>
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          show(a.dataset.go);
+        }),
+      );
+      document
+        .querySelectorAll(".demo [data-view]")
+        .forEach((b) =>
+          b.addEventListener("click", () => show(b.dataset.view)),
+        );
+      function show(v) {
+        for (const k in views) views[k].hidden = k !== v;
+        document
+          .querySelectorAll(".demo [data-view]")
+          .forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === v));
+        window.scrollTo(0, 0);
+        document
+          .querySelector(".scroll-top-btn")
+          .classList.toggle("show", v === "article");
+      }
+      window.addEventListener(
+        "scroll",
+        () => {
+          const b = document.querySelector(".scroll-top-btn");
+          if (b) b.classList.toggle("show", window.scrollY > 600);
+        },
+        { passive: true },
+      );
+    </script>
+  </body>
+</html>

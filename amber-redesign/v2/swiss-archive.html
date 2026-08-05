@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="archive">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>amber · 瑞士档案</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ============================================================
+   A2 · 瑞士档案 (Swiss Archive)
+   POV：amber 是一台精密归档机，克制到极致即风格。
+   全 grotesque + 等宽数据列，严格网格，hairline，瑞士红极度克制。
+   ============================================================ */
+      :root {
+        --paper: oklch(98.5% 0.002 250);
+        --paper-2: oklch(95.5% 0.003 250);
+        --ink: oklch(22% 0.005 250);
+        --ink-2: oklch(46% 0.005 250);
+        --ink-3: oklch(62% 0.004 250);
+        --rule: oklch(90% 0.003 250);
+        --rule-2: oklch(84% 0.003 250);
+        --accent: oklch(52% 0.19 25); /* Swiss red — 仅活动/链接/计数 */
+        --focus: oklch(50% 0.17 25);
+
+        --font-ui: "Inter", "PingFang SC", system-ui, sans-serif;
+        --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+        --measure: 68ch;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      ::selection {
+        background: var(--accent);
+        color: #fff;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: 0;
+        cursor: pointer;
+        padding: 0;
+      }
+      :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+      }
+      .sep {
+        display: none;
+      } /* Swiss 用网格列，不用分隔符 */
+
+      /* demo chrome */
+      .demo {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 0;
+        z-index: 200;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        border: 1px solid var(--ink);
+      }
+      .demo button {
+        padding: 7px 16px;
+        color: var(--ink-2);
+        transition:
+          background 80ms linear,
+          color 80ms linear;
+      }
+      .demo button + button {
+        border-left: 1px solid var(--ink);
+      }
+      .demo button[aria-pressed="true"] {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      .demo .ws {
+        padding: 7px 14px;
+        border-left: 1px solid var(--ink);
+        color: var(--accent);
+        font-weight: 500;
+      }
+
+      /* ============ LIST ============ */
+      .view[hidden] {
+        display: none;
+      }
+      .page {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 48px 120px;
+      }
+      .header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 40px 0 0;
+        border-bottom: 2px solid var(--ink);
+        margin-bottom: 0;
+      }
+      .brand {
+        font-family: var(--font-ui);
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        text-transform: lowercase;
+      }
+      .brand .dot {
+        color: var(--accent);
+      }
+      .brand small {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 400;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        margin-left: 10px;
+      }
+      .theme-dots {
+        display: flex;
+        gap: 6px;
+        align-self: center;
+      }
+      .theme-dots i {
+        width: 12px;
+        height: 12px;
+        border: 1px solid var(--ink);
+        display: inline-block;
+        transition: background 80ms linear;
+      }
+      .theme-dots i.on {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 24px;
+        align-items: end;
+        padding: 20px 0 16px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .search {
+        background: transparent;
+        border: 0;
+        border-bottom: 1px solid var(--ink);
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: 15px;
+        padding: 8px 0;
+        font-weight: 400;
+      }
+      .search::placeholder {
+        color: var(--ink-3);
+        font-weight: 300;
+      }
+      .search:focus {
+        outline: none;
+        border-bottom-color: var(--accent);
+      }
+      .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 0;
+      }
+      .sort {
+        display: flex;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .sort button {
+        padding: 6px 12px;
+        color: var(--ink-3);
+        border: 1px solid var(--rule);
+        transition:
+          color 80ms linear,
+          border-color 80ms linear,
+          background 80ms linear;
+      }
+      .sort button + button {
+        border-left: 0;
+      }
+      .sort button.on {
+        color: var(--paper);
+        background: var(--ink);
+        border-color: var(--ink);
+      }
+      .tag-bar {
+        display: flex;
+        gap: 0;
+        margin-left: 0;
+      }
+      .tag-filter {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-2);
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        transition:
+          color 80ms linear,
+          border-color 80ms linear;
+      }
+      .tag-filter:hover {
+        color: var(--accent);
+      }
+      .tag-filter.on {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+
+      .page-intro {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--ink-3);
+        margin: 28px 0 0;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      /* table-like rows */
+      .collection {
+        margin-top: 0;
+      }
+      .group {
+        margin-top: 18px;
+      }
+      .group-label {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--ink);
+        font-weight: 500;
+        margin: 0 0 0;
+        padding: 14px 0 10px;
+        border-bottom: 1px solid var(--ink);
+        display: grid;
+        grid-template-columns: 84px 1fr 180px 60px;
+        gap: 20px;
+        align-items: baseline;
+      }
+      .group-label .count {
+        grid-column: 4;
+        color: var(--accent);
+      }
+
+      .item {
+        display: grid;
+        grid-template-columns: 84px 1fr 180px 60px;
+        gap: 20px;
+        align-items: baseline;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--rule);
+        transition: background 80ms linear;
+      }
+      .item:hover {
+        background: var(--paper-2);
+      }
+      .favicon {
+        display: none;
+      }
+      .item-main {
+        min-width: 0;
+        grid-column: 2;
+      }
+      .entry-title {
+        font-family: var(--font-ui);
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 1.4;
+        letter-spacing: -0.01em;
+        transition: color 80ms linear;
+      }
+      .item:hover .entry-title {
+        color: var(--accent);
+      }
+      /* 日期列：用 CSS 在每行最左注入（基于 data 属性不可行，改用 meta 重排） */
+      .muted {
+        display: contents;
+      }
+      .muted .entry-host,
+      .muted {
+        font-family: var(--font-mono);
+      }
+      .excerpt {
+        display: none;
+      } /* 档案索引：不见摘要，只有标题列 */
+      .delete-btn {
+        grid-column: 4;
+        justify-self: end;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ink-3);
+        opacity: 0;
+        transition:
+          opacity 80ms linear,
+          color 80ms linear;
+      }
+      .item:hover .delete-btn {
+        opacity: 1;
+      }
+      .delete-btn:hover {
+        color: var(--accent);
+      }
+
+      /* 因 grid 列固定，需把 host/时间/分钟排进第 3 列；用 meta 作为第3列容器 */
+      .item .muted {
+        grid-column: 3;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-2);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      /* 日期第 1 列：用 favicon 占位列放入序号样式 — 改为在 item::before 注入日期需要数据；
+   此处用 favicon span 改造为日期格：复用为序号 */
+      .favicon {
+        display: block;
+        grid-column: 1;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-3);
+        letter-spacing: 0.04em;
+        background: none;
+        color: var(--ink-3);
+        width: auto;
+        height: auto;
+        border-radius: 0;
+        font-weight: 400;
+        margin: 0;
+      }
+
+      .site-footer {
+        margin-top: 60px;
+        padding-top: 14px;
+        border-top: 2px solid var(--ink);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--ink-3);
+        display: flex;
+        justify-content: space-between;
+      }
+
+      /* ============ ARTICLE ============ */
+      .article-shell {
+        min-height: 100vh;
+      }
+      .read-progress-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: transparent;
+        z-index: 90;
+      }
+      .read-progress-fill {
+        height: 100%;
+        width: 38%;
+        background: var(--accent);
+      }
+      .article-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 80;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 16px 48px;
+        background: var(--paper);
+        border-bottom: 1px solid var(--ink);
+      }
+      .back-link {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ink-2);
+        transition: color 80ms linear;
+      }
+      .back-link:hover {
+        color: var(--accent);
+      }
+      .article-topbar-title {
+        flex: 1;
+        font-family: var(--font-ui);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: center;
+      }
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      .font-ctrl {
+        display: flex;
+        gap: 0;
+        border: 1px solid var(--ink);
+      }
+      .font-btn {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink);
+        padding: 4px 9px;
+        transition:
+          background 80ms linear,
+          color 80ms linear;
+      }
+      .font-btn + .font-btn {
+        border-left: 1px solid var(--ink);
+      }
+      .font-btn:hover {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .article-layout {
+        display: grid;
+        grid-template-columns: minmax(0, var(--measure)) 200px;
+        gap: 64px;
+        justify-content: center;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 48px;
+      }
+      .toc {
+        position: sticky;
+        top: 78px;
+        align-self: start;
+        font-family: var(--font-ui);
+        font-size: 13px;
+        padding-top: 64px;
+      }
+      .toc-title {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--ink-3);
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .toc-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .toc-list li {
+        padding: 5px 0;
+      }
+      .toc-list a {
+        color: var(--ink-2);
+        line-height: 1.4;
+        display: block;
+        transition: color 80ms linear;
+        border-left: 2px solid transparent;
+        padding-left: 12px;
+        margin-left: -12px;
+      }
+      .toc-list a:hover,
+      .toc-list a.active {
+        color: var(--accent);
+        border-left-color: var(--accent);
+      }
+      .toc-mobile {
+        display: none;
+        margin: 8px 0 32px;
+        font-family: var(--font-ui);
+        font-size: 13px;
+        border: 1px solid var(--rule);
+        padding: 4px 14px;
+      }
+      .toc-mobile summary {
+        cursor: pointer;
+        color: var(--ink-2);
+        padding: 6px 0;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .article-main {
+        min-width: 0;
+      }
+      .article-title {
+        font-family: var(--font-ui);
+        font-size: clamp(32px, 4.6vw, 48px);
+        line-height: 1.05;
+        font-weight: 600;
+        letter-spacing: -0.035em;
+        margin: 72px 0 0;
+      }
+      .meta {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ink-2);
+        margin: 22px 0 0;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--rule);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0;
+      }
+      .meta > * {
+        padding-right: 14px;
+      }
+      .meta a {
+        color: var(--ink);
+      }
+      .meta a:hover {
+        color: var(--accent);
+      }
+
+      .article-cover {
+        margin: 32px 0 0;
+      }
+      .cover-placeholder {
+        aspect-ratio: 16/7;
+        background: var(--paper-2);
+        border: 1px solid var(--rule);
+        display: grid;
+        place-items: end start;
+        padding: 14px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--ink-3);
+      }
+      .cover-placeholder::after {
+        content: "16 / 7";
+        position: absolute;
+      }
+      .cover-placeholder {
+        position: relative;
+      }
+      .cover-caption {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--ink-3);
+        margin-top: 10px;
+      }
+
+      .article-content p {
+        margin: 1.15em 0;
+        font-size: 17px;
+      }
+      .article-content h2 {
+        font-family: var(--font-ui);
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 2.4em 0 0.6em;
+        padding-top: 1.2em;
+        border-top: 1px solid var(--rule);
+      }
+      .lede {
+        font-size: 19px;
+        color: var(--ink);
+      }
+      .article-content blockquote {
+        margin: 1.8em 0;
+        padding: 0 0 0 18px;
+        border-left: 2px solid var(--accent);
+        font-style: normal;
+        font-size: 18px;
+        line-height: 1.55;
+        color: var(--ink);
+      }
+      .article-content ul {
+        margin: 1.2em 0;
+        padding-left: 0;
+        list-style: none;
+      }
+      .article-content ul li {
+        position: relative;
+        padding-left: 24px;
+        margin: 0.55em 0;
+        font-size: 17px;
+      }
+      .article-content ul li::before {
+        content: "+";
+        position: absolute;
+        left: 0;
+        top: 0;
+        font-family: var(--font-mono);
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .article-content pre {
+        background: var(--paper-2);
+        border: 1px solid var(--rule);
+        border-left: 2px solid var(--ink);
+        padding: 16px 18px;
+        overflow: auto;
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        line-height: 1.7;
+        color: var(--ink);
+        margin: 1.4em 0;
+      }
+      .article-content code {
+        font-family: var(--font-mono);
+        font-size: 0.85em;
+      }
+      .article-content a {
+        color: var(--accent);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        text-decoration-thickness: 1px;
+      }
+
+      .article-foot {
+        margin: 48px 0 0;
+        padding-top: 18px;
+        border-top: 1px solid var(--ink);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .tags-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .tag-label {
+        color: var(--ink-3);
+      }
+      .tag-chip {
+        padding: 4px 9px;
+        border: 1px solid var(--ink);
+        color: var(--ink);
+      }
+      .source-link {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+      }
+      .article-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        margin: 32px 0 120px;
+        padding-top: 18px;
+        border-top: 1px solid var(--rule);
+      }
+      .nav-card {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-width: 48%;
+        transition: color 80ms linear;
+      }
+      .nav-card-next {
+        text-align: right;
+        margin-left: auto;
+      }
+      .nav-dir {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--ink-3);
+      }
+      .nav-title {
+        font-family: var(--font-ui);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink);
+        line-height: 1.35;
+      }
+      .nav-card:hover .nav-title {
+        color: var(--accent);
+      }
+      .scroll-top-btn {
+        position: fixed;
+        right: 32px;
+        bottom: 24px;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--ink);
+        background: var(--paper);
+        color: var(--ink);
+        font-size: 15px;
+        z-index: 70;
+        opacity: 0;
+        transition:
+          opacity 120ms linear,
+          background 80ms linear,
+          color 80ms linear;
+      }
+      .scroll-top-btn.show {
+        opacity: 1;
+      }
+      .scroll-top-btn:hover {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      @media (max-width: 900px) {
+        .article-layout {
+          grid-template-columns: 1px;
+          gap: 0;
+        }
+        .toc {
+          display: none;
+        }
+        .toc-mobile {
+          display: block;
+        }
+        .group-label,
+        .item {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+        .group-label .count,
+        .item .muted,
+        .item .delete-btn,
+        .favicon {
+          grid-column: auto;
+          justify-self: start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============ LIST VIEW ============ -->
+    <div class="view" id="view-list">
+      <div class="page">
+        <header class="header">
+          <a class="brand" href="/"
+            >amber<span class="dot">/</span><small>archive · idx</small></a
+          >
+          <div class="theme-dots" aria-label="主题">
+            <i class="on" style="background: #d23"></i
+            ><i style="background: #222"></i><i style="background: #888"></i
+            ><i style="background: #fff"></i>
+          </div>
+        </header>
+
+        <div class="toolbar">
+          <input class="search" placeholder="搜索归档…" />
+          <div class="filter-row">
+            <div class="sort">
+              <button class="on">最新</button><button>最旧</button
+              ><button>未读</button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="filter-row"
+          style="
+            display: flex;
+            gap: 0;
+            padding: 0 0 14px;
+            border-bottom: 1px solid var(--rule);
+          "
+        >
+          <button class="tag-filter on">全部</button>
+          <button class="tag-filter">思考</button>
+          <button class="tag-filter">产品</button>
+          <button class="tag-filter">设计</button>
+          <button class="tag-filter">阅读</button>
+        </div>
+
+        <p class="page-intro">
+          <span>08 entries · chronological desc</span
+          ><span>updated 2026-08-03</span>
+        </p>
+
+        <main class="collection">
+          <section class="group">
+            <h2 class="group-label">
+              <span>本周</span><span></span><span></span
+              ><span class="count">04</span>
+            </h2>
+
+            <div class="item">
+              <span class="favicon">07·30</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >阅读的形状：从信息到知识</a
+                >
+              </div>
+              <div class="muted">readingshape.com · 14m · 思考</div>
+              <button class="delete-btn">del</button>
+            </div>
+            <div class="item">
+              <span class="favicon">07·30</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >Readwise Reader 三周年：从稍后读到永久库</a
+                >
+              </div>
+              <div class="muted">blog.readwise.io · 11m · 产品</div>
+              <button class="delete-btn">del</button>
+            </div>
+            <div class="item">
+              <span class="favicon">07·29</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >craigmod — The Arts of the Floating World</a
+                >
+              </div>
+              <div class="muted">craigmod.com · 18m</div>
+              <button class="delete-btn">del</button>
+            </div>
+            <div class="item">
+              <span class="favicon">07·28</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >为什么所有笔记软件最后都变成 Notion</a
+                >
+              </div>
+              <div class="muted">mp.weixin.qq.com · 9m · 思考</div>
+              <button class="delete-btn">del</button>
+            </div>
+          </section>
+
+          <section class="group">
+            <h2 class="group-label">
+              <span>上周</span><span></span><span></span
+              ><span class="count">02</span>
+            </h2>
+            <div class="item">
+              <span class="favicon">07·24</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >Are.na 年度报告：把互联网当成花园</a
+                >
+              </div>
+              <div class="muted">are.na · 7m · 设计</div>
+              <button class="delete-btn">del</button>
+            </div>
+            <div class="item">
+              <span class="favicon">07·21</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >IndieWeb：把网络还给自己</a
+                >
+              </div>
+              <div class="muted">indieweb.org · 12m</div>
+              <button class="delete-btn">del</button>
+            </div>
+          </section>
+
+          <section class="group">
+            <h2 class="group-label">
+              <span>更早</span><span></span><span></span
+              ><span class="count">02</span>
+            </h2>
+            <div class="item">
+              <span class="favicon">07·10</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >印刷术如何塑造了现代阅读</a
+                >
+              </div>
+              <div class="muted">douban.com · 22m · 历史</div>
+              <button class="delete-btn">del</button>
+            </div>
+            <div class="item">
+              <span class="favicon">06·28</span>
+              <div class="item-main">
+                <a class="entry-title" href="#article" data-go="article"
+                  >一份能跑十年的个人知识库</a
+                >
+              </div>
+              <div class="muted">github.com · 6m · 工具</div>
+              <button class="delete-btn">del</button>
+            </div>
+          </section>
+        </main>
+
+        <footer class="site-footer">
+          <span>amber · archive system</span><span>v2 · 08 entries</span>
+        </footer>
+      </div>
+    </div>
+
+    <!-- ============ ARTICLE VIEW ============ -->
+    <div class="view" id="view-article" hidden>
+      <div class="article-shell">
+        <div class="read-progress-bar">
+          <div class="read-progress-fill"></div>
+        </div>
+        <header class="article-topbar">
+          <a class="back-link" href="#list" data-go="list">← index</a>
+          <span class="article-topbar-title">阅读的形状：从信息到知识</span>
+          <div class="topbar-right">
+            <div class="font-ctrl">
+              <button class="font-btn">A−</button
+              ><button class="font-btn">A+</button>
+            </div>
+            <div class="theme-dots">
+              <i class="on" style="background: #d23"></i
+              ><i style="background: #222"></i><i style="background: #888"></i
+              ><i style="background: #fff"></i>
+            </div>
+          </div>
+        </header>
+
+        <div class="article-layout">
+          <main class="article-main">
+            <article class="article-content">
+              <h1 class="article-title">阅读的形状：从信息到知识</h1>
+              <p class="meta">
+                <span>by 张伦</span><span>1,840 字</span><span>约 6 min</span
+                ><a href="#">readingshape.com ↗</a><span>pub 2026-07-30</span>
+              </p>
+
+              <figure class="article-cover">
+                <div class="cover-placeholder"></div>
+                <figcaption class="cover-caption">
+                  阅读的形状：从信息到知识
+                </figcaption>
+              </figure>
+
+              <details class="toc-mobile">
+                <summary>index</summary>
+                <ol class="toc-list">
+                  <li><a href="#">收藏是平的，阅读是深的</a></li>
+                  <li><a href="#">从收件箱到书房</a></li>
+                </ol>
+              </details>
+
+              <p class="lede">
+                我们这一代人收藏的东西，比真正读过的多得多。稍后读的列表越堆越长，随之生长的是一种说不清的焦虑——仿佛每一篇没读的文章都在小声控诉。但问题或许不在意志力，而在于我们混淆了两件事：收藏，和阅读。
+              </p>
+
+              <h2>收藏是平的，阅读是深的</h2>
+              <p>
+                收藏是一瞬间的动作：看到一个标题，觉得「以后会用得上」，点一下星标，它就躺进了列表。这个过程是平
+                的、快速的、几乎没有摩擦。阅读恰恰相反——它要求你停下来，把一段不被打扰的时间交给一个陌生的作者，让他的句子一句句地经过你。
+              </p>
+              <blockquote>
+                阅读不是把信息搬进大脑，而是让信息在大脑里扎根。前者只需一次点击，后者需要一段安静。
+              </blockquote>
+              <p>
+                所以，当收藏和阅读共用同一个列表，焦虑几乎是必然的：你在用一种平的动作，去偿还一种深的债。
+              </p>
+
+              <h2>从收件箱到书房</h2>
+              <p>
+                解决的办法，不是更自律地清空收件箱，而是承认它们是两个不同的空间。收件箱负责「捕获」，它应当快速、宽容、来者不拒；书房负责「消化」，它应当安静、专注、只为阅读而存在。amber
+                想做的，正是后者。
+              </p>
+              <ul>
+                <li>「捕获」和「消化」分离：收藏时不必决定何时读</li>
+                <li>阅读时只看见正文，看不见未读计数</li>
+                <li>把读过的东西留下痕迹，而不是清空</li>
+              </ul>
+              <pre><code># amber 的两种状态
+captured: 2026-07-30     # 进了收件箱
+readAt:   ~              # 还没进书房</code></pre>
+              <p>
+                当一个工具不再逼你「清空」，而是允许你「保留」，阅读就从一项任务，变回了一件可以慢慢来的事。
+              </p>
+
+              <footer class="article-foot">
+                <div class="tags-row">
+                  <span class="tag-label">tags /</span
+                  ><span class="tag-chip">思考</span
+                  ><span class="tag-chip">阅读</span>
+                </div>
+                <a class="source-link" href="#">source · readingshape.com →</a>
+              </footer>
+
+              <footer class="article-footer">
+                <a class="nav-card" href="#"
+                  ><span class="nav-dir">← prev</span
+                  ><span class="nav-title"
+                    >为什么所有笔记软件最后都变成 Notion</span
+                  ></a
+                >
+                <a class="nav-card nav-card-next" href="#"
+                  ><span class="nav-dir">next →</span
+                  ><span class="nav-title"
+                    >craigmod — The Arts of the Floating World</span
+                  ></a
+                >
+              </footer>
+            </article>
+          </main>
+
+          <nav class="toc" aria-label="目录">
+            <div class="toc-title">index</div>
+            <ol class="toc-list">
+              <li><a href="#" class="active">收藏是平的，阅读是深的</a></li>
+              <li><a href="#">从收件箱到书房</a></li>
+            </ol>
+          </nav>
+        </div>
+
+        <button class="scroll-top-btn" aria-label="回到顶部">↑</button>
+      </div>
+    </div>
+
+    <div class="demo" role="group" aria-label="切换视图">
+      <button data-view="list" aria-pressed="true">列表</button>
+      <button data-view="article" aria-pressed="false">文章</button>
+      <span class="ws">A2 · 瑞士档案</span>
+    </div>
+
+    <script>
+      const views = {
+        list: document.getElementById("view-list"),
+        article: document.getElementById("view-article"),
+      };
+      document.querySelectorAll("[data-go]").forEach((a) =>
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          show(a.dataset.go);
+        }),
+      );
+      document
+        .querySelectorAll(".demo [data-view]")
+        .forEach((b) =>
+          b.addEventListener("click", () => show(b.dataset.view)),
+        );
+      function show(v) {
+        for (const k in views) views[k].hidden = k !== v;
+        document
+          .querySelectorAll(".demo [data-view]")
+          .forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === v));
+        window.scrollTo(0, 0);
+        const b = document.querySelector(".scroll-top-btn");
+        if (b) b.classList.toggle("show", v === "article");
+      }
+      window.addEventListener(
+        "scroll",
+        () => {
+          const b = document.querySelector(".scroll-top-btn");
+          if (b) b.classList.toggle("show", window.scrollY > 600);
+        },
+        { passive: true },
+      );
+    </script>
+  </body>
+</html>
