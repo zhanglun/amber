@@ -34,6 +34,47 @@ export function getThemeScriptHtml(): string {
 </script>`;
 }
 
+export function getStyleSwitcherHtml(): string {
+  return (
+    `<div class="style-switcher" role="group" aria-label="视觉风格">` +
+    `<button class="style-btn" data-style="editorial" title="Editorial" aria-label="Editorial 风格" onclick="setStyle('editorial')">纸</button>` +
+    `<button class="style-btn" data-style="ink" title="墨水图书馆" aria-label="墨水图书馆风格" onclick="setStyle('ink')">墨</button>` +
+    `<button class="style-btn" data-style="archive" title="瑞士档案" aria-label="瑞士档案风格" onclick="setStyle('archive')">档</button>` +
+    `</div>`
+  );
+}
+
+export function getStyleScriptHtml(): string {
+  return `<script>
+(function(){
+  window.setStyle=function(s){
+    localStorage.setItem('amber-style',s);
+    document.documentElement.setAttribute('data-style',s);
+    document.querySelectorAll('.style-btn[data-style]').forEach(function(btn){
+      var a=btn.getAttribute('data-style')===s;
+      btn.classList.toggle('active',a);
+      btn.setAttribute('aria-pressed',a?'true':'false');
+    });
+    // 每个风格首次进入时展示其标志配色；此后保留用户选择的配色
+    var sig={editorial:'light',ink:'dark',archive:'light'};
+    var flag='amber-style-'+s+'-seen';
+    if(!localStorage.getItem(flag)){
+      localStorage.setItem(flag,'1');
+      if(typeof window.setTheme==='function'&&localStorage.getItem('amber-theme')!==sig[s]){window.setTheme(sig[s]);}
+    }
+  };
+  var s=localStorage.getItem('amber-style');
+  if(!s||['editorial','ink','archive'].indexOf(s)===-1)s='editorial';
+  document.documentElement.setAttribute('data-style',s);
+  document.querySelectorAll('.style-btn[data-style]').forEach(function(btn){
+    var a=btn.getAttribute('data-style')===s;
+    btn.classList.toggle('active',a);
+    btn.setAttribute('aria-pressed',a?'true':'false');
+  });
+})();
+</script>`;
+}
+
 export function getSearchBarHtml(): string {
   return `<div class="search-bar"><input id="search" type="search" class="search-input" placeholder="搜索标题、来源或标签…" aria-label="搜索收藏" autocomplete="off"></div>`;
 }
@@ -177,17 +218,28 @@ export function getDeleteConfirmScriptHtml(): string {
 </script>`;
 }
 
-export function calcReadProgress(scrollTop: number, scrollHeight: number, clientHeight: number): number {
+export function calcReadProgress(
+  scrollTop: number,
+  scrollHeight: number,
+  clientHeight: number,
+): number {
   const max = scrollHeight - clientHeight;
-  return max > 0 ? Math.min(100, Math.max(0, Math.round((scrollTop / max) * 100))) : 0;
+  return max > 0
+    ? Math.min(100, Math.max(0, Math.round((scrollTop / max) * 100)))
+    : 0;
 }
 
-export function calcRemainingMinutes(totalChars: number, progress: number): number {
+export function calcRemainingMinutes(
+  totalChars: number,
+  progress: number,
+): number {
   if (totalChars === 0) return 0;
   return Math.max(0, Math.round((totalChars * (1 - progress / 100)) / 300));
 }
 
-export function getReaderEnhancementsScriptHtml(opts: { hasPrev?: boolean; hasNext?: boolean } = {}): string {
+export function getReaderEnhancementsScriptHtml(
+  opts: { hasPrev?: boolean; hasNext?: boolean } = {},
+): string {
   const hasPrev = opts.hasPrev !== false;
   const hasNext = opts.hasNext !== false;
   return `<script>
@@ -270,6 +322,9 @@ export function getReaderEnhancementsScriptHtml(opts: { hasPrev?: boolean; hasNe
     var mainLeft=main.getBoundingClientRect().left;
     var desired=Math.max(16,Math.round(mainLeft-tocWidth-gap));
     document.documentElement.style.setProperty('--toc-left',desired+'px');
+    var mainRight=main.getBoundingClientRect().right;
+    var desiredRight=Math.max(16,Math.round(window.innerWidth-mainRight-gap-tocWidth));
+    document.documentElement.style.setProperty('--toc-right',desiredRight+'px');
   }
   alignToc();
   window.addEventListener('resize',alignToc);
@@ -308,8 +363,8 @@ export function getReaderEnhancementsScriptHtml(opts: { hasPrev?: boolean; hasNe
 
   if(scrollTopBtn)scrollTopBtn.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
 
-  ${hasPrev ? `var prevLink=document.querySelector('a[data-nav="prev"]');` : ''}
-  ${hasNext ? `var nextLink=document.querySelector('a[data-nav="next"]');` : ''}
+  ${hasPrev ? `var prevLink=document.querySelector('a[data-nav="prev"]');` : ""}
+  ${hasNext ? `var nextLink=document.querySelector('a[data-nav="next"]');` : ""}
   document.addEventListener('keydown',function(e){
     var tag=(document.activeElement||{}).tagName;
     if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
@@ -317,8 +372,8 @@ export function getReaderEnhancementsScriptHtml(opts: { hasPrev?: boolean; hasNe
     if(e.key==='j')window.scrollBy({top:200,behavior:'smooth'});
     else if(e.key==='k')window.scrollBy({top:-200,behavior:'smooth'});
     else if(e.key==='Escape')window.location.href='/';
-    ${hasPrev ? `else if(e.key==='['&&prevLink)window.location.href=prevLink.href;` : ''}
-    ${hasNext ? `else if(e.key===']'&&nextLink)window.location.href=nextLink.href;` : ''}
+    ${hasPrev ? `else if(e.key==='['&&prevLink)window.location.href=prevLink.href;` : ""}
+    ${hasNext ? `else if(e.key===']'&&nextLink)window.location.href=nextLink.href;` : ""}
   });
 })();
 </script>`;

@@ -3,6 +3,8 @@ import { getStyles } from "./styles.js";
 import {
   getThemeSwitcherHtml,
   getThemeScriptHtml,
+  getStyleSwitcherHtml,
+  getStyleScriptHtml,
   getSearchBarHtml,
   getSortToggleHtml,
   getListFilterScriptHtml,
@@ -23,14 +25,24 @@ const ASSET_REF_RE = /amber-asset:([^\s)]+)/g;
  * `/blobs/` 前缀判定天然命中，highlight.ts 无需改动。
  * blob 为 undefined（测试/老路径）时原样返回，对完整 URL 形态的老数据也原样兼容。
  */
-async function resolveAssetRefs(markdown: string, blob?: BlobStore): Promise<string> {
+async function resolveAssetRefs(
+  markdown: string,
+  blob?: BlobStore,
+): Promise<string> {
   if (!blob || !markdown.includes("amber-asset:")) return markdown;
   const keys = Array.from(markdown.matchAll(ASSET_REF_RE), (m) => m[1]);
   if (keys.length === 0) return markdown;
   // 同一 key 只解析一次。
   const cache = new Map<string, string>();
-  await Promise.all(Array.from(new Set(keys)).map(async (k) => cache.set(k, await blob.urlFor(k))));
-  return markdown.replace(ASSET_REF_RE, (_m, k: string) => cache.get(k) ?? `amber-asset:${k}`);
+  await Promise.all(
+    Array.from(new Set(keys)).map(async (k) =>
+      cache.set(k, await blob.urlFor(k)),
+    ),
+  );
+  return markdown.replace(
+    ASSET_REF_RE,
+    (_m, k: string) => cache.get(k) ?? `amber-asset:${k}`,
+  );
 }
 
 /**
@@ -47,9 +59,16 @@ export interface Group {
   items: CaptureSummary[];
 }
 
-export function groupByWeek(items: CaptureSummary[], now = new Date()): Group[] {
+export function groupByWeek(
+  items: CaptureSummary[],
+  now = new Date(),
+): Group[] {
   const daysToMonday = (now.getUTCDay() + 6) % 7;
-  const thisMonday = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysToMonday);
+  const thisMonday = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() - daysToMonday,
+  );
   const lastMonday = thisMonday - 7 * 24 * 60 * 60 * 1000;
   const groups: Group[] = [
     { label: "本周", items: [] },
@@ -96,6 +115,24 @@ export function escapeHtml(s: string): string {
     .replaceAll('"', "&quot;");
 }
 
+/** Best-effort hostname; falls back to the raw string if the URL is malformed. */
+function safeHostname(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
+/** 列表项绝对日期标签（UTC，避免时区把日期推过午夜）；archive 风格的日期列用它。 */
+function itemDateLabel(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${mm}·${dd}`;
+}
+
 function collectTags(items: CaptureSummary[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -113,7 +150,10 @@ function collectTags(items: CaptureSummary[]): string[] {
 function renderTagBar(allTags: string[]): string {
   if (allTags.length === 0) return "";
   const chips = allTags
-    .map((t) => `<button class="tag-filter" type="button" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`)
+    .map(
+      (t) =>
+        `<button class="tag-filter" type="button" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`,
+    )
     .join("");
   return `<div class="tag-bar"><button class="tag-filter-all" type="button">全部</button>${chips}</div>`;
 }
@@ -122,29 +162,35 @@ function renderTagEditor(captureId: string, tags: string[]): string {
   const chips = tags
     .map(
       (t) =>
-        `<span class="tag-chip" data-tag="${escapeHtml(t)}">${escapeHtml(t)}<button class="tag-remove" type="button" title="移除">×</button></span>`
+        `<span class="tag-chip" data-tag="${escapeHtml(t)}">${escapeHtml(t)}<button class="tag-remove" type="button" title="移除">×</button></span>`,
     )
     .join("");
   return `<div class="tag-editor" data-capture-id="${escapeHtml(captureId)}">${chips}<button class="tag-add" type="button" title="添加标签">+</button></div>`;
 }
 
-export function readingStats(markdown: string): { chars: number; minutes: number } {
-  const chars = markdown.replace(/```[\s\S]*?```/g, "").replace(/\s/g, "").length;
+export function readingStats(markdown: string): {
+  chars: number;
+  minutes: number;
+} {
+  const chars = markdown
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\s/g, "").length;
   const minutes = Math.max(1, Math.round(chars / 300));
   return { chars, minutes };
 }
 
 function page(title: string, body: string, bodyClass = ""): string {
   const classAttr = bodyClass ? ` class="${escapeHtml(bodyClass)}"` : "";
-  return `<!doctype html><html lang="zh-CN" data-theme="light"><head>
+  return `<!doctype html><html lang="zh-CN" data-theme="light" data-style="editorial"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..600&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..600&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..600,0..100,0..1;1,9..144,300..500,0..100,0..1&family=Inter:wght@300..600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <title>${escapeHtml(title)}</title>
 ${getStyles()}
 ${getThemeScriptHtml()}
+${getStyleScriptHtml()}
 </head><body${classAttr}>${body}</body></html>`;
 }
 
@@ -155,7 +201,7 @@ export function renderList(items: CaptureSummary[]): string {
   const header =
     `<header class="header">` +
     `<a href="/" class="brand"><span class="brand-mark" aria-hidden="true"></span>amber</a>` +
-    `<div class="header-right">${switcher}</div>` +
+    `<div class="header-right">${getStyleSwitcherHtml()}${switcher}</div>` +
     `</header>`;
 
   if (items.length === 0) {
@@ -174,15 +220,14 @@ export function renderList(items: CaptureSummary[]): string {
     `<div class="toolbar">${searchBar}` +
     `<div class="filter-row">${sortGroup}${tagBar}</div>` +
     `</div>`;
-  const intro =
-    `<div class="page-intro"><p>${items.length} 篇收藏 · 按时间倒序排列。</p></div>`;
+  const intro = `<div class="page-intro"><p>${items.length} 篇收藏 · 按时间倒序排列。</p></div>`;
 
   const groups = groupByWeek(items);
   const sectionsHtml = groups
     .map((g) => {
       const rowsHtml = g.items
         .map((i) => {
-          const hostname = new URL(i.sourceUrl).hostname;
+          const hostname = safeHostname(i.sourceUrl);
           const minutes =
             typeof i.wordCount === "number"
               ? Math.max(1, Math.round(i.wordCount / 300))
@@ -196,15 +241,21 @@ export function renderList(items: CaptureSummary[]): string {
             : "";
           const metaParts = [
             `<span class="entry-host">${escapeHtml(hostname)}</span>`,
-            relativeTime(i.capturedAt),
+            `<span class="meta-rel">${relativeTime(i.capturedAt)}</span>`,
             ...(minutes !== null ? [`约 ${minutes} 分钟`] : []),
           ];
-          if (tags.length > 0) metaParts.push(`<span class="tag">${escapeHtml(tags[0])}</span>`);
+          if (tags.length > 0)
+            metaParts.push(`<span class="tag">${escapeHtml(tags[0])}</span>`);
           const meta = metaParts
-            .map((p, idx) => (idx < metaParts.length - 1 ? `${p}<span class="sep" aria-hidden="true">·</span>` : p))
+            .map((p, idx) =>
+              idx < metaParts.length - 1
+                ? `${p}<span class="sep" aria-hidden="true">·</span>`
+                : p,
+            )
             .join("");
           return (
             `<div class="item" data-title="${escapeHtml(i.title.toLowerCase())}" data-host="${escapeHtml(hostname)}" data-captured-at="${escapeHtml(i.capturedAt)}" data-tags="${tagsAttr}" data-read-progress="${rp}" data-read-at="${ra}">` +
+            `<time class="item-date" datetime="${escapeHtml(i.capturedAt)}">${itemDateLabel(i.capturedAt)}</time>` +
             faviconImg(hostname) +
             `<div class="item-main">` +
             `<a class="entry-title" href="/captures/${escapeHtml(i.id)}">${escapeHtml(i.title)}</a>` +
@@ -232,9 +283,14 @@ export function renderList(items: CaptureSummary[]): string {
     header +
     intro +
     toolbar +
-    `<main class="collection">` + sectionsHtml + `</main>` +
+    `<main class="collection">` +
+    sectionsHtml +
+    `</main>` +
     `<footer class="site-footer"><p>amber · 个人知识库阅读器</p></footer>` +
-    getListFilterScriptHtml() + getDeleteConfirmScriptHtml() + getReadIndicatorScriptHtml() + getTagEditorScriptHtml() +
+    getListFilterScriptHtml() +
+    getDeleteConfirmScriptHtml() +
+    getReadIndicatorScriptHtml() +
+    getTagEditorScriptHtml() +
     `</div>`;
   return page("Amber", body);
 }
@@ -270,7 +326,7 @@ function renderMobileToc(toc: TocItem[]): string {
  * 文章底部（对齐设计稿：tags chip 行 + 原文链接）。上一/下一篇导航紧随其后。
  */
 function renderArticleFoot(capture: Capture): string {
-  const hostname = new URL(capture.sourceUrl).hostname;
+  const hostname = safeHostname(capture.sourceUrl);
   return (
     `<footer class="article-foot">` +
     `<div class="tags-row"><span class="tag-label">标签</span>` +
@@ -283,7 +339,7 @@ function renderArticleFoot(capture: Capture): string {
 
 function renderArticleFooter(
   prev: CaptureSummary | null,
-  next: CaptureSummary | null
+  next: CaptureSummary | null,
 ): string {
   if (!prev && !next) return "";
   const prevCard = prev
@@ -301,7 +357,10 @@ function renderArticleFooter(
 
 export async function renderArticle(
   capture: Capture,
-  neighbors: { prev: CaptureSummary | null; next: CaptureSummary | null } = { prev: null, next: null },
+  neighbors: { prev: CaptureSummary | null; next: CaptureSummary | null } = {
+    prev: null,
+    next: null,
+  },
   blob?: BlobStore,
 ): Promise<string> {
   const switcher = getThemeSwitcherHtml();
@@ -315,23 +374,30 @@ export async function renderArticle(
     `<header class="article-topbar">` +
     `<a class="back-link" href="/">← 返回列表</a>` +
     `<span class="article-topbar-title" aria-hidden="true">${title}</span>` +
-    `<div class="topbar-right">${fontCtrl}${switcher}</div>` +
+    `<div class="topbar-right">${getStyleSwitcherHtml()}${fontCtrl}${switcher}</div>` +
     `</header>`;
 
   const { chars: computedChars } = readingStats(capture.content);
   const chars = capture.wordCount ?? computedChars;
   const minutes = Math.max(1, Math.round(chars / 300));
-  const hostname = new URL(capture.sourceUrl).hostname;
+  const hostname = safeHostname(capture.sourceUrl);
   const publishedLine = (() => {
     if (!capture.publishedAt) return "";
     // Prefer ISO prefix to avoid UTC conversion shifting the date across midnight.
     const dateStr = /^\d{4}-\d{2}-\d{2}/.test(capture.publishedAt)
       ? capture.publishedAt.slice(0, 10)
-      : (() => { const d = new Date(capture.publishedAt!); return isNaN(d.getTime()) ? capture.publishedAt! : d.toISOString().slice(0, 10); })();
+      : (() => {
+          const d = new Date(capture.publishedAt!);
+          return isNaN(d.getTime())
+            ? capture.publishedAt!
+            : d.toISOString().slice(0, 10);
+        })();
     return `发布于 ${escapeHtml(dateStr)}`;
   })();
   const metaParts = [
-    ...(capture.author ? [`<span class="author">${escapeHtml(capture.author)}</span>`] : []),
+    ...(capture.author
+      ? [`<span class="author">${escapeHtml(capture.author)}</span>`]
+      : []),
     `${chars} 字`,
     `<span class="meta-remaining">约 ${minutes} 分钟</span>`,
     `<a href="${escapeHtml(capture.sourceUrl)}">${escapeHtml(hostname)} ↗</a>`,
@@ -339,7 +405,13 @@ export async function renderArticle(
   ];
   const meta =
     `<p class="meta">` +
-    metaParts.map((p, idx) => (idx < metaParts.length - 1 ? `${p}<span class="sep" aria-hidden="true">·</span>` : p)).join("") +
+    metaParts
+      .map((p, idx) =>
+        idx < metaParts.length - 1
+          ? `${p}<span class="sep" aria-hidden="true">·</span>`
+          : p,
+      )
+      .join("") +
     `</p>`;
 
   const toc = extractToc(capture.content);
@@ -349,7 +421,7 @@ export async function renderArticle(
   // 首段加 .lede（drop cap 首字下沉），仅替换首个 <p>
   const content = rendered.replace(/<p>/, '<p class="lede">');
   const readProgress = capture.readProgress ?? 0;
-   const footer = renderArticleFooter(neighbors.prev, neighbors.next);
+  const footer = renderArticleFooter(neighbors.prev, neighbors.next);
 
   // 封面图：仅当 coverImage 存在时渲染，紧跟文章标题/元信息之后
   const cover = capture.coverImage
@@ -381,7 +453,10 @@ export async function renderArticle(
     `<button class="scroll-top-btn" title="回到顶部" aria-label="回到顶部">↑</button>` +
     `</div>` +
     getReaderHeaderScriptHtml() +
-    getReaderEnhancementsScriptHtml({ hasPrev: !!neighbors.prev, hasNext: !!neighbors.next }) +
+    getReaderEnhancementsScriptHtml({
+      hasPrev: !!neighbors.prev,
+      hasNext: !!neighbors.next,
+    }) +
     getTagEditorScriptHtml();
   return page(capture.title, body, "article-body");
 }

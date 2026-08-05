@@ -46,12 +46,12 @@ describe("getStyles", () => {
     expect(css).toContain(".video-embed video");
   });
 
-  it("keeps article content centered while floating the toc on the left", () => {
+  it("keeps article content centered while floating the toc on the right", () => {
     const css = getStyles();
     expect(css).toContain(".article-layout { width: 100%; padding: var(--space-xl) var(--gutter) var(--space-4xl);");
     expect(css).toContain(".article-main { max-width: var(--max-width); margin: 0 auto;");
     expect(css).toMatch(/\.toc\s*\{[\s\S]*?position:\s*fixed/);
-    expect(css).toContain("left: var(--toc-left, max(1rem, calc((100vw - var(--max-width)) / 2 - 260px)))");
+    expect(css).toContain("right: var(--toc-right, max(1rem, calc((100vw - var(--max-width)) / 2 - 260px)))");
     expect(css).not.toContain("grid-column: 3");
   });
 
