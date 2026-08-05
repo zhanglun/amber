@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import type { Capture, CaptureSummary, Store } from "@amber/domain";
+import type { Capture, CaptureSummary, SearchResult, Store } from "@amber/domain";
 
 // Prisma inferred types for the two query shapes used below
 type SummaryRow = Prisma.CaptureGetPayload<{
@@ -49,6 +49,23 @@ function rowToCapture(row: NonNullable<FullRow>): Capture {
     lastOpenedAt: row.lastOpenedAt?.toISOString() ?? undefined,
     readCount: row.readCount > 0 ? row.readCount : undefined,
   };
+}
+
+/** 从正文里抽一句命中上下文（去 markdown 噪声），给“找到了”一个可读片段。 */
+function makeSnippet(content: string, query: string, radius = 60): string {
+  const lower = content.toLowerCase();
+  const i = lower.indexOf(query.toLowerCase());
+  if (i < 0) return "";
+  const start = Math.max(0, i - radius);
+  const end = Math.min(content.length, i + query.length + radius);
+  const slice = content
+    .slice(start, end)
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/[#*`>_~-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (start > 0 ? "…" : "") + slice + (end < content.length ? "…" : "");
 }
 
 export class PostgresStore implements Store {
@@ -103,6 +120,47 @@ export class PostgresStore implements Store {
       },
     });
     return rows.map(rowToSummary);
+  }
+
+  /** 全库搜索：ILIKE 命中 title/content/source，或精确命中 tag（中文友好，无需分词扩展）。 */
+  async search(query: string): Promise<SearchResult[]> {
+    const q = query.trim();
+    if (!q) return [];
+    const rows = await this.prisma.capture.findMany({
+      where: {
+        OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { content: { contains: q, mode: "insensitive" } },
+          { sourceUrl: { contains: q, mode: "insensitive" } },
+          // 标签用精确匹配；导入与编辑时会保留用户输入的标签文本。
+          { tags: { has: q } },
+        ],
+      },
+      orderBy: { capturedAt: "desc" },
+      take: 50,
+      select: {
+        id: true, title: true, sourceUrl: true, capturedAt: true,
+        publishedAt: true, coverImage: true, excerpt: true, wordCount: true,
+        hasCode: true, tags: true, readProgress: true, readAt: true,
+        content: true,
+      },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      sourceUrl: r.sourceUrl,
+      capturedAt: r.capturedAt.toISOString(),
+      publishedAt: r.publishedAt ?? undefined,
+      coverImage: r.coverImage ?? undefined,
+      excerpt: r.excerpt ?? undefined,
+      wordCount: r.wordCount ?? undefined,
+      hasCode: r.hasCode ?? undefined,
+      tags: r.tags,
+      readProgress: r.readProgress ?? undefined,
+      readAt: r.readAt?.toISOString() ?? undefined,
+      // 标题、来源或标签命中时，正文未必包含 query；用已有摘要避免结果“空一行”。
+      snippet: makeSnippet(r.content, q) || r.excerpt || undefined,
+    }));
   }
 
   async get(id: string): Promise<Capture | null> {

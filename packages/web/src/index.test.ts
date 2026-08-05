@@ -32,6 +32,9 @@ function fakeReadService(): ReadService {
     updateReadStatus: vi.fn(),
     updateTags: vi.fn(),
     recordVisit: vi.fn(),
+    search: async (query: string) => query === "First"
+      ? [{ id: "c1", title: "First", sourceUrl: "https://example.com/a", capturedAt: "2026-06-02T00:00:00.000Z", tags: ["test"], snippet: "First Body" }]
+      : [],
   } as unknown as ReadService;
 }
 
@@ -51,6 +54,27 @@ describe("createApp", () => {
     expect(html).toContain('href="/captures/c2"');
     expect(html).toContain('action="/captures/c1/delete"');
     expect(html).not.toContain('class="article-shell"');
+  });
+
+  it("renders the themed long-term library on /library", async () => {
+    const app = createApp(fakeReadService(), { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
+    const res = await app.request("/library");
+    const html = await res.text();
+    expect(res.status).toBe(200);
+    expect(html).toContain("留下来的，不会被时间冲走。");
+    expect(html).toContain('href="/library" aria-current="page"');
+    expect(html).not.toContain('href="/" aria-current="page"');
+  });
+
+  it("GET /search returns full-library results as JSON", async () => {
+    const app = createApp(fakeReadService(), { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
+    const res = await app.request("/search?q=First");
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      query: "First",
+      count: 1,
+      results: [{ id: "c1", title: "First", sourceUrl: "https://example.com/a", capturedAt: "2026-06-02T00:00:00.000Z", tags: ["test"], snippet: "First Body" }],
+    });
   });
 
   it("renders the selected capture on /captures/:id as a focused article", async () => {

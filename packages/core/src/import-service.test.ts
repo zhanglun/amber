@@ -38,6 +38,7 @@ function fakeStore(rows: Capture[] = []): Store {
     updateReadStatus: vi.fn(),
     updateTags: vi.fn(),
     recordVisit: vi.fn(),
+    search: vi.fn(async () => []),
   };
 }
 

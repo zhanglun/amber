@@ -76,7 +76,7 @@ export function getStyleScriptHtml(): string {
 }
 
 export function getSearchBarHtml(): string {
-  return `<div class="search-bar"><input id="search" type="search" class="search-input" placeholder="搜索标题、来源或标签…" aria-label="搜索收藏" autocomplete="off"></div>`;
+  return `<div class="search-bar"><input id="search" type="search" class="search-input" placeholder="搜索标题、正文、来源或标签…" aria-label="搜索整座书架" autocomplete="off"></div>`;
 }
 
 export function getSortToggleHtml(): string {
@@ -87,6 +87,88 @@ export function getSortToggleHtml(): string {
     `<button class="sort-toggle" data-sort="unread" type="button">未读</button>` +
     `</div>`
   );
+}
+
+export function getLibrarySearchScriptHtml(): string {
+  return `<script>
+(function(){
+  var inp=document.getElementById('search');
+  var results=document.getElementById('search-results');
+  var collection=document.querySelector('.collection');
+  var intro=document.querySelector('.page-intro');
+  if(!inp||!results)return;
+  var timer=null,lastQ='',requestId=0,controller=null,cache={};
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function host(u){try{return new URL(u).hostname;}catch(e){return u;}}
+  function hl(text,q){
+    if(!text)return '';
+    var i=text.toLowerCase().indexOf(q.toLowerCase());
+    if(i<0)return esc(text);
+    return esc(text.slice(0,i))+'<mark>'+esc(text.slice(i,i+q.length))+'</mark>'+esc(text.slice(i+q.length));
+  }
+  function setBusy(busy){results.setAttribute('aria-busy',busy?'true':'false');}
+  function render(data,q){
+    q=data.query||q||'';
+    setBusy(false);
+    if(!data.results||!data.results.length){
+      results.innerHTML='<div class="search-head">全库搜索 · 没找到「'+esc(q)+'」</div><p class="search-empty">你的书架里没有匹配的内容。</p>';
+      return;
+    }
+    var html='<div class="search-head">全库搜索 · 找到 '+data.count+' 篇</div><div class="search-list">';
+    data.results.forEach(function(r){
+      var meta=host(r.sourceUrl)+' · '+(r.capturedAt||'').slice(0,10);
+      var tags=(r.tags||[]).map(function(tag){return '<span class="search-tag">'+hl(tag,q)+'</span>';}).join('');
+      html+='<div class="search-item">'+
+        '<a class="search-title" href="/captures/'+encodeURIComponent(r.id)+'">'+hl(r.title,q)+'</a>'+
+        '<div class="search-meta">'+esc(meta)+'</div>'+
+        (r.snippet?'<div class="search-snippet">'+hl(r.snippet,q)+'</div>':'')+
+        (tags?'<div class="search-tags">'+tags+'</div>':'')+
+        '</div>';
+    });
+    results.innerHTML=html+'</div>';
+  }
+  function clearSearch(){
+    requestId++;
+    if(controller)controller.abort();
+    controller=null;lastQ='';
+    setBusy(false);results.hidden=true;results.innerHTML='';
+    if(collection)collection.style.display='';
+    if(intro)intro.style.display='';
+  }
+  function applySearch(raw){
+    var q=(raw||'').trim();
+    if(!q){clearSearch();return;}
+    results.hidden=false;
+    if(collection)collection.style.display='none';
+    if(intro)intro.style.display='none';
+    if(q===lastQ)return;
+    lastQ=q;
+    var id=++requestId;
+    if(controller)controller.abort();
+    if(cache[q]){render(cache[q],q);return;}
+    controller=typeof AbortController==='function'?new AbortController():null;
+    setBusy(true);
+    results.innerHTML='<div class="search-head" role="status">全库搜索中…</div>';
+    var options=controller?{signal:controller.signal}:undefined;
+    fetch('/search?q='+encodeURIComponent(q),options)
+      .then(function(r){if(!r.ok)throw new Error('search failed');return r.json();})
+      .then(function(data){
+        if(id!==requestId||inp.value.trim()!==q)return;
+        cache[q]=data;render(data,q);
+      })
+      .catch(function(error){
+        if(id!==requestId||(error&&error.name==='AbortError'))return;
+        setBusy(false);results.innerHTML='<div class="search-head">搜索出错，请重试</div>';
+      });
+  }
+  inp.addEventListener('input',function(){
+    var v=inp.value;
+    clearTimeout(timer);
+    if(!v.trim()){clearSearch();return;}
+    timer=setTimeout(function(){applySearch(v);},300);
+  });
+})();
+</script>`;
 }
 
 export function getListFilterScriptHtml(): string {

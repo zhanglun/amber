@@ -63,6 +63,25 @@ describe("FileStore", () => {
     expect(list[0].tags).toEqual(["tech", "js"]);
   });
 
+  it("searches title, content, source URL, and exact tags across the whole library", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({
+      id: "robot", title: "工程笔记", content: "机器人在真实环境中完成任务。",
+      sourceUrl: "https://paper.example.com/robot", tags: ["具身智能"],
+      excerpt: "一篇关于实体机器人的笔记。", capturedAt: "2026-02-01T00:00:00.000Z",
+    }));
+    await store.insert(cap({
+      id: "title", title: "具身智能导读", content: "其他内容",
+      sourceUrl: "https://notes.example.com/guide", capturedAt: "2026-01-01T00:00:00.000Z",
+    }));
+
+    expect((await store.search("机器人")).map((r) => r.id)).toEqual(["robot"]);
+    expect((await store.search("paper.example")).map((r) => r.id)).toEqual(["robot"]);
+    const tagged = await store.search("具身智能");
+    expect(tagged.map((r) => r.id)).toEqual(["robot", "title"]);
+    expect(tagged.find((r) => r.id === "robot")?.snippet).toBe("一篇关于实体机器人的笔记。");
+  });
+
   it("findBySourceUrl finds a matching capture or null", async () => {
     const store = new FileStore(dir);
     await store.insert(cap({ id: "a", sourceUrl: "https://x/one" }));

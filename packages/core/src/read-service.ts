@@ -1,4 +1,4 @@
-import type { Capture, CaptureSummary, Store } from "@amber/domain";
+import type { Capture, CaptureSummary, SearchResult, Store } from "@amber/domain";
 import { normalizeTags } from "./tags.js";
 
 export class ReadService {
@@ -29,5 +29,10 @@ export class ReadService {
 
   recordVisit(id: string, visitedAt: string): Promise<void> {
     return this.store.recordVisit(id, visitedAt);
+  }
+
+  /** 全库搜索（title + content）。 */
+  search(query: string): Promise<SearchResult[]> {
+    return this.store.search(query);
   }
 }

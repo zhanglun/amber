@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { BlobStore, Capture, CaptureSummary } from "@amber/domain";
-import { escapeHtml, groupByWeek, readingStats, relativeTime, renderArticle, renderList } from "./render.js";
+import { escapeHtml, groupByWeek, readingStats, relativeTime, renderArticle, renderLibrary, renderList } from "./render.js";
 
 const CAPTURE: Capture = {
   id: "c1",
@@ -74,6 +74,22 @@ describe("relativeTime", () => {
   });
 });
 
+describe("renderLibrary", () => {
+  it("groups captures by their first tag and gives untagged captures a shelf", () => {
+    const html = renderLibrary([
+      { id: "a", title: "Robotics note", sourceUrl: "https://one.example/a", capturedAt: "2026-06-02T00:00:00Z", tags: ["具身智能", "论文"] },
+      { id: "b", title: "Another robotics note", sourceUrl: "https://two.example/b", capturedAt: "2026-06-01T00:00:00Z", tags: ["具身智能"] },
+      { id: "c", title: "No tag yet", sourceUrl: "https://three.example/c", capturedAt: "2026-05-31T00:00:00Z" },
+    ]);
+    expect(html).toContain('href="/library" aria-current="page"');
+    expect(html).toContain("留下来的，不会被时间冲走。");
+    expect(html).toContain("具身智能</h2><span>2 篇");
+    expect(html).toContain("未归类</h2><span>1 篇");
+    expect(html).toContain("Robotics note");
+    expect(html).toContain("No tag yet");
+  });
+});
+
 describe("renderList", () => {
   it("renders list items with links and delete buttons", () => {
     const items: CaptureSummary[] = [
@@ -98,8 +114,15 @@ describe("renderList", () => {
     expect(renderList([])).toContain("No captures yet");
   });
 
-  it("includes search bar", () => {
-    expect(renderList([])).toContain('<input id="search"');
+  it("includes an accessible full-library search entry", () => {
+    const html = renderList([
+      { id: "c1", title: "First", sourceUrl: "https://example.com/a", capturedAt: "2020-01-15T00:00:00.000Z" },
+    ]);
+    expect(html).toContain('<input id="search"');
+    expect(html).toContain("搜索标题、正文、来源或标签…");
+    expect(html).toContain('id="search-results" hidden aria-live="polite" aria-busy="false"');
+    expect(html).toContain("AbortController");
+    expect(html).toContain("全库搜索中…");
   });
 
   it("includes sort group with desc/asc/unread buttons", () => {

@@ -17,6 +17,7 @@ function fakeStore(): Store {
     updateReadStatus: vi.fn(),
     updateTags: vi.fn(),
     recordVisit: vi.fn(),
+    search: vi.fn(async () => []),
   };
 }
 

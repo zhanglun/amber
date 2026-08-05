@@ -26,6 +26,9 @@ export type CaptureSummary = Pick<
   | "tags" | "readProgress" | "readAt"
 >;
 
+/** 搜索命中：一条 CaptureSummary + 命中上下文片段（用于“我记得存过 X”的检索结果展示）。 */
+export type SearchResult = CaptureSummary & { snippet?: string };
+
 /** 一个二进制资源（图片），由 markdown 中的占位符引用。 */
 export interface Asset {
   placeholder: string;
@@ -58,6 +61,8 @@ export interface Store {
   updateReadStatus(id: string, status: { readProgress: number; readAt?: string }): Promise<void>;
   updateTags(id: string, tags: string[]): Promise<void>;
   recordVisit(id: string, visitedAt: string): Promise<void>;
+  /** 全库搜索（title + content），返回命中与片段。 */
+  search(query: string): Promise<SearchResult[]>;
   /** 释放底层资源（如数据库连接）。无连接的实现可不提供。 */
   disconnect?(): Promise<void>;
 }

@@ -1,6 +1,23 @@
 import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { Capture, CaptureSummary, Store } from "@amber/domain";
+import type { Capture, CaptureSummary, SearchResult, Store } from "@amber/domain";
+
+/** 从正文里抽一句命中上下文（去 markdown 噪声）。 */
+function makeSnippet(content: string, query: string, radius = 60): string {
+  const lower = content.toLowerCase();
+  const i = lower.indexOf(query.toLowerCase());
+  if (i < 0) return "";
+  const start = Math.max(0, i - radius);
+  const end = Math.min(content.length, i + query.length + radius);
+  const slice = content
+    .slice(start, end)
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/[#*`>_~-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (start > 0 ? "…" : "") + slice + (end < content.length ? "…" : "");
+}
 
 /** 基于本地文件的 Store 实现（无数据库模式）：每条 Capture 存一个 JSON 文件。 */
 export class FileStore implements Store {
@@ -25,7 +42,11 @@ export class FileStore implements Store {
     for (const name of names) {
       if (!name.endsWith(".json")) continue;
       const text = await readFile(join(this.dir, name), "utf8");
-      captures.push(JSON.parse(text) as Capture);
+      try {
+        captures.push(JSON.parse(text) as Capture);
+      } catch {
+        // 跳过损坏的 JSON 文件
+      }
     }
     return captures;
   }
@@ -55,6 +76,40 @@ export class FileStore implements Store {
       tags: c.tags,
       readProgress: c.readProgress,
       readAt: c.readAt,
+    }));
+  }
+
+  /** 全库搜索：内存实现，title/content/source/tag 子串匹配（不区分大小写）。 */
+  async search(query: string): Promise<SearchResult[]> {
+    const q = query.trim();
+    if (!q) return [];
+    const ql = q.toLowerCase();
+    const all = await this.readAll();
+    const matched = all
+      .filter(
+        (c) =>
+          c.title.toLowerCase().includes(ql) ||
+          c.content.toLowerCase().includes(ql) ||
+          c.sourceUrl.toLowerCase().includes(ql) ||
+          (c.tags ?? []).some((tag) => tag === q),
+
+      )
+      .sort((a, b) => (a.capturedAt < b.capturedAt ? 1 : -1))
+      .slice(0, 50);
+    return matched.map((c) => ({
+      id: c.id,
+      title: c.title,
+      sourceUrl: c.sourceUrl,
+      capturedAt: c.capturedAt,
+      publishedAt: c.publishedAt,
+      coverImage: c.coverImage,
+      excerpt: c.excerpt,
+      wordCount: c.wordCount,
+      hasCode: c.hasCode,
+      tags: c.tags,
+      readProgress: c.readProgress,
+      readAt: c.readAt,
+      snippet: makeSnippet(c.content, q) || c.excerpt,
     }));
   }
 

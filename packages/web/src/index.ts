@@ -5,7 +5,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import type { BlobStore } from "@amber/domain";
 import type { ReadService } from "@amber/core";
-import { renderArticle, renderList } from "./render.js";
+import { renderArticle, renderLibrary, renderList } from "./render.js";
 import { errorHandler, requestLogger } from "./request-log.js";
 
 const MIME: Record<string, string> = {
@@ -39,6 +39,19 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
   app.get("/", async (c) => {
     const items = await readService.list();
     return c.html(renderList(items));
+  });
+
+  /** 长期书架：不按时间分组，而按用户给文章加的首个标签归位。 */
+  app.get("/library", async (c) => {
+    const items = await readService.list();
+    return c.html(renderLibrary(items));
+  });
+
+  /** 全库搜索：搜全部 Capture 的 title + content，返回命中 + 片段。 */
+  app.get("/search", async (c) => {
+    const q = c.req.query("q") ?? "";
+    const results = q.trim() ? await readService.search(q) : [];
+    return c.json({ query: q, count: results.length, results });
   });
 
   app.get("/captures/:id", async (c) => {

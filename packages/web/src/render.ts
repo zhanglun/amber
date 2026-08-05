@@ -8,6 +8,7 @@ import {
   getSearchBarHtml,
   getSortToggleHtml,
   getListFilterScriptHtml,
+  getLibrarySearchScriptHtml,
   getReaderHeaderScriptHtml,
   getDeleteConfirmScriptHtml,
   getReaderEnhancementsScriptHtml,
@@ -179,6 +180,21 @@ export function readingStats(markdown: string): {
   return { chars, minutes };
 }
 
+function renderAppHeader(active: "inbox" | "library"): string {
+  const inboxCurrent = active === "inbox" ? ' aria-current="page"' : "";
+  const libraryCurrent = active === "library" ? ' aria-current="page"' : "";
+  return (
+    `<header class="header">` +
+    `<a href="/" class="brand"><span class="brand-mark" aria-hidden="true"></span>amber</a>` +
+    `<nav class="view-nav" aria-label="内容视图">` +
+    `<a href="/"${inboxCurrent}>收件箱</a>` +
+    `<a href="/library"${libraryCurrent}>书架</a>` +
+    `</nav>` +
+    `<div class="header-right">${getStyleSwitcherHtml()}${getThemeSwitcherHtml()}</div>` +
+    `</header>`
+  );
+}
+
 function page(title: string, body: string, bodyClass = ""): string {
   const classAttr = bodyClass ? ` class="${escapeHtml(bodyClass)}"` : "";
   return `<!doctype html><html lang="zh-CN" data-theme="light" data-style="editorial"><head>
@@ -196,13 +212,8 @@ ${getStyleScriptHtml()}
 
 export function renderList(items: CaptureSummary[]): string {
   const searchBar = getSearchBarHtml();
-  const switcher = getThemeSwitcherHtml();
   const sortGroup = getSortToggleHtml();
-  const header =
-    `<header class="header">` +
-    `<a href="/" class="brand"><span class="brand-mark" aria-hidden="true"></span>amber</a>` +
-    `<div class="header-right">${getStyleSwitcherHtml()}${switcher}</div>` +
-    `</header>`;
+  const header = renderAppHeader("inbox");
 
   if (items.length === 0) {
     const body =
@@ -283,16 +294,89 @@ export function renderList(items: CaptureSummary[]): string {
     header +
     intro +
     toolbar +
+    `<div class="search-results" id="search-results" hidden aria-live="polite" aria-busy="false"></div>` +
     `<main class="collection">` +
     sectionsHtml +
     `</main>` +
     `<footer class="site-footer"><p>amber · 个人知识库阅读器</p></footer>` +
+    getLibrarySearchScriptHtml() +
     getListFilterScriptHtml() +
     getDeleteConfirmScriptHtml() +
     getReadIndicatorScriptHtml() +
     getTagEditorScriptHtml() +
     `</div>`;
-  return page("Amber", body);
+  return page("Amber · 收件箱", body);
+}
+
+/**
+ * 书架按每篇文章的第一个标签归位；没有标签的内容也有自己的位置，绝不让它消失。
+ * 第一个标签是用户目前唯一明确指定的“主题”，因此不擅自用 AI 猜分类。
+ */
+function groupByShelf(items: CaptureSummary[]): Array<{ label: string; items: CaptureSummary[] }> {
+  const shelves = new Map<string, CaptureSummary[]>();
+  const unfiled: CaptureSummary[] = [];
+  for (const item of items) {
+    const label = item.tags?.[0];
+    if (!label) {
+      unfiled.push(item);
+      continue;
+    }
+    const shelf = shelves.get(label) ?? [];
+    shelf.push(item);
+    shelves.set(label, shelf);
+  }
+  const groups = Array.from(shelves, ([label, shelfItems]) => ({ label, items: shelfItems }));
+  if (unfiled.length > 0) groups.push({ label: "未归类", items: unfiled });
+  return groups;
+}
+
+function renderLibraryBook(item: CaptureSummary): string {
+  const hostname = safeHostname(item.sourceUrl);
+  const tags = (item.tags ?? [])
+    .map((tag) => `<span class="library-book-tag">${escapeHtml(tag)}</span>`)
+    .join("");
+  const excerpt = item.excerpt
+    ? `<p class="library-book-excerpt">${escapeHtml(item.excerpt)}</p>`
+    : "";
+  return (
+    `<article class="library-book">` +
+    `<a class="library-book-title" href="/captures/${escapeHtml(item.id)}">${escapeHtml(item.title)}</a>` +
+    `<p class="library-book-meta">${escapeHtml(hostname)}</p>` +
+    excerpt +
+    (tags ? `<div class="library-book-tags">${tags}</div>` : "") +
+    `</article>`
+  );
+}
+
+/** 长期保存的内容不按“什么时候存”堆叠，而按用户给出的主题标签放上书架。 */
+export function renderLibrary(items: CaptureSummary[]): string {
+  const header = renderAppHeader("library");
+  const shelves = groupByShelf(items);
+  const shelfHtml = shelves.length
+    ? shelves
+      .map((shelf) => (
+        `<section class="library-shelf">` +
+        `<div class="library-shelf-heading"><h2>${escapeHtml(shelf.label)}</h2><span>${shelf.items.length} 篇</span></div>` +
+        `<div class="library-books">${shelf.items.map(renderLibraryBook).join("")}</div>` +
+        `</section>`
+      ))
+      .join("")
+    : `<p class="library-empty">书架还是空的。先把一篇想留下的网页放进 amber。</p>`;
+  const intro = items.length
+    ? `<div class="page-intro"><p>${items.length} 篇被留下的网页 · 按第一个标签归位</p></div>`
+    : "";
+  const body =
+    `<div class="page">` +
+    header +
+    `<div class="library-intro"><p class="library-kicker">LIBRARY</p><h1>留下来的，不会被时间冲走。</h1><p>这里不按保存日期堆叠。给文章一个标签，它就有了该在的位置。</p></div>` +
+    intro +
+    `<div class="toolbar">${getSearchBarHtml()}</div>` +
+    `<div class="search-results" id="search-results" hidden aria-live="polite" aria-busy="false"></div>` +
+    `<main class="collection library-shelves">${shelfHtml}</main>` +
+    `<footer class="site-footer"><p>amber · 个人网页书架</p></footer>` +
+    getLibrarySearchScriptHtml() +
+    `</div>`;
+  return page("Amber · 书架", body);
 }
 
 function renderTocList(toc: TocItem[]): string {
