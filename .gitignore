@@ -8,3 +8,5 @@ packages/adapters/src/generated/
 amber-data/
 .playwright-mcp/
 .sisyphus/
+# Local Pi runtime state
+.atl/
