@@ -6,7 +6,7 @@ type SummaryRow = Prisma.CaptureGetPayload<{
   select: {
     id: true; title: true; sourceUrl: true; capturedAt: true;
     publishedAt: true; coverImage: true; excerpt: true; wordCount: true;
-    hasCode: true; tags: true; readProgress: true; readAt: true;
+    hasCode: true; tags: true; readProgress: true; readAt: true; inboxAt: true;
   };
 }>;
 
@@ -26,6 +26,7 @@ function rowToSummary(row: SummaryRow): CaptureSummary {
     tags: row.tags,
     readProgress: row.readProgress ?? undefined,
     readAt: row.readAt?.toISOString() ?? undefined,
+    inboxAt: row.inboxAt?.toISOString() ?? undefined,
   };
 }
 
@@ -48,6 +49,7 @@ function rowToCapture(row: NonNullable<FullRow>): Capture {
     readAt: row.readAt?.toISOString() ?? undefined,
     lastOpenedAt: row.lastOpenedAt?.toISOString() ?? undefined,
     readCount: row.readCount > 0 ? row.readCount : undefined,
+    inboxAt: row.inboxAt?.toISOString() ?? undefined,
   };
 }
 
@@ -106,6 +108,7 @@ export class PostgresStore implements Store {
         readAt: capture.readAt ? new Date(capture.readAt) : null,
         lastOpenedAt: capture.lastOpenedAt ? new Date(capture.lastOpenedAt) : null,
         readCount: capture.readCount ?? 0,
+        inboxAt: capture.inboxAt ? new Date(capture.inboxAt) : null,
       },
     });
   }
@@ -116,7 +119,7 @@ export class PostgresStore implements Store {
       select: {
         id: true, title: true, sourceUrl: true, capturedAt: true,
         publishedAt: true, coverImage: true, excerpt: true, wordCount: true,
-        hasCode: true, tags: true, readProgress: true, readAt: true,
+        hasCode: true, tags: true, readProgress: true, readAt: true, inboxAt: true,
       },
     });
     return rows.map(rowToSummary);
@@ -141,7 +144,7 @@ export class PostgresStore implements Store {
       select: {
         id: true, title: true, sourceUrl: true, capturedAt: true,
         publishedAt: true, coverImage: true, excerpt: true, wordCount: true,
-        hasCode: true, tags: true, readProgress: true, readAt: true,
+        hasCode: true, tags: true, readProgress: true, readAt: true, inboxAt: true,
         content: true,
       },
     });
@@ -158,6 +161,7 @@ export class PostgresStore implements Store {
       tags: r.tags,
       readProgress: r.readProgress ?? undefined,
       readAt: r.readAt?.toISOString() ?? undefined,
+      inboxAt: r.inboxAt?.toISOString() ?? undefined,
       // 标题、来源或标签命中时，正文未必包含 query；用已有摘要避免结果“空一行”。
       snippet: makeSnippet(r.content, q) || r.excerpt || undefined,
     }));
@@ -202,6 +206,12 @@ export class PostgresStore implements Store {
   async updateTags(id: string, tags: string[]): Promise<void> {
     await this.prisma.capture
       .update({ where: { id }, data: { tags } })
+      .catch((e: unknown) => { if ((e as { code?: string })?.code !== "P2025") throw e; });
+  }
+
+  async updateInboxAt(id: string, inboxAt?: string): Promise<void> {
+    await this.prisma.capture
+      .update({ where: { id }, data: { inboxAt: inboxAt ? new Date(inboxAt) : null } })
       .catch((e: unknown) => { if ((e as { code?: string })?.code !== "P2025") throw e; });
   }
 

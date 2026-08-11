@@ -38,13 +38,13 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
 
   app.get("/", async (c) => {
     const items = await readService.list();
-    return c.html(renderList(items));
+    return c.html(renderList(items.filter((item) => item.inboxAt)));
   });
 
-  /** 长期书架：不按时间分组，而按用户给文章加的首个标签归位。 */
+  /** 长期书架：已安顿内容的多重标签索引，不由标签顺序决定唯一位置。 */
   app.get("/library", async (c) => {
     const items = await readService.list();
-    return c.html(renderLibrary(items));
+    return c.html(renderLibrary(items.filter((item) => !item.inboxAt)));
   });
 
   /** 全库搜索：搜全部 Capture 的 title + content，返回命中 + 片段。 */
@@ -59,18 +59,32 @@ export function createApp(readService: ReadService, options: WebOptions): Hono {
     const [capture, all] = await Promise.all([readService.get(id), readService.list()]);
     if (!capture) return c.html("<p>Not found. <a href='/'>back</a></p>", 404);
     void readService.recordVisit(id, new Date().toISOString());
-    const idx = all.findIndex((s) => s.id === id);
+    // 阅读路径不跨越注意力边界：Inbox 文章只串联 Inbox，书架文章只串联书架。
+    const sameView = all.filter((item) => Boolean(item.inboxAt) === Boolean(capture.inboxAt));
+    const idx = sameView.findIndex((s) => s.id === id);
     const neighbors = idx === -1
       ? { prev: null, next: null }
       : {
-          prev: idx > 0 ? all[idx - 1] : null,
-          next: idx < all.length - 1 ? all[idx + 1] : null,
+          prev: idx > 0 ? sameView[idx - 1] : null,
+          next: idx < sameView.length - 1 ? sameView[idx + 1] : null,
         };
     return c.html(await renderArticle(capture, neighbors, options.blob));
   });
 
   app.post("/captures/:id/delete", async (c) => {
     await options.deleteCapture(c.req.param("id"));
+    return c.redirect("/", 303);
+  });
+
+  /** 显式安顿：内容永久保留，只是不再占据收件箱。 */
+  app.post("/captures/:id/shelve", async (c) => {
+    await readService.shelve(c.req.param("id"));
+    return c.redirect("/library", 303);
+  });
+
+  /** 显式重新进入注意力队列，按当前时间排到收件箱顶部。 */
+  app.post("/captures/:id/return-to-inbox", async (c) => {
+    await readService.returnToInbox(c.req.param("id"), new Date().toISOString());
     return c.redirect("/", 303);
   });
 

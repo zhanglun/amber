@@ -11,6 +11,7 @@ const captures: Capture[] = [
     sourceUrl: "https://example.com/a",
     sourceType: "url",
     capturedAt: "2026-06-02T00:00:00.000Z",
+    inboxAt: "2026-06-02T00:00:00.000Z",
   },
   {
     id: "c2",
@@ -25,13 +26,15 @@ const captures: Capture[] = [
 function fakeReadService(): ReadService {
   return {
     list: async () =>
-      captures.map(({ id, title, sourceUrl, capturedAt }) => ({ id, title, sourceUrl, capturedAt })),
+      captures.map(({ id, title, sourceUrl, capturedAt, inboxAt }) => ({ id, title, sourceUrl, capturedAt, inboxAt })),
     get: async (id: string) => captures.find((c) => c.id === id) ?? null,
     findBySourceUrl: async (sourceUrl: string) =>
       captures.find((c) => c.sourceUrl === sourceUrl) ?? null,
     updateReadStatus: vi.fn(),
     updateTags: vi.fn(),
     recordVisit: vi.fn(),
+    shelve: vi.fn(),
+    returnToInbox: vi.fn(),
     search: async (query: string) => query === "First"
       ? [{ id: "c1", title: "First", sourceUrl: "https://example.com/a", capturedAt: "2026-06-02T00:00:00.000Z", tags: ["test"], snippet: "First Body" }]
       : [],
@@ -51,7 +54,7 @@ describe("createApp", () => {
     const html = await res.text();
     expect(html).toContain('<input id="search"');
     expect(html).toContain('href="/captures/c1"');
-    expect(html).toContain('href="/captures/c2"');
+    expect(html).not.toContain('href="/captures/c2"');
     expect(html).toContain('action="/captures/c1/delete"');
     expect(html).not.toContain('class="article-shell"');
   });
@@ -64,6 +67,22 @@ describe("createApp", () => {
     expect(html).toContain("留下来的，不会被时间冲走。");
     expect(html).toContain('href="/library" aria-current="page"');
     expect(html).not.toContain('href="/" aria-current="page"');
+    expect(html).toContain('href="/captures/c2"');
+    expect(html).not.toContain('href="/captures/c1"');
+  });
+
+  it("moves a capture between inbox and library through explicit actions", async () => {
+    const svc = fakeReadService();
+    const app = createApp(svc, { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
+    const shelved = await app.request("/captures/c1/shelve", { method: "POST" });
+    expect(shelved.status).toBe(303);
+    expect(shelved.headers.get("location")).toBe("/library");
+    expect(svc.shelve).toHaveBeenCalledWith("c1");
+
+    const returned = await app.request("/captures/c2/return-to-inbox", { method: "POST" });
+    expect(returned.status).toBe(303);
+    expect(returned.headers.get("location")).toBe("/");
+    expect(svc.returnToInbox).toHaveBeenCalledWith("c2", expect.any(String));
   });
 
   it("GET /search returns full-library results as JSON", async () => {
@@ -90,21 +109,14 @@ describe("createApp", () => {
     expect(html).not.toContain('class="group"');
   });
 
-  it("article page includes link to adjacent capture via data-nav", async () => {
+  it("does not navigate between inbox and library articles", async () => {
     const app = createApp(fakeReadService(), { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
-    const res = await app.request("/captures/c2");
-    const html = await res.text();
-    expect(html).toContain('data-nav="prev"');
-    expect(html).toContain('href="/captures/c1"');
-  });
-
-  it("first article has no prev neighbor but has next", async () => {
-    const app = createApp(fakeReadService(), { blobsDir: "/tmp", blob: fakeBlob, deleteCapture: async () => {} });
-    const res = await app.request("/captures/c1");
-    const html = await res.text();
-    expect(html).not.toContain('data-nav="prev"');
-    expect(html).toContain('data-nav="next"');
-    expect(html).toContain('href="/captures/c2"');
+    const inboxHtml = await (await app.request("/captures/c1")).text();
+    const libraryHtml = await (await app.request("/captures/c2")).text();
+    expect(inboxHtml).not.toContain('data-nav="next"');
+    expect(libraryHtml).not.toContain('data-nav="prev"');
+    expect(inboxHtml).not.toContain('href="/captures/c2"');
+    expect(libraryHtml).not.toContain('href="/captures/c1"');
   });
 
   it("GET /captures/:id calls recordVisit", async () => {

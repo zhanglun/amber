@@ -31,6 +31,16 @@ export class ReadService {
     return this.store.recordVisit(id, visitedAt);
   }
 
+  /** 安顿好后离开收件箱，但 Capture 永久保留在书架中。 */
+  shelve(id: string): Promise<void> {
+    return this.store.updateInboxAt(id);
+  }
+
+  /** 重新占据注意力的内容回到收件箱顶部。 */
+  returnToInbox(id: string, inboxAt: string): Promise<void> {
+    return this.store.updateInboxAt(id, inboxAt);
+  }
+
   /** 全库搜索（title + content）。 */
   search(query: string): Promise<SearchResult[]> {
     return this.store.search(query);

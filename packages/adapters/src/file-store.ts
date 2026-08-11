@@ -76,6 +76,7 @@ export class FileStore implements Store {
       tags: c.tags,
       readProgress: c.readProgress,
       readAt: c.readAt,
+      inboxAt: c.inboxAt,
     }));
   }
 
@@ -109,6 +110,7 @@ export class FileStore implements Store {
       tags: c.tags,
       readProgress: c.readProgress,
       readAt: c.readAt,
+      inboxAt: c.inboxAt,
       snippet: makeSnippet(c.content, q) || c.excerpt,
     }));
   }
@@ -148,6 +150,13 @@ export class FileStore implements Store {
     const capture = await this.get(id);
     if (!capture) return;
     capture.tags = tags;
+    await writeFile(this.file(id), JSON.stringify(capture, null, 2), "utf8");
+  }
+
+  async updateInboxAt(id: string, inboxAt?: string): Promise<void> {
+    const capture = await this.get(id);
+    if (!capture) return;
+    capture.inboxAt = inboxAt;
     await writeFile(this.file(id), JSON.stringify(capture, null, 2), "utf8");
   }
 

@@ -17,13 +17,14 @@ export interface Capture {
   readAt?: string;         // ISO 8601，首次读完时写入，不随进度回退
   lastOpenedAt?: string;   // ISO 8601，最近一次打开时间
   readCount?: number;      // 打开次数（每次访问 /captures/:id 自增）
+  inboxAt?: string;        // 仍占据注意力时的进入收件箱时间；未定义表示已上架
 }
 
 export type CaptureSummary = Pick<
   Capture,
   | "id" | "title" | "sourceUrl" | "capturedAt" | "publishedAt"
   | "coverImage" | "excerpt" | "wordCount" | "hasCode"
-  | "tags" | "readProgress" | "readAt"
+  | "tags" | "readProgress" | "readAt" | "inboxAt"
 >;
 
 /** 搜索命中：一条 CaptureSummary + 命中上下文片段（用于“我记得存过 X”的检索结果展示）。 */
@@ -61,6 +62,8 @@ export interface Store {
   updateReadStatus(id: string, status: { readProgress: number; readAt?: string }): Promise<void>;
   updateTags(id: string, tags: string[]): Promise<void>;
   recordVisit(id: string, visitedAt: string): Promise<void>;
+  /** 有值即放入收件箱；undefined 即上架。 */
+  updateInboxAt(id: string, inboxAt?: string): Promise<void>;
   /** 全库搜索（title + content），返回命中与片段。 */
   search(query: string): Promise<SearchResult[]>;
   /** 释放底层资源（如数据库连接）。无连接的实现可不提供。 */

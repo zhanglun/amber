@@ -17,6 +17,7 @@ function fakeStore(): Store {
     updateReadStatus: vi.fn(),
     updateTags: vi.fn(),
     recordVisit: vi.fn(),
+    updateInboxAt: vi.fn(),
     search: vi.fn(async () => []),
   };
 }
@@ -63,5 +64,14 @@ describe("ReadService", () => {
     const svc = new ReadService(store);
     await svc.recordVisit("c1", "2026-06-05T10:00:00.000Z");
     expect(store.recordVisit).toHaveBeenCalledWith("c1", "2026-06-05T10:00:00.000Z");
+  });
+
+  it("shelves and returns captures through inboxAt", async () => {
+    const store = fakeStore();
+    const svc = new ReadService(store);
+    await svc.shelve("c1");
+    await svc.returnToInbox("c1", "2026-06-06T10:00:00.000Z");
+    expect(store.updateInboxAt).toHaveBeenNthCalledWith(1, "c1");
+    expect(store.updateInboxAt).toHaveBeenNthCalledWith(2, "c1", "2026-06-06T10:00:00.000Z");
   });
 });

@@ -38,6 +38,7 @@ function fakeStore(rows: Capture[] = []): Store {
     updateReadStatus: vi.fn(),
     updateTags: vi.fn(),
     recordVisit: vi.fn(),
+    updateInboxAt: vi.fn(),
     search: vi.fn(async () => []),
   };
 }
@@ -68,6 +69,7 @@ describe("ImportService.run", () => {
     await svc.run("https://x/a");
     const saved = await store.get("fixed-id");
     expect(saved?.capturedAt).toBe("2026-05-31T00:00:00.000Z");
+    expect(saved?.inboxAt).toBe("2026-05-31T00:00:00.000Z");
   });
 
   it("stores publishedAt from raw when provided", async () => {
@@ -185,6 +187,14 @@ describe("ImportService.run", () => {
     expect(source.capture).toHaveBeenCalled();
     const saved = await store.get("c1");
     expect(saved?.title).toBe("New");
+  });
+
+  it("preserves an existing shelved state when re-importing", async () => {
+    const source = { capture: vi.fn(async () => ({ title: "Fresh", markdown: "fresh body", assets: [] })) };
+    const store = fakeStore([cap]);
+    const svc = new ImportService(source, store, fakeBlob());
+    await svc.run("https://x/a", { forceId: "c1", initialInboxAt: null });
+    expect((await store.get("c1"))?.inboxAt).toBeUndefined();
   });
 
   it("reports progress through onProgress across stages (with images)", async () => {

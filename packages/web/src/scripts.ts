@@ -270,6 +270,42 @@ export function getListFilterScriptHtml(): string {
 </script>`;
 }
 
+/** 书架标签是多重索引：一次可选多个标签，未标记也可单独查看。 */
+export function getShelfFilterScriptHtml(): string {
+  return `<script>
+(function(){
+  var chips=document.querySelectorAll('.shelf-filter[data-tag]');
+  var all=document.querySelector('.shelf-filter-all');
+  var untagged=document.querySelector('.shelf-filter-untagged');
+  var active=new Set(),showUntagged=false;
+  function tags(book){try{return JSON.parse(book.getAttribute('data-tags')||'[]');}catch(e){return [];}}
+  function apply(){
+    document.querySelectorAll('.library-book[data-tags]').forEach(function(book){
+      var bookTags=tags(book);
+      var tagOk=active.size===0||Array.from(active).every(function(t){return bookTags.indexOf(t)>=0;});
+      var untaggedOk=!showUntagged||bookTags.length===0;
+      book.hidden=!(tagOk&&untaggedOk);
+    });
+  }
+  chips.forEach(function(chip){chip.addEventListener('click',function(){
+    var tag=chip.getAttribute('data-tag');
+    if(active.has(tag)){active.delete(tag);chip.classList.remove('active');}
+    else{active.add(tag);chip.classList.add('active');}
+    if(all)all.classList.toggle('active',active.size===0&&!showUntagged);apply();
+  });});
+  if(untagged)untagged.addEventListener('click',function(){
+    showUntagged=!showUntagged;untagged.classList.toggle('active',showUntagged);
+    if(all)all.classList.toggle('active',active.size===0&&!showUntagged);apply();
+  });
+  if(all){all.classList.add('active');all.addEventListener('click',function(){
+    active.clear();showUntagged=false;chips.forEach(function(c){c.classList.remove('active');});
+    if(untagged)untagged.classList.remove('active');all.classList.add('active');apply();
+  });}
+  apply();
+})();
+</script>`;
+}
+
 export function getReaderHeaderScriptHtml(): string {
   return `<script>
 (function(){

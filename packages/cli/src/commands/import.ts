@@ -19,7 +19,11 @@ export const importCommand = defineCommand({
         const existing = await readService.findBySourceUrl(args.url);
         if (existing) {
           await deleteCapture(existing.id);
-          id = await importService.run(args.url, { forceId: existing.id, onProgress });
+          id = await importService.run(args.url, {
+            forceId: existing.id,
+            initialInboxAt: existing.inboxAt ?? null,
+            onProgress,
+          });
         } else {
           id = await importService.run(args.url, { onProgress });
         }

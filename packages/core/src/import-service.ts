@@ -10,6 +10,8 @@ export interface ImportDeps {
 
 export interface ImportOptions {
   forceId?: string;
+  /** 重新抓取时保留原有注意力状态：undefined=新导入默认进 Inbox，null=已上架。 */
+  initialInboxAt?: string | null;
   /** 进度回调：在抓取/压缩/保存各阶段被调用，用于 CLI 更新 spinner 文案。 */
   onProgress?: (message: string) => void;
 }
@@ -71,6 +73,11 @@ export class ImportService {
     options?.onProgress?.("Saving…");
 
     const capturedAt = this.now().toISOString();
+    // undefined 表示全新导入；null 表示重新抓取时保留“已上架”。
+    let inboxAt: string | undefined;
+    if (options?.initialInboxAt === undefined) inboxAt = capturedAt;
+    else if (options.initialInboxAt) inboxAt = options.initialInboxAt;
+
     const capture: Capture = {
       id,
       title: raw.title,
@@ -84,6 +91,8 @@ export class ImportService {
       excerpt: computeExcerpt(content),
       wordCount: computeWordCount(content),
       hasCode: computeHasCode(content),
+      // 新存入默认进入收件箱；重新抓取时必须保留用户此前的安顿决定。
+      inboxAt,
     };
     await this.store.insert(capture);
     return id;

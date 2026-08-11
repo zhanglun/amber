@@ -164,6 +164,15 @@ describe("FileStore", () => {
     await expect(store.updateTags("ghost", ["a"])).resolves.toBeUndefined();
   });
 
+  it("updates inboxAt to shelve and return a capture", async () => {
+    const store = new FileStore(dir);
+    await store.insert(cap({ id: "inbox", inboxAt: "2026-06-05T10:00:00.000Z" }));
+    await store.updateInboxAt("inbox");
+    expect((await store.get("inbox"))?.inboxAt).toBeUndefined();
+    await store.updateInboxAt("inbox", "2026-06-06T10:00:00.000Z");
+    expect((await store.get("inbox"))?.inboxAt).toBe("2026-06-06T10:00:00.000Z");
+  });
+
   it("recordVisit sets lastOpenedAt and increments readCount", async () => {
     const store = new FileStore(dir);
     await store.insert(cap({ id: "v1" }));

@@ -25,4 +25,5 @@ model Capture {
   readAt       DateTime?
   lastOpenedAt DateTime?
   readCount    Int       @default(0)
+  inboxAt      DateTime?
 }

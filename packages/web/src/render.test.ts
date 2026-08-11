@@ -75,7 +75,7 @@ describe("relativeTime", () => {
 });
 
 describe("renderLibrary", () => {
-  it("groups captures by their first tag and gives untagged captures a shelf", () => {
+  it("uses tags as multi-index filters instead of assigning a first-tag shelf", () => {
     const html = renderLibrary([
       { id: "a", title: "Robotics note", sourceUrl: "https://one.example/a", capturedAt: "2026-06-02T00:00:00Z", tags: ["具身智能", "论文"] },
       { id: "b", title: "Another robotics note", sourceUrl: "https://two.example/b", capturedAt: "2026-06-01T00:00:00Z", tags: ["具身智能"] },
@@ -83,14 +83,25 @@ describe("renderLibrary", () => {
     ]);
     expect(html).toContain('href="/library" aria-current="page"');
     expect(html).toContain("留下来的，不会被时间冲走。");
-    expect(html).toContain("具身智能</h2><span>2 篇");
-    expect(html).toContain("未归类</h2><span>1 篇");
+    expect(html).toContain('data-tag="具身智能"');
+    expect(html).toContain('data-tag="论文"');
+    expect(html).toContain("未标记 <span>1</span>");
+    expect(html).toContain('data-tags="[&quot;具身智能&quot;,&quot;论文&quot;]"');
+    expect(html).not.toContain('class="library-shelf"');
     expect(html).toContain("Robotics note");
     expect(html).toContain("No tag yet");
   });
 });
 
 describe("renderList", () => {
+  it("orders inbox items by inboxAt rather than original capture time", () => {
+    const html = renderList([
+      { id: "old", title: "Old capture, newly returned", sourceUrl: "https://example.com/old", capturedAt: "2020-01-01T00:00:00.000Z", inboxAt: "2026-06-02T00:00:00.000Z" },
+      { id: "new", title: "New capture", sourceUrl: "https://example.com/new", capturedAt: "2026-06-01T00:00:00.000Z", inboxAt: "2026-06-01T00:00:00.000Z" },
+    ]);
+    expect(html.indexOf("Old capture, newly returned")).toBeLessThan(html.indexOf("New capture"));
+  });
+
   it("renders list items with links and delete buttons", () => {
     const items: CaptureSummary[] = [
       { id: "c1", title: "First", sourceUrl: "https://example.com/a", capturedAt: "2020-01-15T00:00:00.000Z" },
@@ -110,8 +121,11 @@ describe("renderList", () => {
     expect(html).not.toContain('"Hello "World""');
   });
 
-  it("shows empty-state message when no items", () => {
-    expect(renderList([])).toContain("No captures yet");
+  it("shows an empty inbox state without implying saved content was lost", () => {
+    const html = renderList([]);
+    expect(html).toContain("收件箱清空了。");
+    expect(html).toContain("你留下的内容都在书架里");
+    expect(html).toContain('href="/library"');
   });
 
   it("includes an accessible full-library search entry", () => {
@@ -125,8 +139,10 @@ describe("renderList", () => {
     expect(html).toContain("全库搜索中…");
   });
 
-  it("includes sort group with desc/asc/unread buttons", () => {
-    const html = renderList([]);
+  it("includes sort group with desc/asc/unread buttons when inbox has items", () => {
+    const html = renderList([
+      { id: "c1", title: "First", sourceUrl: "https://example.com/a", capturedAt: "2020-01-15T00:00:00.000Z", inboxAt: "2020-01-15T00:00:00.000Z" },
+    ]);
     expect(html).toContain('class="sort-group"');
     expect(html).toContain('data-sort="desc"');
     expect(html).toContain('data-sort="asc"');
@@ -241,6 +257,18 @@ describe("renderArticle", () => {
     expect(html).toContain('class="tag-label"');
     expect(html).toContain('class="source-link"');
     expect(html).toContain("原文发布于");
+  });
+
+  it("renders explicit placement actions based on inboxAt", async () => {
+    const inboxHtml = await renderArticle({ ...CAPTURE, inboxAt: "2026-06-04T00:00:00.000Z" });
+    expect(inboxHtml).toContain('action="/captures/c1/shelve"');
+    expect(inboxHtml).toContain("放上书架");
+    expect(inboxHtml).toContain('href="/">← 返回收件箱');
+
+    const libraryHtml = await renderArticle(CAPTURE);
+    expect(libraryHtml).toContain('action="/captures/c1/return-to-inbox"');
+    expect(libraryHtml).toContain("放回收件箱");
+    expect(libraryHtml).toContain('href="/library">← 返回书架');
   });
 
   it("renders source link in meta", async () => {

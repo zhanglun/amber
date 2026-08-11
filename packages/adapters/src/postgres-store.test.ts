@@ -180,6 +180,17 @@ describe.skipIf(!TEST_DB_URL)("PostgresStore", () => {
     await expect(store.updateTags("ghost", ["a"])).resolves.toBeUndefined();
   });
 
+  // ── inbox placement ──────────────────────────────────────────────────────
+
+  it("stores inboxAt and can shelve or return a capture", async () => {
+    await store.insert(cap({ id: "inbox", inboxAt: "2026-06-05T10:00:00.000Z" }));
+    expect((await store.get("inbox"))?.inboxAt).toBe("2026-06-05T10:00:00.000Z");
+    await store.updateInboxAt("inbox");
+    expect((await store.get("inbox"))?.inboxAt).toBeUndefined();
+    await store.updateInboxAt("inbox", "2026-06-06T10:00:00.000Z");
+    expect((await store.get("inbox"))?.inboxAt).toBe("2026-06-06T10:00:00.000Z");
+  });
+
   // ── recordVisit ───────────────────────────────────────────────────────────
 
   it("recordVisit sets lastOpenedAt and increments readCount", async () => {
