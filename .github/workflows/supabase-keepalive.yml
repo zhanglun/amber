@@ -10,9 +10,6 @@ permissions: {}
 
 jobs:
   ping:
-    # Forks do not have the upstream repository's secrets, so this job is
-    # skipped unless the two project-specific secrets are configured.
-    if: ${{ secrets.SUPABASE_URL != '' && secrets.SUPABASE_ANON_KEY != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -20,9 +17,15 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: >-
-          curl --fail-with-body --silent --show-error
-          --max-time 30
-          "$SUPABASE_URL/rest/v1/"
-          -H "apikey: $SUPABASE_ANON_KEY"
-          -H "Authorization: Bearer $SUPABASE_ANON_KEY"
+        run: |
+          # Forks do not receive the upstream repository's secrets.
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Supabase secrets are not configured; skipping keepalive."
+            exit 0
+          fi
+
+          curl --fail-with-body --silent --show-error \
+            --max-time 30 \
+            "$SUPABASE_URL/rest/v1/" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY"
